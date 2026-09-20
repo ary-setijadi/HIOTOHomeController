@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Automation v4.0</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Home Automation <span class="ver">v4.0</span></h1>
+    <div class="status"><span id="dot" class="dot off"></span><span id="status-text">disconnected</span></div>
+  </header>
+
+  <section class="toolbar">
+    <span class="label">Create device:</span>
+    <input id="new-serial" placeholder="serial, e.g. SNS-TMP-005" />
+    <select id="new-kind"><option value="sensor">sensor</option><option value="actuator">actuator</option></select>
+    <select id="new-type"><option value="1">digital (1)</option><option value="2">analog (2)</option></select>
+    <button id="btn-create-device">Create</button>
+  </section>
+
+  <main class="layout">
+    <section class="col">
+      <h2>Sensors</h2>
+      <div id="sensors" class="list"></div>
+      <h2>Actuators</h2>
+      <div id="actuators" class="list"></div>
+    </section>
+
+    <section class="col">
+      <h2>Rules</h2>
+      <div id="rules" class="list"></div>
+      <div class="add-rule">
+        <h3>Register a rule (JSON)</h3>
+        <textarea id="rule-json" rows="5" placeholder='{"name":"evening-on","mode":"trigger","when":{"type":"time","at":"18:00"},"then":[{"actuator":"ACT-LMP-001","value":1}]}'></textarea>
+        <button id="btn-add-rule" class="primary">Add Rule</button>
+        <p class="hint">
+          <b>Level</b> (default): <code>{"when":{"sensor":"SNS-SW-001","op":"==","threshold":1},"then":[…],"else":[…]}</code><br/>
+          <b>Trigger</b>: <code>{"mode":"trigger","when":{"type":"time","at":"18:00"},"then":[…]}</code> — fires once at the time.<br/>
+          <b>Window</b>: <code>{"when":{"type":"time","from":"18:00","to":"22:00"},"then":[…],"else":[…]}</code>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

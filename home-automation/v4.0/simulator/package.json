@@ -1,0 +1,9 @@
+{
+  "name": "home-automation-v3-simulator",
+  "version": "3.0.0",
+  "description": "Whole-house simulator (DI/DO + analog) + UI for home.automation v3",
+  "private": true,
+  "dependencies": {
+    "mqtt": "^5.10.1"
+  }
+}

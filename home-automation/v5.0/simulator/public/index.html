@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Automation v5.0</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Home Automation <span class="ver">v5.0 · mTLS</span></h1>
+    <div class="status"><span id="dot" class="dot off"></span><span id="status-text">disconnected</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="sensors">Sensors</button>
+    <button class="tab" data-tab="actuators">Actuators</button>
+    <button class="tab" data-tab="rules">Rules</button>
+    <button class="tab" data-tab="traffic">Traffic</button>
+    <button class="tab" data-tab="security">Security</button>
+    <button class="tab" data-tab="devices">Devices</button>
+    <button class="tab" data-tab="setup">Setup</button>
+  </nav>
+
+  <main class="content">
+    <!-- Sensors -->
+    <section id="panel-sensors" class="panel active">
+      <div class="panel-head">
+        <h2>Sensors</h2>
+        <div class="filter" data-for="sensor">
+          <button class="fbtn active" data-filter="all">All</button>
+          <button class="fbtn" data-filter="1">Digital</button>
+          <button class="fbtn" data-filter="2">Analog</button>
+        </div>
+      </div>
+      <div id="sensors" class="list"></div>
+      <div class="pager">
+        <button id="sensor-prev" class="pager-btn">‹ Prev</button>
+        <span id="sensor-page" class="pager-info">1 / 1</span>
+        <button id="sensor-next" class="pager-btn">Next ›</button>
+      </div>
+    </section>
+
+    <!-- Actuators -->
+    <section id="panel-actuators" class="panel">
+      <div class="panel-head">
+        <h2>Actuators</h2>
+        <div class="filter" data-for="actuator">
+          <button class="fbtn active" data-filter="all">All</button>
+          <button class="fbtn" data-filter="1">Digital</button>
+          <button class="fbtn" data-filter="2">Analog</button>
+        </div>
+      </div>
+      <div id="actuators" class="list"></div>
+      <div class="pager">
+        <button id="actuator-prev" class="pager-btn">‹ Prev</button>
+        <span id="actuator-page" class="pager-info">1 / 1</span>
+        <button id="actuator-next" class="pager-btn">Next ›</button>
+      </div>
+    </section>
+
+    <!-- Rules -->
+    <section id="panel-rules" class="panel">
+      <div class="panel-head"><h2>Rules</h2></div>
+      <div id="rules" class="list"></div>
+      <div class="pager">
+        <button id="rule-prev" class="pager-btn">‹ Prev</button>
+        <span id="rule-page" class="pager-info">1 / 1</span>
+        <button id="rule-next" class="pager-btn">Next ›</button>
+      </div>
+      <div class="add-rule">
+        <h3>Register a rule (JSON)</h3>
+        <textarea id="rule-json" rows="4" placeholder='{"name":"evening-on","mode":"trigger","when":{"type":"time","at":"18:00"},"then":[{"actuator":"ACT-LMP-001","value":1}]}'></textarea>
+        <button id="btn-add-rule" class="primary">Add Rule</button>
+        <p class="hint">
+          <b>Level</b> (default): <code>{"when":{"sensor":"SNS-SW-001","op":"==","threshold":1},"then":[…],"else":[…]}</code><br/>
+          <b>Trigger</b>: <code>{"mode":"trigger","when":{"type":"time","at":"18:00"},"then":[…]}</code> — fires once at the time.<br/>
+          <b>Window</b>: <code>{"when":{"type":"time","from":"18:00","to":"22:00"},"then":[…],"else":[…]}</code>
+        </p>
+      </div>
+    </section>
+
+    <!-- Traffic -->
+    <section id="panel-traffic" class="panel">
+      <div class="panel-head">
+        <h2 id="traffic-title">Live message flow</h2>
+        <div class="traffic-tools">
+          <button id="btn-history" class="pager-btn">Load history (Pi file)</button>
+          <button id="btn-live" class="pager-btn">Live</button>
+          <div class="flowcounts" id="flowCounts"></div>
+        </div>
+      </div>
+      <table id="msgTable">
+        <thead><tr><th>time</th><th>flow</th><th>topic</th><th>source</th><th>class</th><th>payload</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="pager">
+        <button id="msg-prev" class="pager-btn">‹ Prev</button>
+        <span id="msg-page" class="pager-info">1 / 1</span>
+        <button id="msg-next" class="pager-btn">Next ›</button>
+      </div>
+      <p class="hint">Live feed keeps only the most recent ~10&nbsp;MB in memory; the full history is stored on the Pi in a rolling 100&nbsp;MB file (<code>/var/lib/homeautomation/traffic.log</code>). Use "Load history" to page through it.</p>
+    </section>
+
+    <!-- Security -->
+    <section id="panel-security" class="panel">
+      <div class="cards">
+        <div class="card"><div class="num" id="secTotal">–</div><div class="lbl">broker connections</div></div>
+        <div class="card"><div class="num" id="secTls">–</div><div class="lbl">over TLS</div></div>
+        <div class="card"><div class="num" id="secAllTls">–</div><div class="lbl">all-TLS?</div></div>
+        <div class="card"><div class="num" id="msgTotal">0</div><div class="lbl">messages observed</div></div>
+      </div>
+
+      <div class="panel-head"><h2>Broker connection table</h2></div>
+      <table id="connTable">
+        <thead><tr><th>protocol</th><th>SSL/TLS</th><th>client certificate (CN)</th><th>connection</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="panel-head"><h2>Impostor test</h2></div>
+      <button id="impostorBtn">Run impostor test</button>
+      <pre id="impostorOut">click "Run impostor test" to demonstrate mTLS rejection</pre>
+    </section>
+
+    <!-- Devices -->
+    <section id="panel-devices" class="panel">
+      <div class="panel-head"><h2>Register a new device</h2></div>
+      <div class="setup-row">
+        <input id="dev-serial" placeholder="serial, e.g. SNS-TMP-005" />
+        <select id="dev-kind"><option value="sensor">sensor</option><option value="actuator">actuator</option></select>
+        <select id="dev-type"><option value="1">digital (1)</option><option value="2">analog (2)</option></select>
+        <button id="btn-register-device" class="primary">Register</button>
+      </div>
+      <div id="device-qr" class="qr-area"></div>
+
+      <div class="panel-head"><h2>Registered devices</h2></div>
+      <table id="deviceTable">
+        <thead><tr><th>serial</th><th>kind</th><th>type</th><th>created</th><th>QR code</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="hint">Registering issues a client certificate (CN = serial) and a QR code. Scan it with the registration app (<code>node server.js</code> in <code>v5.0/registration</code>, then open <code>http://127.0.0.1:3007</code>) to onboard the device.</p>
+    </section>
+
+    <!-- Setup -->
+    <section id="panel-setup" class="panel">
+      <h2>Create device</h2>
+      <div class="setup-row">
+        <input id="new-serial" placeholder="serial, e.g. SNS-TMP-005" />
+        <select id="new-kind"><option value="sensor">sensor</option><option value="actuator">actuator</option></select>
+        <select id="new-type"><option value="1">digital (1)</option><option value="2">analog (2)</option></select>
+        <button id="btn-create-device" class="primary">Create</button>
+      </div>
+      <p class="hint">A new device connects over MQTTS with its own certificate. Add a cert for its serial in <code>v5.0/certs/</code> to let it authenticate.</p>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

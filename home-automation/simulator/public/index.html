@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Automation v2.0</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Home Automation <span class="ver">v2.0</span></h1>
+    <div class="status"><span id="dot" class="dot off"></span><span id="status-text">disconnected</span></div>
+  </header>
+
+  <section class="toolbar">
+    <span class="label">Create switch:</span>
+    <input id="new-switch" placeholder="e.g. SNS-SW-0006" />
+    <button id="btn-create-switch">Create</button>
+  </section>
+
+  <main class="layout">
+    <section class="col">
+      <h2>Switches</h2>
+      <div id="switches" class="list"></div>
+      <h2>Lamps</h2>
+      <div id="lamps" class="list"></div>
+    </section>
+
+    <section class="col">
+      <h2>Rules</h2>
+      <div id="rules" class="list"></div>
+      <div class="add-rule">
+        <h3>Register a rule</h3>
+        <input id="rule-switch" placeholder="switch serial, e.g. SNS-SW-0005" />
+        <input id="rule-mappings" placeholder="ACT-LMP-0002:1:0, ACT-LMP-0003:0:1" />
+        <button id="btn-add-rule" class="primary">Add Rule</button>
+        <p class="hint">mapping format <code>ACTUATOR:on:off</code> — "on"/"off" are the lamp values for switch ON/OFF (0/1).</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

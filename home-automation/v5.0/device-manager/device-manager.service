@@ -1,0 +1,13 @@
+[Unit]
+Description=Home Automation Device Manager (registration + cert issuance + QR)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/root/device-manager -http-port 8081
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

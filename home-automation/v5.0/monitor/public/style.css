@@ -1,0 +1,30 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0f172a; color: #e2e8f0; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; background: #1e293b; border-bottom: 1px solid #334155; }
+header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+header .v { color: #38bdf8; }
+.status { font-size: 13px; color: #38bdf8; }
+
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px 20px; }
+.card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; }
+.card .num { font-size: 26px; font-weight: 700; color: #38bdf8; }
+.card .lbl { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
+
+.panel { margin: 0 20px 18px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px 16px; }
+.panel h2 { margin: 0 0 10px; font-size: 15px; }
+.panel h2 small { color: #94a3b8; font-weight: 400; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #334155; vertical-align: top; }
+th { color: #94a3b8; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: .04em; }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; color: #fff; font-size: 11.5px; white-space: nowrap; }
+.ok { color: #4ade80; }
+.bad { color: #f87171; }
+
+.flowcounts { margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.flowchip { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 3px 9px; font-size: 12px; color: #cbd5e1; }
+
+button { background: #0284c7; color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; font-size: 14px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+pre { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px; font-size: 12.5px; white-space: pre-wrap; color: #cbd5e1; margin: 10px 0 0; }

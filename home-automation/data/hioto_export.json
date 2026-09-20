@@ -1,0 +1,4100 @@
+{
+  "rooms": [
+    {
+      "id": 2,
+      "floor_id": 1,
+      "name": "Teras"
+    },
+    {
+      "id": 3,
+      "floor_id": 2,
+      "name": "Kantor"
+    },
+    {
+      "id": 4,
+      "floor_id": 2,
+      "name": "Storage"
+    },
+    {
+      "id": 5,
+      "floor_id": 2,
+      "name": "Lab Automation"
+    },
+    {
+      "id": 6,
+      "floor_id": 3,
+      "name": "Kitchen"
+    },
+    {
+      "id": 7,
+      "floor_id": 3,
+      "name": "Garage Area"
+    },
+    {
+      "id": 8,
+      "floor_id": 3,
+      "name": "Living Room"
+    },
+    {
+      "id": 9,
+      "floor_id": 3,
+      "name": "Bathroom"
+    },
+    {
+      "id": 10,
+      "floor_id": 3,
+      "name": "Meeting Room"
+    },
+    {
+      "id": 11,
+      "floor_id": 2,
+      "name": "Meeting Room"
+    },
+    {
+      "id": 12,
+      "floor_id": 2,
+      "name": "Terrace"
+    },
+    {
+      "id": 13,
+      "floor_id": 4,
+      "name": "Ruangan Zalfa"
+    }
+  ],
+  "floors": [
+    {
+      "id": 1,
+      "name": "Lantai 3"
+    },
+    {
+      "id": 2,
+      "name": "Lantai 2"
+    },
+    {
+      "id": 3,
+      "name": "Lantai 1"
+    },
+    {
+      "id": 4,
+      "name": "Lantai 4"
+    }
+  ],
+  "rule_devices": [
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "20a18e7a-61e2-4c50-baa8-41b5e64db12f",
+      "output_guid": "904a5ac4-05ff-4f08-86cd-879cd3aa2d89",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "20a18e7a-61e2-4c50-baa8-41b5e64db12f",
+      "output_guid": "904a5ac4-05ff-4f08-86cd-879cd3aa2d89",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "f603e38c-fa72-4d97-8f0f-455104ae6953",
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "f603e38c-fa72-4d97-8f0f-455104ae6953",
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "679bf788-eddf-46dc-a92e-f275e97d5c0e",
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "679bf788-eddf-46dc-a92e-f275e97d5c0e",
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "c405d391-49cc-4ab5-b41a-96502e352199",
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "c405d391-49cc-4ab5-b41a-96502e352199",
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "5b8bd379-beaf-4315-9765-0f8495717c16",
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "5b8bd379-beaf-4315-9765-0f8495717c16",
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "b6b0aa57-fb1c-41c9-b716-85aa41f4bce4",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "b6b0aa57-fb1c-41c9-b716-85aa41f4bce4",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "b4108f5e-5918-4e3c-a7ad-edae82988568",
+      "output_guid": "9c28e2ef-bd5e-4841-b53a-dc0d56100e71",
+      "input_value": "0",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "b4108f5e-5918-4e3c-a7ad-edae82988568",
+      "output_guid": "9c28e2ef-bd5e-4841-b53a-dc0d56100e71",
+      "input_value": "1",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "input_value": "00",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "input_value": "01",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "input_value": "01",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "input_value": "10",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "input_value": "10",
+      "output_value": "1"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "input_value": "11",
+      "output_value": "0"
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "input_value": "11",
+      "output_value": "0"
+    }
+  ],
+  "registrations": [
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.2-2ND.FLOOR-LAB AUTOMATION-246-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "E8:68:E7:80:8F:B2",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:24.979303191+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.1-2ND.FLOOR-LAB AUTOMATION-246-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "D8:BF:C0: E:5E:6F",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:24.953327724+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.1-2ND.FLOOR-LAB-AUTOMATION-246",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:51:D7",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-28 07:14:28.2442129+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.2-2ND.FLOOR-MEETING ROOM-247",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:4F:E1",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.648451926+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.3-2ND.FLOOR-MEETING ROOM-247-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "E8:68:E7:D9:C4:7",
+      "status": "0",
+      "room_id": 11,
+      "last_seen": "2026-09-19 16:14:24.915576272+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.4-2ND.FLOOR-MEETING ROOM-247-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "34:94:54:83:20:A6",
+      "status": "0",
+      "room_id": 11,
+      "last_seen": "2026-09-19 16:14:31.00410364+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.3-2ND.FLOOR-LAB AUTOMATION-248",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "4C:75:25:18:FA:22",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.5-2ND.FLOOR-LAB AUTOMATION-248-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "34:94:54:83:24:B2",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:25.794153105+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.6-2ND.FLOOR-LAB AUTOMATION-248-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "84:CC:A8:A1:BA:EE",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:25.731646791+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.4-2ND.FLOOR-STORAGE ROOM-249",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:53:54",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": 2,
+      "guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "y_position": 0.6767969202136387,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "LAMP.8-2ND.FLOOR-LAB AUTOMATION-249-02}",
+      "category": "",
+      "x_position": 0.8064155773621987,
+      "mac": "5C:CF:7F:A0:84:C3",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:24.88877215+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1",
+      "floor_id": 2,
+      "guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "y_position": 0.7450271095048165,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.7-2ND.FLOOR-STORAGE ROOM-249-01",
+      "category": "LAMPU",
+      "x_position": 0.5524131908645866,
+      "mac": "DC:4F:22:45:1A:45",
+      "status": "1",
+      "room_id": 4,
+      "last_seen": "2026-09-19 16:14:34.594041076+07:00",
+      "status_device": "1",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.9-1ST.FLOOR-GARAGE AREA-254",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:E8:41:D5",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.17-1ST.FLOOR-GARAGE AREA-254-01}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "5C:CF:7F:41:A8:A2",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.586631592+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.18-1ST.FLOOR-LIVING ROOM-254-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "f4:cf:a2:75:cd:7d",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.444683397+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.10-1ST.FLOOR-GARAGE AREA-255",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:56:1B",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.19-1ST.FLOOR-BATH ROOM-255-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "50:02:91:7c:25:50",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.387506385+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.20-1ST.FLOOR-GARAGE AREA-255-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "68:c6:3a:f5:1c:86",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:29.748690707+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.12-1ST.FLOOR-UNCATEGORIES-257",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:54:A3",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.23-1ST.FLOOR-BATH ROOM-257-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "24:A1:60:2C:16:9E",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:31.853700425+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.24-1ST.FLOOR-UNCATEGORIES-257-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:e7:29:6d:89:fa",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.945274186+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.13-1ST.FLOOR-UNCATEGORIES-258",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:51:B5",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.25-1ST.FLOOR-GARAGE AREA-258-01}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:58:c7:8f",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-05-11 09:16:02.004065765+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.26-1ST.FLOOR-UNCATEGORIES-258-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "f4:cf:a2:67:83:cd",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:32.784998474+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.7-1ST.FLOOR-LIVING ROOM-252",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC: B:FB:D0:13:8E",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.13-1ST.FLOOR-LIVING ROOM-252-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "34:94:54:83:23:FB",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.717123633+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.14-1ST.CONNECTING SPACE-252-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "80:7D:3A:4E:AF:C1",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.223024043+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.11-1ST.FLOOR-GARAGE AREA-256",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:E8:3B:32",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.21-1ST.FLOOR-UNCATEGORIES-256-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "cc:50:e3:f3:8d:c0",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.511818232+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.22-1ST.FLOOR-NONE-256-02}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "5c:cf:7f:8f:56:7a",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:34.243341814+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.5-1ST.FLOOR-LIVING ROOM-250",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4E:26:E9",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.9-1ST.FLOOR-LIVING ROOM-250-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "24:A1:60:2B:D4:E8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:31.16786266+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.10-1ST.FLOOR-LIVING ROOM-250-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "E8:DB:84:E8:27:E3",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.405811338+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.8-1ST.FLOOR-CONNECTION SPACE-253",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:5A:13",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP 15-1ST.FLOOR-CONNECTION SPACE-253-01}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "f4:cf:a2:d9:91:c3",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:24.696146249+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP 16-1ST.FLOOR-CONNECTION SPACE-253-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "50:02:91:7a:e5:97",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.587960654+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.6-1ST.FLOOR-LIVING ROOM-251",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "30:83:98:88:E4:A5",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.11-1ST.FLOOR-LIVING ROOM-251-01}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "E8:9F:6D:88:F2:A6",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.565328757+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.12-1ST.FLOOR-LIVING ROOM-251-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "E8:9F:6D:87:EE:9A",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.932515635+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.14-1ST.FLOOR-UNCATEGORIES-259",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC: B:FB:DD:75:10",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-15 07:29:42",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.27-1ST.FLOOR-UNCATEGORIES-259-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "DC:4F:22:45:24:0E",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.52402703+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.28-1ST.FLOOR-UNCATEGORIES-259-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:3F:DA:8A:FE:4A",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.637347922+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c2d78875-ecf4-42ef-a747-198382588dd5",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_SUHU",
+      "name": "HIOTO-WEATHERSTATION-DHT11-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:50:E0",
+      "status": "27.60",
+      "room_id": null,
+      "last_seen": "2025-04-22 13:46:29.7137463+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.15-1ST.FLOOR-UNCATEGORIES-260",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:5E:4F",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-23 09:22:38.0252886+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.29-1ST.FLOOR-UNCATEGORIES-260-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "24:d7:eb:c6:bf:de",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-05-12 10:49:52.629373367+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.30-1ST.FLOOR-UNCATEGORIES-260-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "d8:bf:c0:e1:d3:37",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.233066969+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.16-1ST.FLOOR-UNCATEGORIES-262",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:50:AD",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-23 09:27:27.7285543+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.31-1ST.FLOOR-UNCATEGORIES-262-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "bc:dd:c2:66:6f:7d",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.104009896+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.32-1ST.FLOOR-UNCATEGORIES-262-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "d8:bf:c0:cb:52:c8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:26.360992773+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.17-1ST.FLOOR-UNCATEGORIES-263",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c4:5b:be:e8:41:1d",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-23 09:36:07.2220346+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.33-1ST.FLOOR-UNCATEGORIES-263-01}",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "e8:db:84:ed:2e:3b",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:30.931660149+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.34-1ST.FLOOR-UNCATEGORIES-263-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "24:a1:60:2b:5c:f9",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:33.655073188+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.18-1ST.FLOOR-UNCATEGORIES-264",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c4:5b:be:e8:3b:32",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-24 11:49:46.7666589+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.35-1ST.FLOOR-UNCATEGORIES-264-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:44:ef:c0",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-24 12:03:57.1500354+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.36-1ST.FLOOR-UNCATEGORIES-264-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "84:cc:a8:99:92:e8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-24 12:04:35.546274+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.37-1ST.FLOOR-UNCATEGORIES-265-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:3f:da:4d:d4:a8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-24 12:07:02.0686747+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.38-1ST.FLOOR-UNCATEGORIES-265-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "8c:aa:b5:6a:a0:b6",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.266307741+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.19-1ST.FLOOR-UNCATEGORIES-265",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4d:b2:84",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-24 12:08:49.3829447+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.20-1ST.FLOOR-UNCATEGORIES-266",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c8:c9:a3:56:5c:fe",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-24 12:13:41.2474136+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.39-1ST.FLOOR-UNCATEGORIES-266-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "34:94:54:83:21:23",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:32.34433683+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.40-1ST.FLOOR-UNCATEGORIES-266-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "dc:4f:22:4f:cb:de",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:34.266184956+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "93906342-057b-4372-9273-390e4e9e847c",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.21-1ST.FLOOR-UNCATEGORIES-267",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "bc:ff:4d:49:a8:de",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-25 11:43:38.1742504+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "670de629-736e-4750-a878-58e318c01a8d",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.41-1ST.FLOOR-UNCATEGORIES-267-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "bc:dd:c2:ec:de:98",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:01:58.2656396+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "9f1e651a-afa4-44df-8ee9-60523abbab6f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.42-1ST.FLOOR-UNCATEGORIES-267-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "cc:50:e3:f3:4e:be",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:07:15.5246643+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "091f355a-552e-46e5-a077-ae42e5a15c7c",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.22-1ST.FLOOR-UNCATEGORIES-268",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4c:b6:7e",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:15:40.5783379+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e532dedc-2bee-4c65-8529-e4423ed213a0",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.43-1ST.FLOOR-UNCATEGORIES-268-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "f0:08:d1:02:0c:6b",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:22:33.052838+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "fbf5ae4c-0238-4acb-8636-1b6df173c859",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.44-1ST.FLOOR-UNCATEGORIES-268-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "44:17:93:14:3d:cb",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:24:21.1803147+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "100b95fd-1736-4ade-bf78-b22e8e09e88b",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.23-1ST.FLOOR-UNCATEGORIES-269",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "ac:0b:fb:dc:cf:eb",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:28:46.1312443+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "335097fc-f169-4a7b-bd83-e0ae2c0014fa",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.45-1ST.FLOOR-UNCATEGORIES-269-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "bc:dd:c2:66:ae:cb",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:33:02.1062806+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "1b80e748-dc55-4371-97b1-6dd83bc4952c",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LAMP.46-1ST.FLOOR-UNCATEGORIES-269-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "d8:bf:c0:09:2d:9a",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-04-28 11:40:37.0873651+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "00b9d11b-41a0-44eb-9cef-727c8d73df85",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LSKK-HIOTO-DI-271",
+      "category": "",
+      "x_position": 0.0,
+      "mac": " c8:c9:a3:56:58:73",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2025-06-23 11:11:08.1481601+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "38b4e08a-0236-40f2-9adb-33b9de6b4fea",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-270-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "50:02:91:d2:07:40",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-06-23 11:15:07.312619+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "66b7e25d-1fbb-4e95-9815-f6f0027a3618",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-270-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:f5:20:32:70:a9",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2025-06-23 11:15:51.7234083+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a86bf02a-83b9-4804-9572-8efa2627770a",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LIGHT SWITCH.1-2ND.FLOOR-MEETING ROOM-1",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:53:A3",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:24.930993406+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5fb6c313-04ac-4f7f-9a94-12dfb0acfda7",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "SAKLAR-HIOTO-PUNCLUT-5",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:E8:41:DB",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:33.944452659+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "8b647036-629a-4145-b127-8f4d6600d00b",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "SAKLAR-HIOTO-PUNCLUT-6",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "30:83:98:88:ea:18",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:31.506492027+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d9b444c2-41a7-46d5-b205-899f7bf284e3",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "SAKLAR-HIOTO-PUNCLUT-3",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "30:83:98:88:ea:e2",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:25.467360052+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "765c3c26-4ce6-499d-acf1-21afbee1f9bd",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "SAKLAR-HIOTO-PUNCLUT-7",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:E8:3D:6A",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-05-26 14:24:30.959184638+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e77abb4c-bc42-43c6-964b-3706bcc32885",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": " SAKLAR-HIOTO-PUNCLUT-4",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:59:C4",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:33.545722442+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LSKK-HIOTO-DI-280",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c8:c9:a3:56:5a:cd",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-06-09 10:46:33.762410879+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-280-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "44:17:93:10:9e:7e",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-06-09 10:47:43.614030048+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": ": 6f09e77f-ab05-41a3-a18b-a4ec21c51157",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-280-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c8:c9:a3:56:5e:88",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-06-09 09:56:15.673718523+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "20a18e7a-61e2-4c50-baa8-41b5e64db12f",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-GASDETECTOR-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4E:13:77",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-06-09 10:37:07.244785619+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f2ea5b6c-c1e7-4b39-8e03-cd5907714584",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "DI/DO",
+      "name": "HIOTO-SMARTSTEKER-03",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "FC:F5:C4:91:FE:3D",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-06-13 18:52:39.086957894+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "904a5ac4-05ff-4f08-86cd-879cd3aa2d89",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:55:19: B:80:A8",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-06-16 20:26:55.874285698+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "1c7d6029-2bbd-44ff-84a6-4224e404dfc8",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "SENSOR_WATER_TANK",
+      "name": "LSKK-HIOTO-WATERLEVEL-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:51:B5",
+      "status": "1",
+      "room_id": 2,
+      "last_seen": "2021-06-16 23:53:09.264779013+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "3f430f98-8333-451a-880e-faea630dfba6",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_SUHU",
+      "name": "HIOTO-WEATHERSTATION-ANEMOMETER-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:0E:74:F5:AA",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-06-17 01:18:47.943219768+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5c316f94-b2bc-4716-873e-d5440e2e8504",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-TOMBOLDARURAT-SIRENE-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "F0: 8:D1: 2: 3:6C",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-06-18 02:29:03.283586599+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "LSKK-HIOTO-DI-283",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "c8:c9:a3:56:56:d7",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-08-27 20:24:30.402243494+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-283-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "a0:20:a6:15:0d:4b",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-08-27 20:24:53.901136578+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DO-283-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:3f:da:64:02:d8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-06-19 03:40:44.602593104+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f603e38c-fa72-4d97-8f0f-455104ae6953",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-RFID-DOORLOCK-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "50:02:91:da:25:5f",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-06-18 03:09:04.114083561+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d42cd199-a203-4408-876c-991a89939356",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-AKTUATOR-DOORLOCK-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "BC:FF:4D:FB:70:9C",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-08-28 14:21:55.673431887+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d66d2421-0606-44e4-88a4-bdb706093bb5",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_SMART_RELAY",
+      "name": "HIOTO-SMARTRELAY-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:73:E1:C9C",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-07-02 00:26:35.980640935+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "ca6f9717-e39b-4aa2-bac5-c134b7167653",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-SMARTSTEKER-09",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "A8:48:FA:DC:F2:C2",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-07-12 07:23:32.113256111+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "e2331d1e-616f-4888-8be5-a422 8d964325",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "SENSOR",
+      "name": "SAKLAR-HIOTO-PUNCLUT-13",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:51:F7",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-08-24 14:48:22.26199198+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a9de8394-c4cc-45f1-99c4-afed1dc3b540 ",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-19",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "58:BF:25:D9:E0:D8",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-08-24 14:59:49.951264165+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "df3b83b3-4a86-4c23-997b-10844c14b4e1 ",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-20",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "48:3F:DA: 5:24:22",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-08-25 11:02:25.753451975+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c4b1743a-b23f-447e-b635-561e3dbe9f80",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "AKTUATOR",
+      "name": "LSKK-IWK-SAKLAR-89",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC: B:FB:D0:25:A2",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-08-26 13:19:04.233673513+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "30a643ca-7ff9-42d9-a227-b36651eb009a",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "AKTUATOR",
+      "name": "LSKK-IWK-SAKLAR-79",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC: B:FB:CF:BC:A6",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-08-26 16:36:50.062467166+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "25df83e3-e40a-4358-a640-0bcfb6c7bbe3",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-SMARTSTEKER-07",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "30:83:98:AB:71:D1",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-08-27 16:07:21.813134847+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "CAM-P098",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "SENSOR_CAMERA",
+      "name": "HIOTO-SECURITYCAMERA-098",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "F0: 8:D1: 2: 3:6C",
+      "status": "",
+      "room_id": 2,
+      "last_seen": "2021-09-03 03:14:11.016170279+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "CAM-P112",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_CAMERA",
+      "name": "HIOTO-SECURITYCAMERA-112",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "F0: 8:D1: 2: 3:6C",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2021-09-03 03:15:28.106223215+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-SIRINE-43",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "CC:50:E3:DE:01:63",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-09-19 16:14:34.524254001+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "da27de93-2337-4515-bd64-96102142291a",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-DISPENSER-03",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C4:5B:BE:73:D2:88",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2021-09-03 06:39:05.41723654+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5171bacd-9c75-46f6-8ba6-1d76ecadb229 ",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-25",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:F4:AB:D8:D6:F2",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2021-09-03 06:43:12.828329102+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "CAM-P120",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_CAMERA",
+      "name": "HIOTO-SECURITYCAMERA-120",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "F0: 8:D1: 2: 3:6C",
+      "status": "",
+      "room_id": 2,
+      "last_seen": "2021-09-03 06:44:04.588502958+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d923757b-71e8-4062-85a1-6132e358e8ac ",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-21",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:f4:ab:f5:dd:6e",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2021-09-03 06:46:14.138062584+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "679bf788-eddf-46dc-a92e-f275e97d5c0e",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "Button Panic Button 43",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:58:73",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2026-07-21 18:57:03.794939652+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c405d391-49cc-4ab5-b41a-96502e352199",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_BELL",
+      "name": "HIOTO-SMARTBELL-01",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:58:43",
+      "status": "",
+      "room_id": null,
+      "last_seen": "2026-09-19 16:14:32.781588819+07:00",
+      "status_device": "1",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "CAM-P033",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR_CAMERA",
+      "name": "HIOTO-SECURITYCAMERA-033",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "4C:11:AE:9E:24:D0",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2026-04-24 17:42:50.978475807+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "c6a25318-d41c-4f94-9de4-7d9b456d9b51",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-11",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4f:ec:72",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:17:25.705870279+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "2b193c36-47cc-45b0-924c-1802272b806c",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-14",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "50:02:91:fe:4e:48",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:23:18.031777165+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "02cae5d1-670f-4902-9925-c91ab6a59c81",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-16",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "8C:AA:B5:D3:A0:29",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:26:21.525874478+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "68d1ab9d-f220-4a70-a807-1de5a379e5d4",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-29",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "A4:CF:12:EE:58:DB",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:29:21.608838775+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "20777a55-cddb-4ddc-9e13-0701cafcb906",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-15",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:f4:ab:d8:d9:60",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:30:13.688566978+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "567e20f7-c000-4008-b8b7-3174cd277611",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-13",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:45:aa:07",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:30:47.135411588+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5268d6c0-cab7-4b86-8483-6c3337ad015e",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-27",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "F4:CF:A2:D9:BC:E2",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:31:17.657343588+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "d923757b-71e8-4062-85a1-6132e358e8ac",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-21",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:f4:ab:f5:dd:6e",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:34:56.297365825+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f99ec51e-72ab-41ad-96ec-f7a58a7bc28d",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-26",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "2C:F4:32:36:5:33",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:36:42.971787555+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5171bacd-9c75-46f6-8ba6-1d76ecadb229  ",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-25",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:F4:AB:D8:D6:F2 ",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-04-29 15:52:02.176476473+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "8c66403d-8e38-4d2d-8762-49c18c50c3c3",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-17",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "84:CC:A8:94:C3:27",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-05-05 11:36:46.257733811+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "f9a06cd5-2152-4add-8120-7bb92deb38ae",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-12",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "D8:BF:C0:F9:29:A9",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-05-05 11:47:51.972067258+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5171bacd-9c75-46f6-8ba6-1d76ecadb229",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-25",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:F4:AB:D8:D6:F2",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-05-05 14:06:32.055086284+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "b88331c2-72cb-40d7-a188-5eb9f973f7d0",
+      "y_position": 0.0,
+      "quantity": 2,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-DI-150",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4e:1c:a3",
+      "status": "1",
+      "room_id": null,
+      "last_seen": "2026-05-06 13:08:07.976367496+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "7f36a759-19ef-4a0c-b275-cff384be04fe",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-30",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "BC:FF:4D:FB:66:FD",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-05-06 13:54:23.746387123+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "1b7db367-ab24-4f18-8356-e5be6bcb1202",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-25",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "98:F4:AB:D8:D6:F2",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-05-06 15:50:47.626288388+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "eb5a73a0-8d44-4d51-ac53-022f12bc5a3a",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "HIOTO-SMARTSTEKER-10",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "68:C6:3A:FC:2F:E",
+      "status": "0",
+      "room_id": null,
+      "last_seen": "2026-05-06 15:52:18.63592156+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "5b8bd379-beaf-4315-9765-0f8495717c16",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO BUTTON DOOR LOCK",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "40:91:51:4C:B6:7E",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2026-08-28 13:37:13.576029996+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "b6b0aa57-fb1c-41c9-b716-85aa41f4bce4",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "LSKK-PANICBUTTON-BUTTON-44",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC:0B:FB:DC:CF:EB",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2026-06-10 15:01:57.112456067+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-PANICBUTTON-SIRINE-44",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "2C:F4:32:63:D3:62",
+      "status": "1",
+      "room_id": 5,
+      "last_seen": "2026-06-10 15:02:36.344174201+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "HIOTO-SMARTBELL-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "C8:C9:A3:56:53:49",
+      "status": "",
+      "room_id": 5,
+      "last_seen": "2026-06-10 15:35:01.172659494+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "9c28e2ef-bd5e-4841-b53a-dc0d56100e71",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "AKTUATOR",
+      "name": "HIOTO-AKTUATOR-DOORLOCK-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "AC:0B:FB:DA:EF:CD",
+      "status": "1",
+      "room_id": 3,
+      "last_seen": "2026-09-03 15:05:56.860685873+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1",
+      "floor_id": null,
+      "guid": "b4108f5e-5918-4e3c-a7ad-edae82988568",
+      "y_position": 0.0,
+      "quantity": 0,
+      "type": "SENSOR",
+      "name": "HIOTO-RFID-DOORLOCK-02",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "BC:FF:4D:FB:60:E2",
+      "status": "",
+      "room_id": 3,
+      "last_seen": "2026-09-03 10:44:55.337425185+07:00",
+      "status_device": "0",
+      "minor": "0"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "SENSOR",
+      "name": "saklar-LSKK-HIOTO-DI-TEST",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "testing",
+      "status": "",
+      "room_id": 3,
+      "last_seen": "2026-09-03 15:41:57.58305623+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "lamp-LSKK-HIOTO-DO-01-TEST",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "testing1",
+      "status": "0",
+      "room_id": 3,
+      "last_seen": "2026-09-03 15:42:03.30616532+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "lamp-LSKK-HIOTO-DO-02-TEST",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "testing2",
+      "status": "0",
+      "room_id": 3,
+      "last_seen": "2026-09-03 15:46:27.161542467+07:00",
+      "status_device": "0",
+      "minor": "1.a"
+    },
+    {
+      "version": "1.0",
+      "floor_id": null,
+      "guid": "a6dda051-ba48-45e4-b2db-413ed7997ed8",
+      "y_position": 0.0,
+      "quantity": 1,
+      "type": "AKTUATOR",
+      "name": "LSKK-HIOTO-SMARTPLUG-04",
+      "category": "",
+      "x_position": 0.0,
+      "mac": "7C:9E:BD:47:06:9C",
+      "status": "00",
+      "room_id": 1,
+      "last_seen": "2026-09-11 16:22:39.121705224+07:00",
+      "status_device": "0",
+      "minor": "1.0"
+    }
+  ]
+}

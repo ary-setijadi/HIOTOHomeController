@@ -1,0 +1,13 @@
+[Unit]
+Description=Home Automation Controller v4 (MQTT/AMQP rule engine)
+After=network-online.target rabbitmq-server.service
+Wants=network-online.target rabbitmq-server.service
+
+[Service]
+Type=simple
+ExecStart=/root/controller-v4 -period-ms 1000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

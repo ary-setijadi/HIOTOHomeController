@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/home-automation/schemas/envelope.json",
+  "title": "MessageEnvelope",
+  "description": "Uniform wrapper around every home.automation payload.",
+  "type": "object",
+  "required": ["msg_id", "ts", "source", "message_class", "payload"],
+  "properties": {
+    "msg_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Globally unique message id (producer-assigned)."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Producer-assigned ISO-8601 timestamp."
+    },
+    "source": {
+      "type": "string",
+      "description": "serial_number of the publishing device."
+    },
+    "message_class": {
+      "type": "string",
+      "enum": ["state", "cmd", "event"]
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional. For an actuator state published in response to a cmd, this echoes the cmd's msg_id."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Device-specific object; see per-kind schemas for state, actuator-cmd for cmd, and {event,reason} for event."
+    }
+  },
+  "additionalProperties": true
+}

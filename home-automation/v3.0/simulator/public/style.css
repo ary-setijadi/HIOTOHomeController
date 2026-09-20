@@ -1,0 +1,43 @@
+:root {
+  --bg: #0f1420; --panel: #1a2130; --panel2: #222b3d; --border: #2c3648;
+  --text: #e6ebf2; --muted: #8b97a8; --accent: #4f8cff;
+  --green: #2ecc71; --red: #e74c3c; --amber: #f39c12; --off: #3a4356;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px; background: var(--panel); border-bottom: 1px solid var(--border); }
+.topbar h1 { margin: 0; font-size: 18px; }
+.ver { color: var(--accent); font-size: 14px; }
+.status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot.off { background: var(--red); }
+
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 22px; }
+.toolbar .label { color: var(--muted); font-size: 13px; }
+input, select, textarea { padding: 7px 9px; background: var(--panel2); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; }
+input[type=number] { width: 64px; }
+button { padding: 7px 12px; border: 1px solid var(--border); background: var(--panel2); color: var(--text); border-radius: 5px; cursor: pointer; font-size: 12.5px; }
+button:hover { filter: brightness(1.15); }
+button.primary { background: var(--green); border-color: var(--green); color: #0a2415; font-weight: 700; }
+button.danger { background: var(--red); border-color: var(--red); color: #fff; font-weight: 700; }
+
+.layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 22px 22px; }
+.col h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin: 14px 0 8px; }
+.list { display: flex; flex-direction: column; gap: 6px; }
+
+.dev-row { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; }
+.serial { font-family: Consolas, monospace; font-size: 12.5px; flex: 1; }
+.type { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+.state { padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+.state.on { background: var(--green); color: #0a2415; }
+.state.off { background: var(--off); color: #b9c2d0; }
+.state.analog { background: var(--accent); color: #fff; }
+.ov-badge { background: var(--amber); color: #1a1200; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+.controls { display: flex; gap: 6px; align-items: center; }
+
+.rule-row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+.rule-text { font-family: Consolas, monospace; font-size: 12px; flex: 1; word-break: break-all; }
+.add-rule { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.add-rule h3 { margin: 0; font-size: 13px; color: var(--muted); }

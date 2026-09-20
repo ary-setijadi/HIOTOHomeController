@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/home-automation/schemas/base-state.json",
+  "title": "BaseDeviceState",
+  "description": "Common fields present in every device state payload.",
+  "type": "object",
+  "required": ["serial_number", "alias_name", "mac_address", "device_kind", "device_type"],
+  "properties": {
+    "serial_number": {
+      "type": "string",
+      "description": "Globally unique, immutable device id."
+    },
+    "alias_name": {
+      "type": "string",
+      "description": "Human-friendly, user-editable name."
+    },
+    "mac_address": {
+      "type": "string",
+      "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+      "description": "Colon-separated hex MAC address."
+    },
+    "device_kind": {
+      "type": "string",
+      "enum": ["sensor", "actuator", "controller", "monitor"]
+    },
+    "device_type": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "1 = digital, 2 = analog; 0 for controller/monitor."
+    },
+    "firmware_version": {
+      "type": "string",
+      "description": "Optional but recommended."
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Broker/controller-derived; NOT sent by the device."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["online", "offline", "fault"],
+      "description": "Derived from LWT and heartbeats, not trusted from the device."
+    }
+  },
+  "additionalProperties": true
+}

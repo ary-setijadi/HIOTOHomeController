@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MQTT Simulator UI</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>MQTT Simulator</h1>
+    <div class="status-line">
+      <span id="status-dot" class="dot off"></span>
+      <span id="status-text">disconnected</span>
+      <span id="broker-label" class="muted"></span>
+      <span id="sim-badge" class="badge hidden">sim running</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <!-- Connection -->
+      <section class="card">
+        <h2>Connection</h2>
+        <label>Broker URL</label>
+        <input id="broker" value="mqtt://192.168.137.44:1883" />
+        <label>Username</label>
+        <input id="username" value="admin" />
+        <label>Password</label>
+        <input id="password" type="password" value="123456Aa!" />
+        <button id="btn-connect" class="primary">Connect</button>
+      </section>
+
+      <!-- Subscribe -->
+      <section class="card">
+        <h2>Subscribe</h2>
+        <input id="sub-topic" placeholder="topic, e.g. iot/# or iot/+/telemetry" value="iot/#" />
+        <button id="btn-subscribe">Subscribe</button>
+        <ul id="subs-list" class="subs"></ul>
+      </section>
+
+      <!-- Publish -->
+      <section class="card">
+        <h2>Publish</h2>
+        <input id="pub-topic" placeholder="topic" value="iot/sim-001/commands" />
+        <textarea id="pub-message" rows="3" placeholder='message, e.g. {"command":"reboot"}'></textarea>
+        <button id="btn-publish" class="primary">Publish</button>
+      </section>
+
+      <!-- Simulator -->
+      <section class="card">
+        <h2>Simulator</h2>
+        <div class="row2">
+          <div><label>Device</label><input id="sim-device" value="sim" /></div>
+          <div><label>Count</label><input id="sim-count" type="number" min="1" value="1" /></div>
+        </div>
+        <label>Interval (sec)</label>
+        <input id="sim-interval" type="number" min="0.5" step="0.5" value="2" />
+        <label>Telemetry topic</label>
+        <input id="sim-telemetry" value="iot/{id}/telemetry" />
+        <label>Command topic</label>
+        <input id="sim-command" value="iot/{id}/commands" />
+        <div class="row2">
+          <button id="btn-sim-start" class="primary">Start</button>
+          <button id="btn-sim-stop">Stop</button>
+        </div>
+      </section>
+    </aside>
+
+    <section class="log-panel">
+      <div class="log-head">
+        <h2>Messages</h2>
+        <button id="btn-clear">Clear</button>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

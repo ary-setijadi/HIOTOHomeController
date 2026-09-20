@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/home-automation/schemas/actuator-cmd.json",
+  "title": "ActuatorCommand",
+  "description": "Target values the controller wants written to an actuator (the cmd message's payload).",
+  "type": "object",
+  "properties": {
+    "digital_value": {
+      "type": "array",
+      "items": { "type": "integer", "enum": [0, 1] }
+    },
+    "analog_value": {
+      "type": "array",
+      "items": { "type": "number" }
+    }
+  },
+  "anyOf": [
+    { "required": ["digital_value"] },
+    { "required": ["analog_value"] }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home Automation v5 — Security &amp; Traffic Monitor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Home Automation <span class="v">v5.0</span> — Security &amp; Traffic Monitor</h1>
+    <div class="status" id="status">connecting…</div>
+  </header>
+
+  <section class="cards" id="secCards">
+    <div class="card"><div class="num" id="secTotal">–</div><div class="lbl">broker connections</div></div>
+    <div class="card"><div class="num" id="secTls">–</div><div class="lbl">over TLS</div></div>
+    <div class="card"><div class="num" id="secAllTls">–</div><div class="lbl">all-TLS?</div></div>
+    <div class="card"><div class="num" id="msgTotal">0</div><div class="lbl">messages observed</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>Broker connection table <small>(who is connected, over what, and which certificate)</small></h2>
+    <table id="connTable">
+      <thead><tr><th>protocol</th><th>SSL/TLS</th><th>client certificate (CN)</th><th>connection</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Impostor test <small>(tries to connect without a valid device certificate)</small></h2>
+    <button id="impostorBtn">Run impostor test</button>
+    <pre id="impostorOut">click "Run impostor test" to demonstrate mTLS rejection</pre>
+  </section>
+
+  <section class="panel">
+    <h2>Live message flow <small>(every message through the broker, classified by direction)</small></h2>
+    <div class="flowcounts" id="flowCounts"></div>
+    <table id="msgTable">
+      <thead><tr><th>time</th><th>flow</th><th>topic</th><th>source</th><th>class</th><th>payload</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

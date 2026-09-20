@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/home-automation/schemas/actuator-state.json",
+  "title": "ActuatorState",
+  "allOf": [
+    { "$ref": "base-state.json" },
+    {
+      "type": "object",
+      "properties": {
+        "device_kind": { "const": "actuator" },
+        "digital_value": {
+          "type": "array",
+          "items": { "type": "integer", "enum": [0, 1] },
+          "description": "Actual (post-execution) digital output channels."
+        },
+        "analog_value": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Actual (post-execution) analog output channels."
+        }
+      }
+    }
+  ],
+  "description": "Ground-truth state after execution; distinct from cmd (intention)."
+}

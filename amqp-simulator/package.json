@@ -1,0 +1,14 @@
+{
+  "name": "amqp-device-simulator",
+  "version": "1.0.0",
+  "description": "AMQP (RabbitMQ) device simulator: publish telemetry and consume commands via topic exchange",
+  "main": "simulator.js",
+  "scripts": {
+    "start": "node simulator.js",
+    "ui": "node server.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>V4m Manager — Devices &amp; Rules</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>V4m <span class="ver">Manager</span></h1>
+    <div class="status"><span id="dot" class="dot off"></span><span id="status-text">…</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="devices">Devices</button>
+    <button class="tab" data-tab="rules">Rules</button>
+  </nav>
+
+  <main class="content">
+    <!-- Devices -->
+    <section id="panel-devices" class="panel active">
+      <div class="toolbar">
+        <input id="dev-search" placeholder="search name / guid / type" />
+        <button id="btn-refresh-devices" class="ghost">Refresh</button>
+      </div>
+
+      <div class="form-box">
+        <h3>Add device</h3>
+        <div class="form-row">
+          <input id="dev-guid" placeholder="guid (UUID / serial)" />
+          <input id="dev-mac" placeholder="mac (optional)" />
+          <select id="dev-type"></select>
+          <input id="dev-name" placeholder="name" />
+          <button id="btn-add-device" class="primary">Add</button>
+        </div>
+      </div>
+
+      <div class="form-box">
+        <h3>Bulk import devices (JSON array of {guid, mac, type, name})</h3>
+        <textarea id="devices-json" rows="4" placeholder='[{"guid":"…","mac":"…","type":"SENSOR","name":"…"}]'></textarea>
+        <button id="btn-import-devices" class="primary">Import Devices</button>
+        <button id="btn-clean" class="danger">Clean All (devices + rules)</button>
+      </div>
+
+      <table id="deviceTable">
+        <thead><tr><th>Name</th><th>guid</th><th>Type</th><th>Kind</th><th>Last seen</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Rules -->
+    <section id="panel-rules" class="panel">
+      <div class="toolbar">
+        <input id="rule-search" placeholder="search input / output guid" />
+        <button id="btn-refresh-rules" class="ghost">Refresh</button>
+      </div>
+
+      <div class="form-box">
+        <h3>Add rule <span class="hint">(input value: 0–1 for 1-bit switch, 0–3 for 2-channel switch · output value: 0–1)</span></h3>
+        <div class="form-row">
+          <select id="rule-in" title="input device"></select>
+          <select id="rule-in-val">
+            <option value="0">= 0</option><option value="1">= 1</option><option value="2">= 2</option><option value="3">= 3</option>
+          </select>
+          <span class="arrow">→</span>
+          <select id="rule-out" title="output device"></select>
+          <select id="rule-out-val"><option value="0">0</option><option value="1">1</option></select>
+          <button id="btn-add-rule" class="primary">Add</button>
+        </div>
+      </div>
+
+      <div class="form-box">
+        <h3>Bulk import rules (JSON array of {input_guid, input_value, output_guid, output_value})</h3>
+        <textarea id="rules-json" rows="4" placeholder='[{"input_guid":"…","input_value":1,"output_guid":"…","output_value":1}]'></textarea>
+        <button id="btn-import-rules" class="primary">Import Rules</button>
+      </div>
+
+      <table id="ruleTable">
+        <thead><tr><th>#</th><th>Input</th><th>value</th><th>Output</th><th>value</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

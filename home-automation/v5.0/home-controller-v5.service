@@ -1,0 +1,14 @@
+[Unit]
+Description=Home Automation Controller v5 (AMQPS/mTLS rule engine)
+After=rabbitmq-server.service
+Wants=rabbitmq-server.service
+
+[Service]
+Type=simple
+ExecStart=/root/controller-v5 -period-ms 1000
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

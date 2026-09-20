@@ -1,0 +1,14 @@
+{
+  "name": "mqtt-iot-simulator",
+  "version": "1.0.0",
+  "description": "MQTT IoT device simulator for RabbitMQ (publish telemetry, subscribe to commands)",
+  "main": "simulator.js",
+  "scripts": {
+    "start": "node simulator.js",
+    "ui": "node server.js"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1"
+  },
+  "license": "MIT"
+}

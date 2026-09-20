@@ -1,0 +1,9 @@
+{
+  "name": "home-automation-registration",
+  "version": "5.0.0",
+  "description": "Device registration app: scan a QR code with the camera to enroll a device",
+  "private": true,
+  "dependencies": {
+    "jsqr": "^1.4.0"
+  }
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=Home Automation Traffic Logger (AMQPS -> rolling 100MB file)
+After=rabbitmq-server.service
+Wants=rabbitmq-server.service
+
+[Service]
+Type=simple
+ExecStart=/root/traffic-logger -http-port 8080
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

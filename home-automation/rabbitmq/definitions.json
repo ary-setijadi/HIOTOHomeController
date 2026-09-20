@@ -1,0 +1,39 @@
+{
+  "rabbit_version": "3.8.3",
+  "users": [
+    { "name": "sensor.SNS-SW-0001", "password_hash": "CHANGE_ME", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": "" },
+    { "name": "actuator.ACT-LMP-0002", "password_hash": "CHANGE_ME", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": "" },
+    { "name": "controller.ctrl-0001", "password_hash": "CHANGE_ME", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": "" },
+    { "name": "monitor.mon-0001", "password_hash": "CHANGE_ME", "hashing_algorithm": "rabbit_password_hashing_sha256", "tags": "" }
+  ],
+  "vhosts": [
+    { "name": "/home-site1" }
+  ],
+  "permissions": [
+    { "user": "sensor.SNS-SW-0001", "vhost": "/home-site1", "configure": "", "write": "", "read": "" },
+    { "user": "actuator.ACT-LMP-0002", "vhost": "/home-site1", "configure": "", "write": "", "read": "" },
+    { "user": "controller.ctrl-0001", "vhost": "/home-site1", "configure": "^q\\.controller\\.ctrl-0001$", "write": "^home\\.actuator\\..*\\.ACT-LMP-0002\\.cmd$", "read": "^q\\.controller\\.ctrl-0001$" },
+    { "user": "monitor.mon-0001", "vhost": "/home-site1", "configure": "^q\\.monitor\\.mon-0001$", "write": "", "read": "^q\\.monitor\\.mon-0001$" }
+  ],
+  "topic_permissions": [
+    { "user": "sensor.SNS-SW-0001", "vhost": "/home-site1", "exchange": "home.automation", "write": "^home\\.sensor\\..*\\.SNS-SW-0001\\.(state|event)$", "read": "" },
+    { "user": "actuator.ACT-LMP-0002", "vhost": "/home-site1", "exchange": "home.automation", "write": "^home\\.actuator\\..*\\.ACT-LMP-0002\\.(state|event)$", "read": "^home\\.actuator\\..*\\.ACT-LMP-0002\\.cmd$" },
+    { "user": "controller.ctrl-0001", "vhost": "/home-site1", "exchange": "home.automation", "write": "^home\\.actuator\\..*\\.ACT-LMP-0002\\.cmd$", "read": "^home\\.sensor\\..*\\.SNS-SW-0001\\.state$" },
+    { "user": "monitor.mon-0001", "vhost": "/home-site1", "exchange": "home.automation", "write": "", "read": "^home\\..*\\..*\\..*\\.(state|event)$" }
+  ],
+  "exchanges": [
+    { "name": "home.automation", "vhost": "/home-site1", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "home.automation.dlx", "vhost": "/home-site1", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "q.controller.ctrl-0001", "vhost": "/home-site1", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "home.automation.dlx" } },
+    { "name": "q.monitor.mon-0001", "vhost": "/home-site1", "durable": true, "auto_delete": false, "arguments": { "x-dead-letter-exchange": "home.automation.dlx" } },
+    { "name": "q.controller.ctrl-0001.dlq", "vhost": "/home-site1", "durable": true, "auto_delete": false, "arguments": {} }
+  ],
+  "bindings": [
+    { "source": "home.automation", "vhost": "/home-site1", "destination": "q.controller.ctrl-0001", "destination_type": "queue", "routing_key": "home.sensor.*.SNS-SW-0001.state", "arguments": {} },
+    { "source": "home.automation", "vhost": "/home-site1", "destination": "q.monitor.mon-0001", "destination_type": "queue", "routing_key": "home.*.*.*.state", "arguments": {} },
+    { "source": "home.automation", "vhost": "/home-site1", "destination": "q.monitor.mon-0001", "destination_type": "queue", "routing_key": "home.*.*.*.event", "arguments": {} },
+    { "source": "home.automation.dlx", "vhost": "/home-site1", "destination": "q.controller.ctrl-0001.dlq", "destination_type": "queue", "routing_key": "#", "arguments": {} }
+  ]
+}

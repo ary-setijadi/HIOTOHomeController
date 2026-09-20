@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/home-automation/schemas/controller-state.json",
+  "title": "ControllerState",
+  "allOf": [
+    { "$ref": "base-state.json" },
+    {
+      "type": "object",
+      "required": ["algorithm_id", "period_ms", "bound_sensors", "bound_actuators"],
+      "properties": {
+        "device_kind": { "const": "controller" },
+        "algorithm_id": {
+          "type": "string",
+          "description": "Identifies the control logic in use."
+        },
+        "period_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Control-loop evaluation cadence."
+        },
+        "bound_sensors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "serial_numbers of sensors this controller reads."
+        },
+        "bound_actuators": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "serial_numbers of actuators this controller commands."
+        },
+        "last_run": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  ]
+}

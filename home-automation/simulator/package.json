@@ -1,0 +1,9 @@
+{
+  "name": "home-automation-simulator",
+  "version": "1.0.0",
+  "description": "5 lamp-switch sensors + 5 lamp actuators + monitor/supervisory control over MQTT (home.automation)",
+  "private": true,
+  "dependencies": {
+    "mqtt": "^5.10.1"
+  }
+}

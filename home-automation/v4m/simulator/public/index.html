@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Automation V4m</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Home Automation <span class="ver">V4m · plaintext + SQLite</span></h1>
+    <div class="status"><span id="dot" class="dot off"></span><span id="status-text">disconnected</span></div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="sensors">Sensors</button>
+    <button class="tab" data-tab="actuators">Actuators</button>
+    <button class="tab" data-tab="rules">Rules</button>
+    <button class="tab" data-tab="devices">Devices</button>
+    <button class="tab" data-tab="setup">Setup</button>
+  </nav>
+
+  <main class="content">
+    <section id="panel-sensors" class="panel active">
+      <div class="panel-head"><h2>Sensors</h2></div>
+      <div id="sensors" class="list"></div>
+    </section>
+
+    <section id="panel-actuators" class="panel">
+      <div class="panel-head"><h2>Actuators</h2></div>
+      <div id="actuators" class="list"></div>
+    </section>
+
+    <section id="panel-rules" class="panel">
+      <div class="panel-head"><h2>Rules</h2></div>
+      <div id="rules" class="list"></div>
+      <div class="add-rule">
+        <h3>Import rules (rule_devices JSON)</h3>
+        <textarea id="rules-json" rows="5" placeholder='[{"input_guid":"SNS-SW-001","input_value":1,"output_guid":"ACT-LMP-001","output_value":1}]'></textarea>
+        <button id="btn-import-rules" class="primary">Import Rules</button>
+      </div>
+    </section>
+
+    <section id="panel-devices" class="panel">
+      <div class="panel-head"><h2>Register a device</h2></div>
+      <div class="setup-row">
+        <input id="dev-guid" placeholder="guid, e.g. SNS-TMP-005" />
+        <select id="dev-type">
+          <option>AKTUATOR</option><option>SENSOR</option><option>SENSOR_CAMERA</option>
+          <option>SENSOR_SUHU</option><option>SENSOR_GAS_DETECTOR</option>
+          <option>SENSOR_WATER_TANK</option><option>SENSOR_WEATHER</option>
+          <option>SENSOR_BELL</option><option>SENSOR_SMART_RELAY</option>
+          <option>SENSOR_SMART_PLUG</option><option>DI_DO</option>
+        </select>
+        <input id="dev-mac" placeholder="mac (optional)" />
+        <button id="btn-register-device" class="primary">Register</button>
+      </div>
+      <div id="device-qr" class="qr-area"></div>
+
+      <div class="panel-head"><h2>Registered devices</h2></div>
+      <table id="deviceTable">
+        <thead><tr><th>guid</th><th>type</th><th>kind</th><th>value</th><th>last_seen</th><th>QR</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="panel-setup" class="panel">
+      <div class="panel-head"><h2>About</h2></div>
+      <p class="hint">V4m — plaintext (no mTLS), local-only controller with a SQLite database.
+        Devices are registered in the controller (SQLite <code>registrations</code>),
+        rules come from <code>rule_devices</code>, and telemetry is stored in <code>logs</code>.
+        Scan a device QR with the registration app (<code>v4m/registration</code>) to onboard it.</p>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
