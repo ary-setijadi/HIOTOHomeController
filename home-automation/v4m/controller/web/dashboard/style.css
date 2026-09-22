@@ -56,6 +56,11 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 
 .rule-row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
 .rule-text { font-family: Consolas, monospace; font-size: 12px; flex: 1; word-break: break-all; }
+.timer-field { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: var(--muted); }
+.timer-field input, .timer-field select { max-width: 150px; }
+.timer-actions { display: flex; flex-direction: column; gap: 4px; }
+.action-row { display: flex; gap: 4px; align-items: center; }
+.action-row select { max-width: 140px; }
 
 /* pagination */
 .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }

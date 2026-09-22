@@ -212,6 +212,27 @@ function timerScheduleText(tr) {
   if (tr.at) return `⏱ at ${tr.at}`;
   return '—';
 }
+function timerActuatorSelect(selected) {
+  const sel = document.createElement('select');
+  for (const a of actuators) {
+    const o = document.createElement('option'); o.value = a.serial; o.textContent = a.name || a.serial; sel.appendChild(o);
+  }
+  if (selected) sel.value = selected;
+  return sel;
+}
+function timerStateSelect(selected) {
+  const sel = document.createElement('select');
+  const on = document.createElement('option'); on.value = '0'; on.textContent = 'ON'; sel.appendChild(on);
+  const off = document.createElement('option'); off.value = '1'; off.textContent = 'OFF'; sel.appendChild(off);
+  sel.value = selected === 1 ? '1' : '0';
+  return sel;
+}
+function timerField(label, el) {
+  const l = document.createElement('label'); l.className = 'timer-field';
+  l.append(document.createTextNode(label), el);
+  return l;
+}
+
 function renderTimerRules(rules) {
   const c = $('#timer-rules'); c.innerHTML = '';
   if (!rules || !rules.length) { const row = document.createElement('div'); row.className = 'rule-row'; row.textContent = 'no timer rules'; c.appendChild(row); return; }
@@ -220,13 +241,92 @@ function renderTimerRules(rules) {
     const tag = document.createElement('span'); tag.className = 'ov-badge'; tag.textContent = tr.enabled ? 'on' : 'off';
     const txt = document.createElement('span'); txt.className = 'rule-text';
     txt.textContent = `${tr.name} — ${timerScheduleText(tr)} → ${timerActionsText(tr.then)}${tr.else && tr.else.length ? ' ELSE ' + timerActionsText(tr.else) : ''}`;
+    const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.onclick = () => timerEditRow(tr, row);
     const tog = document.createElement('button'); tog.textContent = tr.enabled ? 'Disable' : 'Enable';
     tog.onclick = async () => { await post('/api/timer-rules/' + tr.id + '/toggle', {}); loadTimerRules(); };
     const del = document.createElement('button'); del.textContent = 'Delete'; del.className = 'danger';
     del.onclick = async () => { await fetch('/api/timer-rules/' + tr.id, { method: 'DELETE' }); loadTimerRules(); };
-    row.append(tag, txt, tog, del);
+    row.append(tag, txt, edit, tog, del);
     c.appendChild(row);
   }
+}
+
+function timerActionList(initialActs, defaultVal) {
+  const acts = (initialActs && initialActs.length) ? initialActs.map((a) => ({ actuator: a.actuator, value: a.value })) : [{ actuator: '', value: defaultVal }];
+  const box = document.createElement('div'); box.className = 'timer-actions';
+  const add = document.createElement('button'); add.textContent = '+'; add.type = 'button'; add.title = 'add action';
+  function render() {
+    box.innerHTML = '';
+    acts.forEach((act, i) => {
+      const d = document.createElement('div'); d.className = 'action-row';
+      const a = timerActuatorSelect(act.actuator);
+      const s = timerStateSelect(act.value);
+      a.onchange = () => { act.actuator = a.value; };
+      s.onchange = () => { act.value = Number(s.value); };
+      const rm = document.createElement('button'); rm.textContent = '✕'; rm.type = 'button'; rm.className = 'danger'; rm.title = 'remove';
+      rm.onclick = () => { acts.splice(i, 1); if (!acts.length) acts.push({ actuator: '', value: defaultVal }); render(); };
+      d.append(a, s, rm);
+      box.appendChild(d);
+    });
+    box.appendChild(add);
+  }
+  add.onclick = () => { acts.push({ actuator: '', value: defaultVal }); render(); };
+  render();
+  return { box, acts };
+}
+
+function timerEditRow(tr, row) {
+  row.innerHTML = '';
+  row.style.flexWrap = 'wrap';
+  row.style.alignItems = 'flex-end';
+
+  const name = document.createElement('input'); name.value = tr.name || ''; name.placeholder = 'name';
+  const kind = document.createElement('select');
+  [['at', 'At a time'], ['window', 'Between times'], ['duration', 'For N minutes']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; kind.appendChild(o); });
+  kind.value = tr.for_minutes > 0 ? 'duration' : (tr.from || tr.to ? 'window' : 'at');
+
+  const atIn = document.createElement('input'); atIn.type = 'time'; atIn.value = tr.at || '07:00';
+  const fromIn = document.createElement('input'); fromIn.type = 'time'; fromIn.value = tr.from || '18:00';
+  const toIn = document.createElement('input'); toIn.type = 'time'; toIn.value = tr.to || '06:00';
+  const datIn = document.createElement('input'); datIn.type = 'time'; datIn.value = tr.at || '';
+  const minIn = document.createElement('input'); minIn.type = 'number'; minIn.min = '1'; minIn.value = tr.for_minutes || '30';
+
+  const thenList = timerActionList(tr.then, 0);
+  const elseList = timerActionList(tr.else, 1);
+
+  const save = document.createElement('button'); save.textContent = 'Save'; save.className = 'primary';
+  const cancel = document.createElement('button'); cancel.textContent = 'Cancel';
+
+  const fAt = timerField('At', atIn), fFrom = timerField('From', fromIn), fTo = timerField('To', toIn),
+        fDat = timerField('At (opt)', datIn), fMin = timerField('Min', minIn);
+  const fThen = timerField('Then', thenList.box), fElse = timerField('Else', elseList.box);
+  const refresh = () => {
+    const k = kind.value;
+    fAt.style.display = k === 'at' ? '' : 'none';
+    fFrom.style.display = k === 'window' ? '' : 'none';
+    fTo.style.display = k === 'window' ? '' : 'none';
+    fDat.style.display = k === 'duration' ? '' : 'none';
+    fMin.style.display = k === 'duration' ? '' : 'none';
+    const showElse = k === 'window' || k === 'duration';
+    fElse.style.display = showElse ? '' : 'none';
+  };
+  kind.onchange = refresh;
+  refresh();
+
+  save.onclick = async () => {
+    const then = thenList.acts.filter((a) => a.actuator).map((a) => ({ actuator: a.actuator, value: a.value }));
+    const els = elseList.acts.filter((a) => a.actuator).map((a) => ({ actuator: a.actuator, value: a.value }));
+    const body = { name: name.value.trim(), enabled: tr.enabled, then, at: '', from: '', to: '', for_minutes: 0, else: els };
+    const k = kind.value;
+    if (k === 'at') { body.at = atIn.value; body.else = []; }
+    else if (k === 'window') { body.from = fromIn.value; body.to = toIn.value; }
+    else if (k === 'duration') { body.at = datIn.value || ''; body.for_minutes = parseInt(minIn.value, 10) || 0; }
+    await fetch('/api/timer-rules/' + tr.id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    loadTimerRules();
+  };
+  cancel.onclick = () => loadTimerRules();
+
+  row.append(timerField('Name', name), timerField('Type', kind), fAt, fFrom, fTo, fDat, fMin, fThen, fElse, save, cancel);
 }
 async function loadTimerRules() { try { renderTimerRules(await fetch('/api/timer-rules').then((r) => r.json())); } catch {} }
 

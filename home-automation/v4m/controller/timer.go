@@ -198,6 +198,25 @@ func registerTimerHandlers(mux *http.ServeMux, db *DB, st *state) {
 			loadTimerRules(db, st)
 			log.Printf("[timer] deleted #%d", id)
 			send(rw, 200, map[string]bool{"ok": true})
+		case r.Method == http.MethodPut && len(parts) == 1:
+			var tr TimerRule
+			if err := json.NewDecoder(r.Body).Decode(&tr); err != nil {
+				send(rw, 400, map[string]string{"error": "bad json"})
+				return
+			}
+			tr.ID = id
+			tr.Name = strings.TrimSpace(tr.Name)
+			if tr.Name == "" {
+				send(rw, 400, map[string]string{"error": "name required"})
+				return
+			}
+			if err := db.updateTimerRule(tr); err != nil {
+				send(rw, 500, map[string]string{"error": err.Error()})
+				return
+			}
+			loadTimerRules(db, st)
+			log.Printf("[timer] updated #%d %q", id, tr.Name)
+			send(rw, 200, tr)
 		case r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "toggle":
 			rows, _ := db.listTimerRules()
 			for _, tr := range rows {
