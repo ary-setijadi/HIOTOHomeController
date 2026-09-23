@@ -10,7 +10,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -441,54 +440,6 @@ func main() {
 		log.Fatalf("list rules: %v", err)
 	}
 
-	u := &url.URL{Scheme: "amqp", Host: fmt.Sprintf("%s:%d", cfg.host, cfg.port), Path: cfg.vhost}
-	u.User = url.UserPassword(cfg.user, cfg.password)
-	// Vhosts with a leading slash (e.g. "/smarthome") must be %2F-encoded in
-	// the AMQP URI or amqp091-go parses them as "smarthome" (no slash).
-	if cfg.vhost != "" && cfg.vhost != "/" {
-		u.RawPath = url.PathEscape(cfg.vhost)
-	}
-	// Connect to RabbitMQ with retry. After a power outage the network and the
-	// broker may come up before RabbitMQ is actually ready to accept AMQP
-	// connections, so keep trying instead of crashing (systemd Restart=always
-	// remains as a last-resort safety net for genuine configuration errors).
-	var conn *amqp.Connection
-	for {
-		conn, err = amqp.Dial(u.String())
-		if err == nil {
-			break
-		}
-		log.Printf("[amqp] dial failed: %v — retrying in 2s", err)
-		time.Sleep(2 * time.Second)
-	}
-	log.Printf("[amqp] connected to %s:%d", cfg.host, cfg.port)
-	defer conn.Close()
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("channel: %v", err)
-	}
-	if err := ch.ExchangeDeclare(cfg.exchange, "topic", true, false, false, false, nil); err != nil {
-		log.Fatalf("exchange: %v", err)
-	}
-	// Non-durable + exclusive + auto-delete: when the controller disconnects,
-	// the queue is deleted and un-consumed messages are lost (not buffered).
-	qdecl, err := ch.QueueDeclare("", false, true, true, false, nil)
-	if err != nil {
-		log.Fatalf("queue: %v", err)
-	}
-	queue := qdecl.Name
-	binds := []string{"home.sensor.*.*.state", "home.actuator.*.*.state", "home.actuator.*.*.override", "home.config.rules"}
-	binds = append(binds, hiotoTopicBinds...)
-	for _, b := range binds {
-		if err := ch.QueueBind(queue, b, cfg.exchange, false, nil); err != nil {
-			log.Fatalf("bind %s: %v", b, err)
-		}
-	}
-	msgs, err := ch.Consume(queue, "home-controller-v4m", true, false, false, false, nil)
-	if err != nil {
-		log.Fatalf("consume: %v", err)
-	}
-
 	st := newState()
 	// register device kinds/types from the DB + build an in-memory registry map
 	// (avoids a SQLite SELECT per message).
@@ -510,69 +461,72 @@ func main() {
 	}
 	loadTimerRules(db, st)
 
-	go func() {
-		for d := range msgs {
-			// HIOTO-topic messages use a plain {guid, value, ...} payload,
-			// not the V4 envelope.
-			if isHiotoRoutingKey(d.RoutingKey) {
-				handleHioto(d.RoutingKey, d.Body, st, db, deviceMap)
-				continue
+	// Incoming-message handler (runs on the broker's consume goroutine).
+	handle := func(d amqp.Delivery) {
+		// HIOTO-topic messages use a plain {guid, value, ...} payload,
+		// not the V4 envelope.
+		if isHiotoRoutingKey(d.RoutingKey) {
+			handleHioto(d.RoutingKey, d.Body, st, db, deviceMap)
+			return
+		}
+		parts := strings.Split(d.RoutingKey, ".")
+		var env envelope
+		if json.Unmarshal(d.Body, &env) != nil {
+			return
+		}
+		switch {
+		case d.RoutingKey == "home.config.rules":
+			var rm ruleMsg
+			if json.Unmarshal(env.Payload, &rm) == nil {
+				if rm.Action == "add" && rm.Rule.Name != "" {
+					st.putRule(rm.Rule)
+				} else if rm.Action == "remove" {
+					st.delRule(rm.Name)
+				}
 			}
-			parts := strings.Split(d.RoutingKey, ".")
-			var env envelope
-			if json.Unmarshal(d.Body, &env) != nil {
-				continue
+		case len(parts) == 5 && parts[1] == "sensor" && parts[4] == "state":
+			var p statePayload
+			if json.Unmarshal(env.Payload, &p) == nil {
+				v := 0.0
+				if len(p.DigitalValue) > 0 {
+					v = float64(p.DigitalValue[0])
+				} else if len(p.AnalogValue) > 0 {
+					v = p.AnalogValue[0]
+				}
+
+				st.putSensor(p.SerialNumber, v)
+				kickRules()
+				recordTelemetry(p.SerialNumber, deviceMap[p.SerialNumber].Name, "value", v)
+				_ = db.touchDevice(p.SerialNumber)
 			}
-			switch {
-			case d.RoutingKey == "home.config.rules":
-				var rm ruleMsg
-				if json.Unmarshal(env.Payload, &rm) == nil {
-					if rm.Action == "add" && rm.Rule.Name != "" {
-						st.putRule(rm.Rule)
-					} else if rm.Action == "remove" {
-						st.delRule(rm.Name)
-					}
+		case len(parts) == 5 && parts[1] == "actuator" && parts[4] == "state":
+			var p statePayload
+			if json.Unmarshal(env.Payload, &p) == nil {
+				if t, err := strconv.Atoi(parts[2]); err == nil {
+					st.putActType(p.SerialNumber, t)
 				}
-			case len(parts) == 5 && parts[1] == "sensor" && parts[4] == "state":
-				var p statePayload
-				if json.Unmarshal(env.Payload, &p) == nil {
-					v := 0.0
-					if len(p.DigitalValue) > 0 {
-						v = float64(p.DigitalValue[0])
-					} else if len(p.AnalogValue) > 0 {
-						v = p.AnalogValue[0]
-					}
-					
-					st.putSensor(p.SerialNumber, v)
-					kickRules()
-					recordTelemetry(p.SerialNumber, deviceMap[p.SerialNumber].Name, "value", v)
-					_ = db.touchDevice(p.SerialNumber)
-				}
-			case len(parts) == 5 && parts[1] == "actuator" && parts[4] == "state":
-				var p statePayload
-				if json.Unmarshal(env.Payload, &p) == nil {
-					if t, err := strconv.Atoi(parts[2]); err == nil {
-						st.putActType(p.SerialNumber, t)
-					}
-					_ = db.touchDevice(p.SerialNumber)
-				}
-			case len(parts) == 5 && parts[1] == "actuator" && parts[4] == "override":
-				var p overridePayload
-				if json.Unmarshal(env.Payload, &p) == nil {
-					st.putOverride(p.SerialNumber, p.Override)
-				}
+				_ = db.touchDevice(p.SerialNumber)
+			}
+		case len(parts) == 5 && parts[1] == "actuator" && parts[4] == "override":
+			var p overridePayload
+			if json.Unmarshal(env.Payload, &p) == nil {
+				st.putOverride(p.SerialNumber, p.Override)
 			}
 		}
-	}()
+	}
+
+	// Connect to RabbitMQ (reconnects automatically if the broker restarts).
+	binds := []string{"home.sensor.*.*.state", "home.actuator.*.*.state", "home.actuator.*.*.override", "home.config.rules"}
+	binds = append(binds, hiotoTopicBinds...)
+	brk := newBroker(cfg, binds, handle)
+	brk.connect()
 
 	log.Printf("home-controller v4m started: plaintext rule engine + SQLite, period=%dms, %d devices, %d rules (%d from rule_devices)", cfg.periodMS, len(devices), len(st.rules), len(ruleRows))
 
 	publish := func(actuator string, val float64) {
 		if isHiotoDevice(actuator) {
 			body := hiotoCommand(actuator, val)
-			if err := ch.Publish(cfg.exchange, "Aktuator", false, false, amqp.Publishing{
-				ContentType: "text/plain", DeliveryMode: amqp.Transient, Body: body,
-			}); err != nil {
+			if err := brk.publish("Aktuator", "text/plain", body); err != nil {
 				log.Printf("[out] publish error: %v", err)
 				return
 			}
@@ -596,9 +550,7 @@ func main() {
 		}
 		body, _ := json.Marshal(envelope{MsgID: newUUID(), TS: time.Now(), Source: "ctrl-v4m", MessageClass: "cmd", Payload: payload})
 		routing := fmt.Sprintf("home.actuator.%d.%s.cmd", typ, actuator)
-		if err := ch.Publish(cfg.exchange, routing, false, false, amqp.Publishing{
-			ContentType: "application/json", DeliveryMode: amqp.Transient, Body: body,
-		}); err != nil {
+		if err := brk.publish(routing, "application/json", body); err != nil {
 			log.Printf("[out] publish error: %v", err)
 			return
 		}
