@@ -24,11 +24,17 @@ transport and authentication differ.
 **Rule of thumb:** anything that stays on the local LAN may use plaintext;
 anything that crosses a WAN (e.g. the datacenter agent) **must** use TLS.
 
+> **Deployment status (2026-09-23):** AMQP TLS on **5671** is **live**. MQTT TLS
+> on **8883** is **NOT enabled** — on RabbitMQ 3.8.3 a TLS MQTT client triggers
+> `rabbit_mqtt_processor:initial_state {error,einval}` and disrupts the MQTT
+> plugin, so legacy devices stay on plaintext **1883**. See
+> `VERSION.md` → *Operational notes*. The datacenter agent (AMQP) is the current
+> TLS requirement, so only 5671 is exposed.
+
 ```
 Device (MQTT)  ──1883 (plaintext)──┐
                                    ├──► RabbitMQ (home.automation exchange)
-Device (MQTT)  ──8883 (TLS)────────┘        ▲
-Agent  (AMQP)  ──5671 (TLS)────────────────┘
+Agent  (AMQP)  ──5671 (TLS)────────┘        ▲
 Controller      ──5672 (AMQP, localhost)
 ```
 
@@ -110,9 +116,15 @@ rabbitmqctl set_topic_permissions -p /smarthome device-001 \
   '^(Sensor|Status|sensor_.*|Log\..*|smart_bell.*)$' '^Aktuator(\..*)?$'
 ```
 
-### 4.2 TLS (8883 / 5671)
+### 4.2 TLS (AMQP 5671 — MQTT 8883 deferred)
 
 Same as plaintext, **plus** transport security:
+
+> **Note:** this section documents the *intended* mTLS design. On the current
+> broker (RabbitMQ 3.8.3) only the **AMQP 5671** TLS listener is usable; the MQTT
+> **8883** listener crashes on client connect (`{error,einval}`) and is disabled.
+> Use 5671 for the datacenter agent; keep legacy devices on 1883 until a broker
+> upgrade fixes MQTT TLS.
 
 1. Client **trusts the CA** (`ca.crt`) and verifies the broker hostname
    (`maincontroller` / `192.168.1.22`).

@@ -85,6 +85,19 @@ Artifacts: `v4.0/controller/`, `v4.0/simulator/`.
   `mqtt.ssl_options.*`), and the `none` listener value is not accepted (use
   loopback binding `127.0.0.1:<port>` to restrict plaintext instead).
 
+### Operational notes (TLS hardening, 2026-09-23)
+- **AMQP TLS 5671 is live** on the V4m broker: `listeners.ssl.default = 5671`
+  plus top-level `ssl_options.*` (`verify_none`, `fail_if_no_peer_cert = false`).
+  Verified: `openssl s_client` to 5671 presents `CN=maincontroller`.
+- **MQTT TLS 8883 is deferred.** Adding `mqtt.listeners.ssl.default = 8883`
+  (with the shared top-level `ssl_options`) makes a TLS MQTT client crash the
+  processor: `rabbit_mqtt_processor:initial_state {error,einval}`. Legacy devices
+  therefore stay on plaintext **1883**; the datacenter agent uses AMQP 5671.
+- **Controller now auto-reconnects AMQP.** The connection was extracted into
+  `v4m/controller/broker.go` (`connectOnce` re-declares exchange/queue/bindings/
+  consumer; `watch` reconnects on `NotifyClose`). It survives RabbitMQ restarts
+  instead of wedging on a stale channel.
+
 Artifacts: `v5.0/controller/`, `v5.0/simulator/`, `v5.0/traffic-logger/`,
 `v5.0/device-manager/`, `v5.0/registration/`, `v5.0/monitor/`, `v5.0/certs/`,
 `v5.0/rabbitmq-mtls.conf`, `v5.0/gen-certs.sh`, `DESIGN-v5.md`.
