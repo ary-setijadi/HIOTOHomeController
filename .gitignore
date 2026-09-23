@@ -21,3 +21,6 @@ controller-v4m
 *.err
 *.txt
 *.pid
+
+# --- Temp diagnostic scripts ---
+tools/_*
