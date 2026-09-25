@@ -150,6 +150,8 @@ verify  = 2   # 2 = require client cert (mTLS); 0 = server-only TLS
 
 **Connection parameters** (identical for plaintext and TLS, except the port):
 
+- Broker host = `192.168.1.22` (single-board); for large/multi-subnet deployments
+  use the DNS name **`mqtt.home.arpa`** — see `TECHNICAL-DOCUMENTATION.md` §12.5.
 - MQTT username = **`/smarthome:smarthome`** (`vhost:user` — see §4.1).
 - MQTT password = `Ssm4rt2!`.
 - TLS: trust `ca.crt` and verify `CN=maincontroller` (SAN includes `192.168.1.22`);

@@ -518,6 +518,128 @@ RabbitMQ uses `Type=notify` (systemd waits for broker readiness); the controller
 is ordered `After=` it and now uses a **graceful AMQP dial retry loop** (2 s),
 so it connects cleanly without crash-restart. See §15 (fix #7).
 
+### 12.5 DNS & device provisioning (scaling to a large / multi-subnet home)
+
+The single-board deployment hardcodes `192.168.1.22` everywhere. For a larger
+home — multiple floors/VLANs/subnets, a standby board, and a growing ESP32 fleet —
+that IP pinning becomes brittle. This section records the **target architecture**
+for pointing devices at the controller by **DNS name** instead of a fixed IP.
+
+**Design goals**
+
+1. Devices reach the controller by a **stable name**, not an IP, so the controller
+   can move / fail over without re-flashing devices.
+2. Name resolution must **cross VLANs/subnets** — mDNS `.local` does **not**
+   (it is link-local multicast and also unsupported by fixed-firmware devices).
+3. DNS must not be a single point of failure tied to the controller.
+
+**Internal domain**
+
+Use a *reserved* internal TLD, not a made-up one:
+
+| Choice | Verdict |
+|---|---|
+| `.local` | ❌ reserved for mDNS; conflicts with Bonjour/Avahi |
+| `.lan` / `.home` | ⚠️ common but not officially reserved |
+| **`.home.arpa`** | ✅ RFC 8375, reserved for home networks |
+| subdomain you own (`iot.example.com`) | ✅ best if you own a domain + run split-horizon DNS |
+
+**DNS server (and the "secondary DNS" trap)**
+
+Run a local resolver that is authoritative for the internal zone: **AdGuard Home**,
+**Pi-hole**, **dnsmasq**, or the router's **Unbound** (pfSense/OPNsense/OpenWrt).
+
+> **Critical:** a "secondary" DNS server is **not** a failover target. Clients use
+> the primary almost exclusively and only fall back to the secondary on a network
+> *timeout* — never on a valid-but-wrong answer (NXDOMAIN). So the box that knows
+> `mqtt.home.arpa` **must be the primary** (or the router must forward to it).
+> For real redundancy run **two** resolvers (e.g. primary board + standby board),
+> both as DNS1/DNS2 — never "router-primary + Pi-hole-secondary".
+
+**Addressing scheme** (one A record → controller IP `192.168.1.22`)
+
+| FQDN | Service | Port |
+|---|---|---|
+| `mqtt.home.arpa` | MQTT (devices) | 8883 TLS / 1883 legacy |
+| `amqp.home.arpa` | AMQP (datacenter agent) | 5671 TLS |
+| `dash.home.arpa` | dashboard | 8081 |
+| `api.home.arpa` | HIOTO-compatible API | 8000 |
+
+Give the controller a **DHCP reservation** so the IP is stable, and point the DNS
+A records at it. On failover, update the A records (or move the reservation).
+
+**Network layout (multi-subnet)**
+
+```
+VLAN 10 main   ── laptop / phone / dashboard ──► dash.home.arpa
+VLAN 20 IoT    ── ESP32 + HIOTO gateway      ──► mqtt.home.arpa:8883
+VLAN 30 guest  ── (no controller access)
+        └── inter-VLAN routing allows only the needed ports
+```
+
+- One **DNS resolver** reachable from all VLANs (or two, for redundancy).
+- **DHCP on each VLAN** hands out the resolver IP + search domain `home.arpa`, so
+  every device picks up resolution automatically.
+- Firewall: allow IoT → controller **only** on `8883`/`1883` (and AMQP `5671` for
+  the agent), nothing else.
+
+**Device provisioning (split by capability)**
+
+*New devices (ESP32 / ESP-IDF — anything you write):*
+
+- Broker = `mqtt.home.arpa:8883`, **mTLS** (per-device cert via
+  `tools/gen-device-cert.sh`), MQTT username = `/smarthome:<user>` (vhost:user).
+- They re-resolve the FQDN on reconnect, so DNS re-pointing works.
+- Provision each device with a **JSON payload** (QR-scannable, matching the
+  dashboard's existing onboarding):
+
+```json
+{
+  "guid": "ESP32-KITCHEN-01",
+  "broker": "mqtt.home.arpa",
+  "port": 8883,
+  "tls": true,
+  "username": "/smarthome:esp32-kitchen",
+  "password": "…",
+  "ca": "…ca.crt…",
+  "cert": "…ESP32-KITCHEN-01.crt…",
+  "key": "…ESP32-KITCHEN-01.key…",
+  "publish": ["Sensor"],
+  "subscribe": ["Aktuator"]
+}
+```
+
+*Legacy fixed-firmware devices (HIOTO gateway):*
+
+- These are **pinned to `192.168.1.22`** and cannot follow DNS. Keep a permanent
+  **"anchor IP"** reservation for them, and migrate them to ESP32 firmware over
+  time. New devices must never hardcode the IP.
+
+**Failover & flexibility**
+
+| Scenario | Action | Device impact |
+|---|---|---|
+| Move controller to a new subnet | update `mqtt.home.arpa` A record + firewall | new devices re-resolve; legacy follow the anchor IP only if it moves too |
+| Failover to standby | point `mqtt.home.arpa` at standby, or move the DHCP reservation | new devices follow DNS; legacy follow only the anchor IP |
+| Zero-touch failover (advanced) | **floating IP (VIP)** via keepalived shared by primary + standby | *all* devices (even legacy) follow the VIP — no DNS or re-flash needed |
+
+The **standby board** is the natural home for the DNS resolver: it is already
+always-on and independent of the primary controller, so a primary failure cannot
+take DNS down with it.
+
+**Recommendation (incremental)**
+
+1. **Now:** reserve `192.168.1.22`; if the router supports local DNS, add the four
+   `.home.arpa` names.
+2. **Standby board:** provision identically; on failover it takes `192.168.1.22`
+   (or the VIP). Legacy devices re-attach with zero changes.
+3. **New ESP32 fleet:** firmware uses `mqtt.home.arpa` + mTLS from day one.
+4. **Large home:** add a pfSense/OPNsense/OpenWrt router with Unbound + VLANs, and
+   the scheme above becomes the backbone.
+
+See `DEVICE-DEVELOPMENT-GUIDE.md` §4.2 (device-side TLS) and §5.3 (ESP32 client
+example).
+
 ---
 
 ## 13. Diagrams, Schematics & Image Placeholders
