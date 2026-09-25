@@ -387,7 +387,42 @@ ready. The controller re-loads devices/rules/timers from SQLite on start.
 
 ---
 
-## 11. Contribution guidelines
+## 11. MQTT TLS terminator (stunnel)
+
+RabbitMQ 3.8.3's own MQTT-TLS listener crashes on client connect
+(`rabbit_mqtt_processor {error,einval}`), so device TLS is terminated by a
+**stunnel** wrapper that fronts the broker's plaintext `1883`:
+
+```
+ESP32 (MQTT TLS :8883) ──► stunnel ──► 127.0.0.1:1883 ──► RabbitMQ ──► controller
+Legacy devices (:1883) ─────────────────────────────────► RabbitMQ ──► controller
+```
+
+- Config: `/etc/stunnel/mqtt-tls.conf` (repo copy: `tools/stunnel-mqtt-tls.conf`).
+- Certs: `/etc/stunnel/certs/{server.crt,server.key,ca.crt}` — copies of the
+  RabbitMQ server cert/key + CA, owned by the `stunnel4` user.
+- `verify = 2` → mTLS (require a device client cert); `verify = 0` → server-only.
+- Per-device client certs: `tools/gen-device-cert.sh <name>` (deployed at
+  `/usr/local/bin/gen-device-cert.sh`), signed by `HomeAutomation-CA`.
+- Enable/start: `systemctl enable --now stunnel4`.
+
+**MQTT username quirk:** RabbitMQ 3.8.3 parses the MQTT username as
+**`vhost:user`** (vhost *first*). To reach `/smarthome` as `smarthome`, use the
+username `/smarthome:smarthome`.
+
+Verified end-to-end (publish via 8883 → receive on 1883):
+
+```bash
+mosquitto_sub -h 127.0.0.1 -p 1883 -u '/smarthome:smarthome' -P 'Ssm4rt2!' -t test/tls -C 1 &
+mosquitto_pub -h 127.0.0.1 -p 8883 --cafile ca.crt --cert ESP32-DEMO-01.crt --key ESP32-DEMO-01.key \
+  -u '/smarthome:smarthome' -P 'Ssm4rt2!' -t test/tls -m hello
+```
+
+See `../../DEVICE-DEVELOPMENT-GUIDE.md` §4.2 for the device-side TLS setup.
+
+---
+
+## 12. Contribution guidelines
 
 1. Keep the controller **plaintext/local-only** by default (V5 security is a
    separate, opt-in layer — see `../../TECHNICAL-DOCUMENTATION.md` §16).
@@ -406,4 +441,4 @@ ready. The controller re-loads devices/rules/timers from SQLite on start.
 
 *As-built: V4m2 controller, 135 devices, 278 rule_devices (132 switch-state
 rules), 6 advanced rules, timer rules (at/window/duration), bounded telemetry,
-HIOTO-compatible `:8000` API, embedded dashboard.*
+HIOTO-compatible `:8000` API, embedded dashboard, MQTT TLS terminator (stunnel).*

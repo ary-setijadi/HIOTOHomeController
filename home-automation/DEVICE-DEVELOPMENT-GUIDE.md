@@ -24,17 +24,16 @@ transport and authentication differ.
 **Rule of thumb:** anything that stays on the local LAN may use plaintext;
 anything that crosses a WAN (e.g. the datacenter agent) **must** use TLS.
 
-> **Deployment status (2026-09-23):** AMQP TLS on **5671** is **live**. MQTT TLS
-> on **8883** is **NOT enabled** — on RabbitMQ 3.8.3 a TLS MQTT client triggers
-> `rabbit_mqtt_processor:initial_state {error,einval}` and disrupts the MQTT
-> plugin, so legacy devices stay on plaintext **1883**. See
-> `VERSION.md` → *Operational notes*. The datacenter agent (AMQP) is the current
-> TLS requirement, so only 5671 is exposed.
+> **Deployment status (2026-09-26):** AMQP TLS on **5671** is **live** (datacenter
+> agent). MQTT TLS on **8883** is served by a **stunnel TLS terminator** that
+> fronts RabbitMQ 3.8.3 — its own MQTT-TLS listener crashes on connect — so
+> TLS-capable devices (ESP32) can migrate gradually while legacy devices stay on
+> plaintext **1883**. See §4.2 and `v4m/controller/README.md` → *TLS terminator*.
 
 ```
-Device (MQTT)  ──1883 (plaintext)──┐
-                                   ├──► RabbitMQ (home.automation exchange)
-Agent  (AMQP)  ──5671 (TLS)────────┘        ▲
+Device (MQTT)  ──1883 (plaintext)──────────────────┐
+Device (MQTT)  ──8883 (TLS)──► stunnel ──1883 ─────┤► RabbitMQ (home.automation)
+Agent  (AMQP)  ──5671 (TLS)────────────────────────┘
 Controller      ──5672 (AMQP, localhost)
 ```
 
@@ -109,6 +108,11 @@ also supports registration with a QR scan.
 One username/password. Legacy devices share `smarthome`; new devices should get a
 **per-device user** (better isolation even without TLS):
 
+> **MQTT username = `vhost:user`** (RabbitMQ 3.8.3 quirk — the *vhost comes first*,
+> then the user). To reach vhost `/smarthome` as user `smarthome`, set the MQTT
+> username to **`/smarthome:smarthome`**. (AMQP uses the normal `user`/`vhost`
+> fields, not this form.)
+
 ```bash
 rabbitmqctl add_user device-001 'StrongPass!'
 rabbitmqctl set_permissions -p /smarthome device-001 '.*' '.*' '.*'
@@ -116,38 +120,54 @@ rabbitmqctl set_topic_permissions -p /smarthome device-001 \
   '^(Sensor|Status|sensor_.*|Log\..*|smart_bell.*)$' '^Aktuator(\..*)?$'
 ```
 
-### 4.2 TLS (AMQP 5671 — MQTT 8883 deferred)
+### 4.2 TLS (AMQP 5671 + MQTT 8883 via stunnel)
 
-Same as plaintext, **plus** transport security:
+Two TLS paths, both from the same CA (`HomeAutomation-CA`):
 
-> **Note:** this section documents the *intended* mTLS design. On the current
-> broker (RabbitMQ 3.8.3) only the **AMQP 5671** TLS listener is usable; the MQTT
-> **8883** listener crashes on client connect (`{error,einval}`) and is disabled.
-> Use 5671 for the datacenter agent; keep legacy devices on 1883 until a broker
-> upgrade fixes MQTT TLS.
+| Path | Port | Served by | For |
+|---|---|---|---|
+| AMQP | **5671** | RabbitMQ native TLS | datacenter agent |
+| MQTT | **8883** | **stunnel** → `127.0.0.1:1883` | ESP32 / new devices (mTLS) |
 
-1. Client **trusts the CA** (`ca.crt`) and verifies the broker hostname
-   (`maincontroller` / `192.168.1.22`).
-2. Client **presents a client cert** (mTLS) — optional; if omitted, fall back to
-   username/password.
+RabbitMQ 3.8.3's own MQTT-TLS listener crashes on connect, so MQTT TLS is
+terminated by **stunnel** (a TLS wrapper) in front of the broker. stunnel
+decrypts the MQTT stream and forwards it to the broker's plaintext `1883` on
+loopback. Old devices keep talking to `1883` directly — the two coexist, so you
+can migrate one device at a time.
 
-Issue a client cert on the broker:
+**stunnel config** (`/etc/stunnel/mqtt-tls.conf`):
 
-```bash
-cd /etc/rabbitmq/certs
-NAME=my-device-001
-openssl req -new -newkey rsa:2048 -nodes -keyout "$NAME.key" -out "$NAME.csr" -subj "/CN=$NAME"
-printf 'extendedKeyUsage=clientAuth\n' > ext.cnf
-openssl x509 -req -in "$NAME.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -out "$NAME.crt" -days 3650 -extfile ext.cnf
+```ini
+[mqtt-tls]
+client  = no
+accept  = 8883
+connect = 127.0.0.1:1883
+cert    = /etc/stunnel/certs/server.crt      # copy of rabbitmq-server.crt
+key     = /etc/stunnel/certs/server.key
+CAfile  = /etc/stunnel/certs/ca.crt
+verify  = 2   # 2 = require client cert (mTLS); 0 = server-only TLS
 ```
 
-Ship **`$NAME.crt` + `$NAME.key`** (private) + **`ca.crt`** (public) to the device.
+**Connection parameters** (identical for plaintext and TLS, except the port):
+
+- MQTT username = **`/smarthome:smarthome`** (`vhost:user` — see §4.1).
+- MQTT password = `Ssm4rt2!`.
+- TLS: trust `ca.crt` and verify `CN=maincontroller` (SAN includes `192.168.1.22`);
+  with `verify=2`, also present the device client cert.
+
+**Issue a client cert** for each device (script in repo at `tools/gen-device-cert.sh`):
+
+```bash
+/usr/local/bin/gen-device-cert.sh ESP32-KITCHEN-01   # → ESP32-KITCHEN-01.crt/.key
+```
+
+Ship **`<name>.crt` + `<name>.key`** (private) + **`ca.crt`** (public) to the device.
 Never share `ca.key`.
 
 | Identity | topic write | topic read | Notes |
 |---|---|---|---|
-| `smarthome` | — | — | legacy shared user |
-| `agent` | `^Aktuator(\..*)?$` | `.*` | datacenter agent |
+| `smarthome` | — | — | legacy shared user (vhost `/smarthome`) |
+| `agent` | `^Aktuator(\..*)?$` | `.*` | datacenter agent (AMQP 5671) |
 | `device-<id>` | `^(Sensor|Status|sensor_.*|Log\..*|smart_bell.*)$` | `^Aktuator(\..*)?$` | per-device (recommended) |
 
 ---
@@ -161,7 +181,7 @@ import paho.mqtt.client as mqtt
 GUID, BROKER = "my-device-001", "192.168.1.22"
 
 c = mqtt.Client(client_id=GUID)
-c.username_pw_set("device-001", "StrongPass!")
+c.username_pw_set("/smarthome:device-001", "StrongPass!")   # MQTT username is vhost:user
 c.connect(BROKER, 1883, keepalive=60)
 
 c.publish("Sensor", f"{GUID}#1")          # publish state
@@ -176,7 +196,7 @@ import ssl, paho.mqtt.client as mqtt
 GUID, BROKER = "my-device-001", "192.168.1.22"
 
 c = mqtt.Client(client_id=GUID)
-c.username_pw_set("device-001", "StrongPass!")
+c.username_pw_set("/smarthome:device-001", "StrongPass!")   # MQTT username is vhost:user
 c.tls_set(ca_certs="/etc/devices/ca.crt",
           certfile="/etc/devices/my-device-001.crt",
           keyfile="/etc/devices/my-device-001.key",
@@ -185,8 +205,60 @@ c.connect(BROKER, 8883, keepalive=60)
 # ... same publish/subscribe as above
 ```
 
-**ESP32/ESP8266 note:** use `WiFiClientSecure`/ESP-IDF TLS. ESP32 does full-chain
-verification fine; ESP8266 should verify by **fingerprint** to save RAM.
+### 5.3 ESP32 (Arduino, WiFiClientSecure + PubSubClient)
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+const char* MQTT_HOST = "192.168.1.22";
+const uint16_t MQTT_PORT = 8883;
+const char* MQTT_USER = "/smarthome:smarthome";   // vhost:user (see §4.1)
+const char* MQTT_PASS = "Ssm4rt2!";
+const char* CLIENT_ID = "ESP32-DEMO-01";
+
+// Embed the three PEMs emitted by gen-device-cert.sh.
+static const char* CA_CERT = R"EOF(
+-----BEGIN CERTIFICATE-----
+... contents of ca.crt ...
+-----END CERTIFICATE-----
+)EOF";
+static const char* CLIENT_CERT = R"EOF(
+-----BEGIN CERTIFICATE-----
+... contents of ESP32-DEMO-01.crt ...
+-----END CERTIFICATE-----
+)EOF";
+static const char* CLIENT_KEY = R"EOF(
+-----BEGIN PRIVATE KEY-----
+... contents of ESP32-DEMO-01.key ...
+-----END PRIVATE KEY-----
+)EOF";
+
+WiFiClientSecure net;
+PubSubClient mqtt(net);
+
+void connectMQTT() {
+  net.setCACert(CA_CERT);              // verify broker against HomeAutomation-CA
+  net.setCertificate(CLIENT_CERT);     // present device cert (mTLS)
+  net.setPrivateKey(CLIENT_KEY);
+  mqtt.setServer(MQTT_HOST, MQTT_PORT);
+  while (!mqtt.connect(CLIENT_ID, MQTT_USER, MQTT_PASS)) {
+    Serial.println("mqtt connect failed; retrying");
+    delay(3000);
+  }
+  mqtt.subscribe("Aktuator");          // receive actuator commands
+}
+
+void publishState(int v) {
+  char buf[64];
+  snprintf(buf, sizeof buf, "%s#%d", CLIENT_ID, v);
+  mqtt.publish("Sensor", buf);         // publish switch/sensor state
+}
+```
+
+> **ESP8266 note:** same pattern, but verify by **fingerprint** instead of a full
+> CA chain to save RAM.
 
 ---
 
@@ -246,14 +318,25 @@ conn, _ := amqp.DialTLS("amqps://agent:Agent%2123@192.168.1.22:5671/%2Fsmarthome
 ## 8. Testing
 
 ```bash
-# TLS handshake + cert check
+# TLS handshake + cert check (mTLS)
 openssl s_client -connect 192.168.1.22:8883 -CAfile ca.crt \
   -cert device.crt -key device.key -verify_return_error < /dev/null
 openssl s_client -connect 192.168.1.22:5671 -CAfile ca.crt < /dev/null
 
 # Plaintext connectivity
-nc -zv 192.168.1.22 1883   # MQTT
+nc -zv 192.168.1.22 1883   # MQTT (legacy)
 nc -zv 192.168.1.22 5672   # AMQP
+```
+
+End-to-end MQTT over TLS (publish via 8883 → receive on 1883):
+
+```bash
+# subscriber on the plaintext side
+mosquitto_sub -h 127.0.0.1 -p 1883 -u '/smarthome:smarthome' -P 'Ssm4rt2!' -t 'test/tls' -C 1 &
+sleep 1
+# publisher through stunnel (TLS + mTLS)
+mosquitto_pub -h 127.0.0.1 -p 8883 --cafile ca.crt --cert ESP32-DEMO-01.crt --key ESP32-DEMO-01.key \
+  -u '/smarthome:smarthome' -P 'Ssm4rt2!' -t 'test/tls' -m 'hello'
 ```
 
 Confirm in RabbitMQ (`rabbitmqctl list_connections`) and in the controller
@@ -262,4 +345,5 @@ Confirm in RabbitMQ (`rabbitmqctl list_connections`) and in the controller
 ---
 
 *Target state: plaintext `1883`/`5672` (legacy) alongside TLS `8883`/`5671`
-(new devices + agent), CA `HomeAutomation-CA`, scoped per-device/agent users.*
+(new ESP32 devices + datacenter agent), CA `HomeAutomation-CA`, mTLS via the
+stunnel terminator, scoped per-device/agent users.*
