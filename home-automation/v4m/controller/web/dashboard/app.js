@@ -387,19 +387,131 @@ function populateHistDevices() {
   const all = sensors.concat(actuators).sort((x, y) => ((x.name || x.serial) + '').localeCompare((y.name || y.serial) + ''));
   for (const d of all) {
     const o = document.createElement('option');
-    o.value = d.serial; o.textContent = (d.name || d.serial) + (d.floor && d.floor !== 'Lainnya' ? ' · ' + d.floor : '');
+    o.value = d.serial;
+    o.textContent = (d.type === 2 ? '📈 ' : '') + (d.name || d.serial) + (d.floor && d.floor !== 'Lainnya' ? ' · ' + d.floor : '');
     sel.appendChild(o);
   }
   if (cur) sel.value = cur;
+  else { const analog = all.find((d) => d.type === 2); if (analog) sel.value = analog.serial; }
 }
+let lastHistPoints = [];
+
+function fmtNum(v) {
+  const a = Math.abs(v);
+  if (a >= 1000) return v.toFixed(0);
+  if (a >= 100) return v.toFixed(1);
+  return v.toFixed(2);
+}
+function fmtTime(ms) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+// drawChart renders a self-contained time-series line chart on the history
+// canvas (no external library — the dashboard must stay local-only/offline).
+function drawChart(points) {
+  const canvas = $('#hist-chart');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 800;
+  const cssH = 260;
+  canvas.width = Math.max(1, Math.round(cssW * dpr));
+  canvas.height = Math.round(cssH * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  if (!points || points.length < 2) {
+    ctx.fillStyle = '#8b97a8';
+    ctx.font = '13px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(points && points.length === 1 ? '1 point — need ≥2 to draw a line' : 'no data', cssW / 2, cssH / 2);
+    return;
+  }
+
+  // chronological order (oldest → newest)
+  const pts = points.slice().reverse();
+  const xs = pts.map((p) => new Date(p.ts).getTime());
+  const ys = pts.map((p) => Number(p.value) || 0);
+  const xMin = xs[0], xMax = xs[xs.length - 1];
+  let yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
+  if (!(yMin < yMax)) { yMin -= 1; yMax += 1; }
+
+  const padL = 48, padR = 12, padT = 12, padB = 26;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+  const px = (t) => padL + (xMax === xMin ? 0 : (t - xMin) / (xMax - xMin)) * plotW;
+  const py = (v) => padT + (yMax - v) / (yMax - yMin) * plotH;
+
+  // gridlines + y-axis labels
+  ctx.strokeStyle = '#2c3648';
+  ctx.fillStyle = '#8b97a8';
+  ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const v = yMin + (yMax - yMin) * i / 4;
+    const yy = py(v);
+    ctx.beginPath();
+    ctx.moveTo(padL, yy);
+    ctx.lineTo(cssW - padR, yy);
+    ctx.stroke();
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtNum(v), padL - 6, yy);
+  }
+
+  // x-axis time labels (first + last)
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText(fmtTime(xs[0]), padL, cssH - padB + 6);
+  ctx.textAlign = 'right';
+  ctx.fillText(fmtTime(xs[xs.length - 1]), cssW - padR, cssH - padB + 6);
+
+  // area fill under the line
+  ctx.beginPath();
+  ctx.moveTo(px(xs[0]), py(ys[0]));
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(px(xs[i]), py(ys[i]));
+  ctx.lineTo(px(xs[xs.length - 1]), cssH - padB);
+  ctx.lineTo(px(xs[0]), cssH - padB);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(79, 140, 255, 0.12)';
+  ctx.fill();
+
+  // the line
+  ctx.beginPath();
+  ctx.moveTo(px(xs[0]), py(ys[0]));
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(px(xs[i]), py(ys[i]));
+  ctx.strokeStyle = '#4f8cff';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // latest-point marker
+  const lx = px(xs[xs.length - 1]), ly = py(ys[ys.length - 1]);
+  ctx.beginPath();
+  ctx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = '#4f8cff';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(lx, ly, 6.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(79, 140, 255, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
 async function loadHistory() {
   const guid = $('#hist-device').value;
   const metric = $('#hist-metric').value;
-  const res = await fetch('/api/telemetry?guid=' + encodeURIComponent(guid) + '&metric=' + encodeURIComponent(metric) + '&limit=500').then((r) => r.json());
+  const res = await fetch('/api/telemetry?guid=' + encodeURIComponent(guid) + '&metric=' + encodeURIComponent(metric) + '&limit=1000').then((r) => r.json());
   const list = $('#history'); list.innerHTML = '';
   $('#hist-stats').textContent = `memory ${(res.mem_bytes / 1048576).toFixed(2)} MB · disk ${(res.disk_bytes / 1048576).toFixed(2)} MB · ${res.files} file(s)`;
-  if (!res.points || !res.points.length) { list.textContent = 'no data'; return; }
-  for (const p of res.points) {
+  const pts = res.points || [];
+  lastHistPoints = pts;
+  drawChart(pts);
+  if (!pts.length) { list.textContent = 'no data'; return; }
+  for (const p of pts) {
     const row = document.createElement('div'); row.className = 'dev-row';
     const ts = document.createElement('span'); ts.className = 'mono'; ts.textContent = (p.ts || '').slice(0, 19);
     const n = document.createElement('span'); n.className = 'serial'; n.textContent = p.name || p.guid;
@@ -410,10 +522,20 @@ async function loadHistory() {
   }
 }
 
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => drawChart(lastHistPoints), 150);
+});
+
 // ---- tab wiring ----
 function switchTab(name) {
   document.querySelectorAll('#top-tabs .tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'history') {
+    drawChart(lastHistPoints); // re-render at the now-visible width
+    if (!lastHistPoints.length) { const s = $('#hist-device'); if (s && s.value) loadHistory(); }
+  }
 }
 
 function buildLayout() {

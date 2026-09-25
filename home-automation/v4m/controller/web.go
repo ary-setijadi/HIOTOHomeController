@@ -117,7 +117,7 @@ func registerWebHandlers(mux *http.ServeMux, db *DB, publish func(string, float6
 				limit = n
 			}
 		}
-		pts := tel.recent(guid, metric, limit)
+		pts := tel.history(guid, metric, limit)
 		memBytes, diskBytes, files := tel.stats()
 		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
 			"points": pts, "mem_bytes": memBytes, "disk_bytes": diskBytes, "files": files,

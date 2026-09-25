@@ -164,7 +164,8 @@ func (t *telemetryStore) enforceFileCap() {
 	}
 }
 
-// recent returns the newest up-to-`limit` points matching guid/metric ("" = any).
+// recent returns the newest up-to-`limit` points matching guid/metric ("" = any)
+// from the in-memory buffer only.
 func (t *telemetryStore) recent(guid, metric string, limit int) []telemetryPoint {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -178,6 +179,59 @@ func (t *telemetryStore) recent(guid, metric string, limit int) []telemetryPoint
 			continue
 		}
 		out = append(out, p)
+	}
+	return out
+}
+
+// history returns the newest up-to-`limit` points matching guid/metric ("" = any),
+// merging the in-memory buffer with the on-disk rollover files. The in-memory
+// buffer is newer than the files; files are scanned newest-sequence-first and,
+// within a file, newest-line-first. Results are newest-first.
+func (t *telemetryStore) history(guid, metric string, limit int) []telemetryPoint {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	match := func(p telemetryPoint) bool {
+		return (guid == "" || p.GUID == guid) && (metric == "" || p.Metric == metric)
+	}
+
+	out := make([]telemetryPoint, 0, limit)
+
+	// 1. newest in-memory points first (t.mem is chronological ascending).
+	for i := len(t.mem) - 1; i >= 0 && len(out) < limit; i-- {
+		if match(t.mem[i]) {
+			out = append(out, t.mem[i])
+		}
+	}
+	if len(out) >= limit {
+		return out
+	}
+
+	// 2. on-disk rollover files, newest sequence first.
+	files, _ := filepath.Glob(filepath.Join(t.dir, "telemetry-*.jsonl"))
+	sort.Slice(files, func(i, j int) bool { return telSeq(files[i]) > telSeq(files[j]) })
+	for _, f := range files {
+		if len(out) >= limit {
+			break
+		}
+		data, err := os.ReadFile(f)
+		if err != nil {
+			continue
+		}
+		lines := strings.Split(string(data), "\n")
+		for i := len(lines) - 1; i >= 0 && len(out) < limit; i-- {
+			ln := strings.TrimSpace(lines[i])
+			if ln == "" {
+				continue
+			}
+			var p telemetryPoint
+			if json.Unmarshal([]byte(ln), &p) != nil {
+				continue
+			}
+			if match(p) {
+				out = append(out, p)
+			}
+		}
 	}
 	return out
 }
