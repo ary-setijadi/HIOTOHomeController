@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 //go:embed web
@@ -104,6 +105,21 @@ func registerWebHandlers(mux *http.ServeMux, db *DB, publish func(string, float6
 		sensors, actuators := liveSnapshot(db)
 		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
 			"connected": true, "sensors": sensors, "actuators": actuators,
+		})
+	})
+
+	// Orange Pi wall-clock time (server-local), for the dashboard topbar clock.
+	mux.HandleFunc("/api/time", func(rw http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(rw, "method not allowed", 405)
+			return
+		}
+		now := time.Now()
+		zone, offset := now.Zone()
+		_ = json.NewEncoder(rw).Encode(map[string]interface{}{
+			"unix_ms": now.UnixMilli(),
+			"offset":  offset,
+			"zone":    zone,
 		})
 	})
 

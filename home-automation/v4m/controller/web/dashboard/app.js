@@ -784,3 +784,38 @@ loadFloorsRooms().then(() => refreshDevices());
 refreshRules();
 loadTimerRules();
 timerKindUI();
+
+// ---- Orange Pi clock (topbar) ----
+let clockOffsetMs = 0; // server epoch ms minus client Date.now()
+let clockTzOffset = 0; // Pi UTC offset (seconds east)
+let clockZone = '';
+
+function fmtPiClock(unixSec) {
+  const shifted = new Date((unixSec + clockTzOffset) * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${shifted.getUTCFullYear()}-${p(shifted.getUTCMonth() + 1)}-${p(shifted.getUTCDate())} ` +
+         `${p(shifted.getUTCHours())}:${p(shifted.getUTCMinutes())}:${p(shifted.getUTCSeconds())}`;
+}
+
+function tickClock() {
+  const el = document.getElementById('clock');
+  if (!el) return;
+  const sec = (Date.now() + clockOffsetMs) / 1000;
+  el.textContent = fmtPiClock(sec) + (clockZone ? ' ' + clockZone : '');
+}
+
+async function syncClock() {
+  try {
+    const r = await fetch('/api/time').then((x) => x.json());
+    clockOffsetMs = (r.unix_ms || 0) - Date.now();
+    clockTzOffset = r.offset || 0;
+    clockZone = r.zone || '';
+    tickClock();
+  } catch {}
+}
+
+(async () => {
+  await syncClock();
+  setInterval(tickClock, 1000);
+  setInterval(syncClock, 60000);
+})();
