@@ -1,0 +1,18 @@
+[Unit]
+Description=Home Automation Datacenter Agent (v4m)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agent
+ExecStart=/usr/local/bin/agent-v4m \
+  -broker-host <HOME_IP_OR_HOST> -port 5671 -vhost /smarthome \
+  -user agent -password 'Agent!23' \
+  -ca /etc/agent-v4m/ca.crt -cert /etc/agent-v4m/agent.crt -key /etc/agent-v4m/agent.key \
+  -server-name maincontroller -out-dir /var/lib/agent-v4m -retention-days 30
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -853,6 +853,7 @@ home-automation/
     manager/server.js                 (standalone Node mgmt UI :3006, dev-only)
     simulator/
   tools/                              (deployment + reverse-engineering scripts)
+  agent/                              (off-site datacenter agent: AMQP-TLS client)
   v5.0/gen-certs.sh
 ```
 
