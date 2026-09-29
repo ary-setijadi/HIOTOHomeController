@@ -6,9 +6,9 @@ board, power) you can fail over in minutes without re-registering the 135-device
 fleet or re-importing rules.
 
 ```
-PRIMARY  (192.168.1.22)  ◄── devices / tablet / datacenter agent
-STAND-BY (idle, provisioned, controller stopped)
-            └── on failover: takes 192.168.1.22, starts the controller
+PRIMARY  192.168.1.22   ◄── devices / tablet / datacenter agent
+STAND-BY 192.168.1.23   (idle, provisioned, controller stopped)
+             └── on failover: takes 192.168.1.22, starts the controller
 ```
 
 ## What's in this directory
@@ -16,49 +16,62 @@ STAND-BY (idle, provisioned, controller stopped)
 | File | Purpose |
 |---|---|
 | `backup.sh` | run on the **primary** — snapshots state into a tarball |
-| `provision.sh` | run on the **stand-by** — installs + restores + configures |
+| `provision.sh` | run on the **stand-by** — cleans + installs + configures |
 | `rabbitmq.conf` | broker config (fallback reference) |
 | `controller-v4m.service` | systemd unit (fallback reference) |
 
 ## Prerequisites
 
 - Stand-by board: clean Armbian, **same architecture as the primary** (armv7 for
-  an Orange Pi Zero). If it's 64-bit, see the note in §Notes.
-- Root SSH access to both boards.
-- The stand-by must eventually be able to **take over IP `192.168.1.22`** (set a
-  static IP or DHCP reservation at failover time).
+  an Orange Pi Zero). If 64-bit, see the note in §Notes.
+- Root SSH access to the board.
+- **Controller binary**: copy `v4m/controller/controller-v4m-armv7` (or `-arm64`
+  for a 64-bit board) to `/root/controller-v4m` on the stand-by — unless you are
+  restoring it from the primary's backup tarball (which already contains it).
 
-## Step 1 — Back up the primary
+## Provisioning (two modes)
 
-On the primary (as root):
+### Mode A — baseline, no primary backup (fresh certs)
 
-```bash
-bash backup.sh /root/standby-backup.tar.gz
-# then copy it off:
-scp /root/standby-backup.tar.gz root@<standby-ip>:/root/
-```
-
-The tarball contains: SQLite DB + telemetry, `/etc/rabbitmq/` (config + full
-certs incl. `ca.key`), `/etc/stunnel/`, the controller binary, and the systemd
-unit.
-
-## Step 2 — Provision the stand-by
-
-On the stand-by (as root):
+Run on the stand-by (as root) with **no argument**:
 
 ```bash
-bash provision.sh /root/standby-backup.tar.gz
+bash provision.sh
 ```
 
-`provision.sh` does, in order:
+This **cleans the board**, installs RabbitMQ + stunnel, generates a **fresh
+`HomeAutomation-CA`** + server/agent certs, creates the vhost/users, and installs
+the controller (disabled). The board is fully functional standalone. This is the
+"get it running now" path when the primary isn't reachable.
+
+> Note: with fresh certs the stand-by has a *different* CA than the primary. To
+> become a true clone, re-run Mode B below once the primary is reachable.
+
+### Mode B — clone the primary (same CA + state)
+
+1. On the **primary**:
+   ```bash
+   bash backup.sh /root/standby-backup.tar.gz
+   scp /root/standby-backup.tar.gz root@192.168.1.23:/root/
+   ```
+2. On the **stand-by**:
+   ```bash
+   bash provision.sh /root/standby-backup.tar.gz
+   ```
+
+The tarball carries: SQLite DB + telemetry, `/etc/rabbitmq/` (config + full certs
+incl. `ca.key`), `/etc/stunnel/`, the controller binary, and the systemd unit.
+Re-running `provision.sh` with the tarball replaces the fresh certs with the
+primary's, so devices and the datacenter agent verify the stand-by identically.
+
+## What `provision.sh` does (in order)
 
 1. **Reset** — stops and wipes any existing RabbitMQ/homeautomation/stunnel state.
-2. **Hostname** — sets `maincontroller` + `/etc/hosts` (avoids the Erlang
-   hostname-resolution failure).
+2. **Hostname** — sets `maincontroller` + `/etc/hosts`.
 3. **Install** — `rabbitmq-server` + `stunnel4`.
-4. **Restore** — unpacks the backup (config, certs, DB, binary).
-5. **Broker** — enables `rabbitmq_mqtt` + `rabbitmq_management`, starts it, and
-   recreates the vhost `/smarthome`, users `smarthome`/`agent`, and topic perms.
+4. **Certs/state** — restores the backup, or generates a fresh CA/certs.
+5. **Broker** — enables `rabbitmq_mqtt` + `rabbitmq_management`, starts it,
+   recreates vhost `/smarthome`, users `smarthome`/`agent`, and topic perms.
 6. **stunnel** — MQTT TLS terminator on `8883` (mTLS).
 7. **Controller** — installs the unit but keeps it **disabled** (stand-by mode).
 
@@ -70,9 +83,7 @@ stunnel:    active
 controller: disabled   (start on failover)
 ```
 
-## Step 3 — Smoke test the stand-by (without failover)
-
-On the stand-by, confirm it's ready but idle:
+## Smoke test (stand-by alone, without failover)
 
 ```bash
 rabbitmqctl list_vhosts                       # should show / and /smarthome
@@ -84,14 +95,26 @@ openssl s_client -connect 127.0.0.1:8883 -CAfile /etc/rabbitmq/certs/ca.crt \
 ```
 
 > Do **not** start the stand-by's controller during normal operation — it would
-> connect to the primary and duplicate rule execution. It must stay disabled
-> until failover.
+> connect to the primary and duplicate rule execution.
 
-## Step 4 — Fail over (when the primary is down)
+## Static IP 192.168.1.23
+
+Set the stand-by to a fixed `192.168.1.23` (or a DHCP reservation). On Armbian
+with NetworkManager, e.g.:
+
+```bash
+nmcli con mod <connection-name> ipv4.method manual \
+  ipv4.addresses 192.168.1.23/24 ipv4.gateway 192.168.1.1
+systemctl restart NetworkManager
+```
+
+(Adjust `<connection-name>` and the gateway `192.168.1.1` to your router.)
+
+## Fail over (when the primary is down)
 
 1. Remove/shut down the primary (or it has already died).
-2. Give the stand-by **`192.168.1.22`** (static IP, or move the DHCP reservation,
-   then reboot the stand-by / restart RabbitMQ so it re-binds).
+2. Give the stand-by **`192.168.1.22`** (change its static IP, or move the DHCP
+   reservation, then reboot / restart RabbitMQ so it re-binds).
 3. On the stand-by:
    ```bash
    systemctl enable --now controller-v4m
@@ -103,13 +126,13 @@ openssl s_client -connect 127.0.0.1:8883 -CAfile /etc/rabbitmq/certs/ca.crt \
 
 ## Notes
 
-- **Architecture**: if the stand-by is 64-bit (arm64), replace the restored
-  `/root/controller-v4m` (armv7, from the backup) with an arm64 build:
-  `GOOS=linux GOARCH=arm64 go build -o controller-v4m .` in `v4m/controller/`.
-- **Certificates**: the stand-by reuses the primary's CA + server cert, so
-  devices and the datacenter agent verify it identically. Keep `ca.key` private.
-- **Telemetry**: the backup includes the telemetry rollover files; on a slow link
-  you can exclude `/var/lib/homeautomation/telemetry/` (it's regenerable history).
-- **Ongoing sync**: for a fresher stand-by, run `backup.sh` on the primary on a
-  cron schedule and re-run `provision.sh` (or just `tar -xzf` the backup) on the
-  stand-by.
+- **Architecture**: if the stand-by is 64-bit, use `controller-v4m-arm64`
+  (build: `GOOS=linux GOARCH=arm64 go build -o controller-v4m .` in
+  `v4m/controller/`).
+- **Certificates**: the stand-by reuses the primary's CA + server cert (SAN
+  `maincontroller`, `192.168.1.22`, `192.168.1.23`, `127.0.0.1`), so devices and
+  the agent verify it identically. Keep `ca.key` private.
+- **Telemetry**: the backup includes telemetry rollover files; on a slow link you
+  can exclude `/var/lib/homeautomation/telemetry/` (it's regenerable history).
+- **Ongoing sync**: run `backup.sh` on the primary on a cron schedule and re-run
+  `provision.sh <tarball>` on the stand-by to keep it fresh.

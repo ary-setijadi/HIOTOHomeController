@@ -2,9 +2,19 @@
 # Provision this board as a STAND-BY controller (identical to the primary).
 # Run as root on a clean Armbian board (same architecture as the primary).
 # Usage: ./provision.sh [/path/to/standby-backup.tar.gz]
+#
+# Two modes:
+#   - WITH a backup tarball: clones the primary (same CA/certs, DB, binary).
+#   - WITHOUT a backup:      generates a FRESH CA + server/agent certs and a
+#                            baseline config, so the board runs standalone.
+#                            Later, run this again WITH the primary's backup to
+#                            turn it into a true clone (same CA).
+#
+# Stand-by IP: 192.168.1.23 (normal). On failover it takes 192.168.1.22.
 set -euo pipefail
 
 BACKUP="${1:-}"
+CERTDIR=/etc/rabbitmq/certs
 
 echo "=== 0. reset to a clean state ==="
 systemctl stop controller-v4m 2>/dev/null || true
@@ -22,8 +32,10 @@ apt-get update -y
 apt-get install -y rabbitmq-server stunnel4
 systemctl stop rabbitmq-server stunnel4 2>/dev/null || true   # stop auto-started instances
 
-echo "=== 3. restore backup (config + certs + state + binary) ==="
+echo "=== 3. certificates + state ==="
+mkdir -p "$CERTDIR"
 if [ -n "$BACKUP" ] && [ -f "$BACKUP" ]; then
+  echo "restoring from backup: $BACKUP"
   tar -xzf "$BACKUP" -C /
   chown -R rabbitmq:rabbitmq /etc/rabbitmq/certs 2>/dev/null || true
   chmod 600 /etc/rabbitmq/certs/*.key 2>/dev/null || true
@@ -33,7 +45,22 @@ if [ -n "$BACKUP" ] && [ -f "$BACKUP" ]; then
   chmod 644 /etc/stunnel/certs/*.crt 2>/dev/null || true
   chmod +x /root/controller-v4m 2>/dev/null || true
 else
-  echo "WARN: no backup tarball given — certs and state will be missing."
+  echo "no backup — generating a FRESH CA + certs (baseline, not a clone yet)"
+  cd "$CERTDIR"
+  openssl genrsa -out ca.key 2048 2>/dev/null
+  openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 -subj "/CN=HomeAutomation-CA" -out ca.crt
+  openssl genrsa -out rabbitmq-server.key 2048 2>/dev/null
+  openssl req -new -key rabbitmq-server.key -subj "/CN=maincontroller" -out rabbitmq-server.csr
+  printf 'subjectAltName=DNS:maincontroller,DNS:localhost,IP:127.0.0.1,IP:192.168.1.22,IP:192.168.1.23\n' > ext.cnf
+  openssl x509 -req -in rabbitmq-server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 3650 -sha256 \
+    -out rabbitmq-server.crt -extfile ext.cnf
+  openssl genrsa -out agent.key 2048 2>/dev/null
+  openssl req -new -key agent.key -subj "/CN=agent" -out agent.csr
+  openssl x509 -req -in agent.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 3650 -sha256 -out agent.crt
+  rm -f ./*.csr ext.cnf
+  chown -R rabbitmq:rabbitmq "$CERTDIR"
+  chmod 600 ./*.key
+  chmod 644 ./*.crt
 fi
 
 echo "=== 4. broker config + plugins ==="
@@ -73,8 +100,8 @@ CAfile  = /etc/stunnel/certs/ca.crt
 verify  = 2
 EOF
 fi
-if [ ! -f /etc/stunnel/certs/server.crt ] && [ -f /etc/rabbitmq/certs/rabbitmq-server.crt ]; then
-  mkdir -p /etc/stunnel/certs
+mkdir -p /etc/stunnel/certs
+if [ ! -f /etc/stunnel/certs/server.crt ]; then
   cp /etc/rabbitmq/certs/rabbitmq-server.crt /etc/stunnel/certs/server.crt
   cp /etc/rabbitmq/certs/rabbitmq-server.key /etc/stunnel/certs/server.key
   cp /etc/rabbitmq/certs/ca.crt /etc/stunnel/certs/ca.crt
@@ -111,6 +138,10 @@ echo
 echo "=== PROVISIONED (stand-by) ==="
 echo "rabbitmq:   $(systemctl is-active rabbitmq-server)"
 echo "stunnel:    $(systemctl is-active stunnel4)"
-echo "controller: $(systemctl is-enabled controller-v4m 2>/dev/null || echo disabled) (start on failover)"
+echo "controller: $(systemctl is-enabled controller-v4m 2>/dev/null || echo disabled)"
+if [ ! -x /root/controller-v4m ]; then
+  echo "NOTE: /root/controller-v4m is missing — copy the binary (v4m/controller/controller-v4m-armv7 or -arm64) to /root/controller-v4m."
+fi
 echo
+echo "Stand-by IP: 192.168.1.23 (set static IP / DHCP reservation)."
 echo "On failover: take IP 192.168.1.22, then:  systemctl enable --now controller-v4m"
