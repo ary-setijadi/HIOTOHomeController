@@ -10,6 +10,7 @@ node_modules/
 # --- Built binaries / artifacts ---
 *.exe
 controller-v4m
+controller-v4m-*
 agent-v4m
 agent-v4m-*
 *.new

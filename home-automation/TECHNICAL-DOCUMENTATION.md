@@ -854,6 +854,7 @@ home-automation/
     simulator/
   tools/                              (deployment + reverse-engineering scripts)
   agent/                              (off-site datacenter agent: AMQP-TLS client)
+  standby/                            (stand-by board: backup.sh + provision.sh runbook)
   v5.0/gen-certs.sh
 ```
 
