@@ -27,3 +27,18 @@ agent-v4m-*
 
 # --- Temp diagnostic scripts ---
 tools/_*
+
+# --- OS images / large downloads (not for git) ---
+*.img
+*.img.xz
+*.sha
+Armbian_*
+
+# --- Python bytecode / cache ---
+__pycache__/
+*.pyc
+
+# --- Downloaded reference docs (scratch) ---
+armbian_firstboot.html
+board.html
+usbimager_readme.md
