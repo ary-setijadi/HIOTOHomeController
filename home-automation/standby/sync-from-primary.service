@@ -1,0 +1,13 @@
+[Unit]
+Description=Pull primary controller state to the stand-by
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/sync-from-primary.sh
+# Uncomment + edit if you use password auth instead of SSH keys:
+# Environment=PRIMARY_PASS=changeme
+
+[Install]
+WantedBy=multi-user.target

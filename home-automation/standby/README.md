@@ -6,19 +6,24 @@ board, power) you can fail over in minutes without re-registering the 135-device
 fleet or re-importing rules.
 
 ```
-PRIMARY  192.168.1.22   ◄── devices / tablet / datacenter agent
-STAND-BY 192.168.1.23   (idle, provisioned, controller stopped)
-             └── on failover: takes 192.168.1.22, starts the controller
+PRIMARY  192.168.1.22 ─┐
+STAND-BY 192.168.1.23 ─┴─► MainController.hioto   (served by Pi-hole @ .99)
+                            devices / tablet / agent address the hostname
+                            └─ failover: Pi-hole re-points the name at .23
 ```
 
 ## What's in this directory
 
 | File | Purpose |
 |---|---|
-| `backup.sh` | run on the **primary** — snapshots state into a tarball |
 | `provision.sh` | run on the **stand-by** — cleans + installs + configures |
+| `sync-from-primary.sh` | run on the **stand-by** — periodic rsync pull of primary state |
+| `failover.sh` | run on the **stand-by** — DNS swap + start controller (promote) |
+| `failback.sh` | run on the **stand-by** — DNS swap back + stop controller (demote) |
+| `backup.sh` | run on the **primary** — full-state snapshot into a tarball |
 | `rabbitmq.conf` | broker config (fallback reference) |
 | `controller-v4m.service` | systemd unit (fallback reference) |
+| `sync-from-primary.service` / `.timer` | systemd unit + example timer for the periodic pull |
 
 ## Prerequisites
 
@@ -110,19 +115,62 @@ systemctl restart NetworkManager
 
 (Adjust `<connection-name>` and the gateway `192.168.1.1` to your router.)
 
+## Periodic sync (pull)
+
+State is synced **one-way and periodically** — the stand-by pulls the primary's
+mutable state at a fixed granularity (the interval = your RPO). No continuous
+replication; the stand-by never runs the controller during a sync.
+
+```bash
+# one-off manual pull:
+bash /root/sync-from-primary.sh
+
+# or schedule it (edit OnUnitActiveSec in the .timer to set the granularity):
+cp /root/sync-from-primary.service /root/sync-from-primary.timer /etc/systemd/system/
+systemctl enable --now sync-from-primary.timer
+```
+
+What `sync-from-primary.sh` copies:
+
+- `/var/lib/homeautomation/` — SQLite device registry + rules + timers + telemetry
+- `/etc/rabbitmq/certs/` — the primary's CA + server certs (incl. `ca.key`), so
+  the stand-by keeps an identical identity; stunnel certs are re-derived from these
+- (optional) the controller binary
+
+The stand-by needs SSH access to the primary. Prefer key auth
+(`ssh-copy-id root@MainController.hioto`); alternatively set `PRIMARY_PASS` and
+`apt-get install sshpass` on the stand-by.
+
 ## Fail over (when the primary is down)
 
-1. Remove/shut down the primary (or it has already died).
-2. Give the stand-by **`192.168.1.22`** (change its static IP, or move the DHCP
-   reservation, then reboot / restart RabbitMQ so it re-binds).
-3. On the stand-by:
+The stand-by keeps its own IP (`192.168.1.23`) — you do **not** re-IP it. The
+Pi-hole just re-points `MainController.hioto` at it; devices, the tablet and the
+datacenter agent all address the broker by that hostname, so they follow the name.
+
+1. Shut down / remove the primary (or confirm it has died).
+2. On the stand-by:
    ```bash
-   systemctl enable --now controller-v4m
+   bash /root/failover.sh
    ```
-4. Verify: `systemctl is-active controller-v4m`, then open the dashboard at
-   `http://192.168.1.22:8081/dashboard/`. The device gateway reconnects to
-   `192.168.1.22` automatically (devices already auto-reconnect after broker
-   restarts).
+   This runs `pihole-FTL --config dns.hosts '["192.168.1.23 MainController.hioto"]'`
+   on the Pi-hole, then `systemctl enable --now controller-v4m` locally.
+3. Verify: `systemctl is-active controller-v4m`, then open
+   `http://MainController.hioto:8081/dashboard/`.
+
+> `failover.sh` needs SSH to the Pi-hole (192.168.1.99). Use key auth, or set
+> `DNS_PASS` (+ `apt-get install sshpass`). The controller's registration QR now
+> embeds the hostname (`-broker-host MainController.hioto`), so re-registered
+> devices keep working after the swap.
+
+## Fail back (primary recovered)
+
+1. Re-sync the primary with any state produced while it was down.
+2. On the stand-by:
+   ```bash
+   bash /root/failback.sh
+   ```
+   This points `MainController.hioto` back at `192.168.1.22` and stops + disables
+   the stand-by controller.
 
 ## Notes
 
@@ -136,3 +184,8 @@ systemctl restart NetworkManager
   can exclude `/var/lib/homeautomation/telemetry/` (it's regenerable history).
 - **Ongoing sync**: run `backup.sh` on the primary on a cron schedule and re-run
   `provision.sh <tarball>` on the stand-by to keep it fresh.
+- **Armbian bookworm** — `provision.sh` is validated on Armbian 25.5.1 (bookworm).
+  It recreates `/var/lib/rabbitmq` (systemd `WorkingDirectory`) and
+  `/var/lib/homeautomation` after the reset, waits for the broker before running
+  `rabbitmqctl`, and gives stunnel a **global** `pid=` so the SysV `stunnel4`
+  unit starts/stops cleanly (no stale `:8883`).

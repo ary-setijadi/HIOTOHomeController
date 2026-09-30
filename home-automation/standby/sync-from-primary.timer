@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic stand-by state sync
+
+[Timer]
+# Run 2 minutes after boot, then every OnUnitActiveSec afterwards.
+OnBootSec=2min
+# Set this to your chosen sync granularity (RPO). 15 min is a sensible default.
+OnUnitActiveSec=15min
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

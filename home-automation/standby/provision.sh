@@ -19,6 +19,8 @@ CERTDIR=/etc/rabbitmq/certs
 echo "=== 0. reset to a clean state ==="
 systemctl stop controller-v4m 2>/dev/null || true
 systemctl stop stunnel4 2>/dev/null || true
+# kill any stale stunnel that predates the pid= directive (init script can't)
+pkill -f 'stunnel4 /etc/stunnel' 2>/dev/null || true
 systemctl stop rabbitmq-server 2>/dev/null || true
 rm -rf /var/lib/rabbitmq /var/lib/homeautomation /etc/rabbitmq /etc/stunnel
 
@@ -78,8 +80,30 @@ fi
 rabbitmq-plugins enable rabbitmq_mqtt rabbitmq_management 2>/dev/null || true
 
 echo "=== 5. start RabbitMQ + vhost/users/perms ==="
+# The reset step above deleted /var/lib/rabbitmq, but the systemd unit has
+# WorkingDirectory=/var/lib/rabbitmq (fails at CHDIR if missing). Recreate the
+# state dir + Erlang cookie exactly as the Debian postinst does.
+install -d -o rabbitmq -g rabbitmq -m 750 /var/lib/rabbitmq/mnesia
+if [ ! -e /var/lib/rabbitmq/.erlang.cookie ]; then
+  (umask 077; openssl rand -base64 -out /var/lib/rabbitmq/.erlang.cookie 42)
+  chmod 0400 /var/lib/rabbitmq/.erlang.cookie
+fi
+chown -R rabbitmq:rabbitmq /var/lib/rabbitmq
+# /var/log is zram (log2ram) on Armbian, so the rabbitmq log dir is wiped on
+# every reboot. Recreate it at boot via tmpfiles.d, otherwise the systemd unit's
+# StandardOutput=append:/var/log/rabbitmq/... fails at STDOUT and crash-loops.
+cat > /etc/tmpfiles.d/rabbitmq-server.conf <<'EOF'
+d /var/log/rabbitmq 0750 rabbitmq rabbitmq -
+d /var/lib/rabbitmq/mnesia 0750 rabbitmq rabbitmq -
+EOF
+systemd-tmpfiles --create /etc/tmpfiles.d/rabbitmq-server.conf 2>/dev/null || true
 systemctl enable --now rabbitmq-server
-sleep 5
+# RabbitMQ (Erlang VM) can take 10-30s on a 512MB ARM board; wait until it
+# answers before creating the vhost/users, so they are not silently skipped.
+for i in $(seq 1 30); do
+  if rabbitmqctl status >/dev/null 2>&1; then break; fi
+  sleep 2
+done
 rabbitmqctl add_vhost /smarthome 2>/dev/null || true
 rabbitmqctl add_user smarthome 'Ssm4rt2!' 2>/dev/null || true
 rabbitmqctl set_permissions -p /smarthome smarthome '.*' '.*' '.*' 2>/dev/null || true
@@ -88,8 +112,15 @@ rabbitmqctl set_permissions -p /smarthome agent '.*' '.*' '.*' 2>/dev/null || tr
 rabbitmqctl set_topic_permissions -p /smarthome agent 'home.automation' '^Aktuator(\..*)?$' '.*' 2>/dev/null || true
 
 echo "=== 6. stunnel (MQTT TLS terminator 8883) ==="
+mkdir -p /etc/stunnel/certs
 if [ ! -f /etc/stunnel/mqtt-tls.conf ]; then
   cat > /etc/stunnel/mqtt-tls.conf <<'EOF'
+; A pid file is required: the SysV stunnel4 init script tracks/terminates
+; each tunnel by its pid= value; without it, stop/restart leaves stale
+; processes that keep :8883 bound (Address already in use).
+; NOTE: `pid` is a GLOBAL option and must precede any [service] section.
+pid     = /var/run/stunnel4/mqtt-tls.pid
+
 [mqtt-tls]
 client  = no
 accept  = 8883
@@ -100,7 +131,6 @@ CAfile  = /etc/stunnel/certs/ca.crt
 verify  = 2
 EOF
 fi
-mkdir -p /etc/stunnel/certs
 if [ ! -f /etc/stunnel/certs/server.crt ]; then
   cp /etc/rabbitmq/certs/rabbitmq-server.crt /etc/stunnel/certs/server.crt
   cp /etc/rabbitmq/certs/rabbitmq-server.key /etc/stunnel/certs/server.key
@@ -109,9 +139,15 @@ if [ ! -f /etc/stunnel/certs/server.crt ]; then
   chmod 600 /etc/stunnel/certs/server.key
   chmod 644 /etc/stunnel/certs/*.crt
 fi
-systemctl enable --now stunnel4
+# Enable for boot and start now. (bookworm's stunnel4 SysV unit has no ENABLED
+# flag, and `enable --now` does not reliably start a generated SysV unit.)
+systemctl enable stunnel4
+service stunnel4 start 2>/dev/null || systemctl start stunnel4
 
 echo "=== 7. controller (installed, DISABLED until failover) ==="
+# The controller's openDB() does not MkdirAll, so create its state dirs first
+# (step 0 deleted them).
+install -d /var/lib/homeautomation/telemetry
 if [ ! -f /etc/systemd/system/controller-v4m.service ]; then
   cat > /etc/systemd/system/controller-v4m.service <<'EOF'
 [Unit]
@@ -121,7 +157,7 @@ Wants=rabbitmq-server.service
 [Service]
 Type=simple
 ExecStart=/root/controller-v4m -period-ms 1000 -db /var/lib/homeautomation/v4m.db \
-  -http-port 8081 -broker-host 192.168.1.22 -vhost /smarthome \
+  -http-port 8081 -broker-host MainController.hioto -vhost /smarthome \
   -user smarthome -password 'Ssm4rt2!'
 Restart=always
 RestartSec=5
