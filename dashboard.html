@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiotoDNSServer — Dashboard</title>
+<style>
+  :root {
+    --bg: #0e1524;
+    --panel: #16202f;
+    --panel2: #1d2a3d;
+    --text: #e6edf7;
+    --muted: #8fa3bd;
+    --border: #253349;
+    --green: #2ecc71;
+    --blue: #4aa3ff;
+    --purple: #a78bfa;
+    --teal: #2dd4bf;
+    --red: #ff5c5c;
+    --orange: #ffb454;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px;
+  }
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+  header .sub { color: var(--muted); }
+  #updated { margin-left: auto; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin: 20px 0; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; text-align: center;
+  }
+  .card .num { font-size: 30px; font-weight: 700; margin-top: 6px; }
+  .card .lbl { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+  .card.warn { border-color: var(--red); }
+  .card.warn .num { color: var(--red); }
+
+  .table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    text-align: left; color: var(--muted); font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 12px 14px;
+    border-bottom: 1px solid var(--border); background: var(--panel2);
+  }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel2); }
+  tbody tr.unknown-active { background: rgba(255, 92, 92, 0.06); }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px;
+    font-weight: 600; border: 1px solid transparent;
+  }
+  .badge.trusted { color: var(--green); background: rgba(46,204,113,.12); border-color: rgba(46,204,113,.4); }
+  .badge.controller { color: var(--blue); background: rgba(74,163,255,.12); border-color: rgba(74,163,255,.4); }
+  .badge.infrastructure { color: var(--purple); background: rgba(167,139,250,.12); border-color: rgba(167,139,250,.4); }
+  .badge.device { color: var(--teal); background: rgba(45,212,191,.12); border-color: rgba(45,212,191,.4); }
+  .badge.unknown { color: var(--red); background: rgba(255,92,92,.12); border-color: rgba(255,92,92,.45); }
+  .badge.router { color: var(--orange); background: rgba(255,180,84,.12); border-color: rgba(255,180,84,.45); }
+
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .dot.on { background: var(--green); box-shadow: 0 0 0 3px rgba(46,204,113,.18); }
+  .dot.off { background: #3b4a63; }
+
+  .domains { display: flex; flex-wrap: wrap; gap: 5px; max-width: 380px; }
+  .chip {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 2px 7px; font-size: 12px; color: var(--muted); white-space: nowrap;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+  .mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12.5px; color: var(--muted); }
+  .num-col { text-align: right; font-variant-numeric: tabular-nums; }
+  .refresh { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>HiotoDNSServer</h1>
+    <span class="sub">DNS client &amp; network monitor</span>
+    <span id="updated"></span>
+  </header>
+
+  <div class="cards">
+    <div class="card"><div class="lbl">Devices</div><div class="num" id="s-total">–</div></div>
+    <div class="card"><div class="lbl">Active now</div><div class="num" id="s-active">–</div></div>
+    <div class="card warn"><div class="lbl">Unknown devices</div><div class="num" id="s-unknown">–</div></div>
+    <div class="card"><div class="lbl">Total queries</div><div class="num" id="s-queries">–</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Device</th><th>IP</th><th>MAC</th><th>Vendor</th>
+          <th>Category</th><th class="num-col">Queries</th><th>Last query</th><th>Top domains (24h)</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <p class="refresh" id="foot">Auto-refresh every 30 s.</p>
+
+<script>
+function fmt(n){ return (n||0).toLocaleString('en-US'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function relTime(ts){
+  if(!ts) return '—';
+  const d = (Date.now()/1000) - ts;
+  let rel;
+  if(d < 45) rel = 'just now';
+  else if(d < 3600) rel = Math.floor(d/60) + ' min ago';
+  else if(d < 86400) rel = Math.floor(d/3600) + ' h ago';
+  else rel = Math.floor(d/86400) + ' d ago';
+  const abs = new Date(ts*1000).toLocaleString();
+  return `<span title="${esc(abs)}">${rel}</span>`;
+}
+
+const CAT_COLOR = {trusted:'trusted', controller:'controller', infrastructure:'infrastructure', device:'device', router:'router', unknown:'unknown'};
+
+function render(data){
+  const clients = data.clients || [];
+  const total = clients.length;
+  const active = clients.filter(c => c.active).length;
+  const unknown = clients.filter(c => c.category === 'unknown').length;
+  const queries = clients.reduce((a,c)=>a+(c.num_queries||0),0);
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-active').textContent = active;
+  document.getElementById('s-unknown').textContent = unknown;
+  document.getElementById('s-queries').textContent = fmt(queries);
+
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '';
+  for(const c of clients){
+    const tr = document.createElement('tr');
+    if(c.category === 'unknown' && c.active) tr.className = 'unknown-active';
+    const cls = CAT_COLOR[c.category] || 'unknown';
+    const dot = c.active ? '<span class="dot on"></span>' : '<span class="dot off"></span>';
+    const doms = (c.top_domains||[]).map(d => `<span class="chip">${esc(d[0])} <b>${fmt(d[1])}</b></span>`).join('');
+    tr.innerHTML = `
+      <td><b title="${esc(c.note)}">${esc(c.name)}</b>${c.type==='router' ? ' <span class="chip">aggregate</span>' : ''}</td>
+      <td class="mono">${esc(c.ip)}</td>
+      <td class="mono">${esc(c.mac)}</td>
+      <td class="mono">${esc(c.vendor)}</td>
+      <td><span class="badge ${cls}">${esc(c.category)}</span></td>
+      <td class="num-col">${fmt(c.num_queries)}</td>
+      <td>${dot}${relTime(c.last_query)}</td>
+      <td class="domains">${doms || '<span class="chip">—</span>'}</td>`;
+    rows.appendChild(tr);
+  }
+  const t = new Date(data.generated_at * 1000).toLocaleTimeString();
+  document.getElementById('updated').textContent = 'Last updated: ' + t;
+}
+
+async function load(){
+  try{
+    const r = await fetch('/api/dns-clients', {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    render(await r.json());
+  }catch(e){
+    document.getElementById('updated').textContent = 'Error: ' + e.message;
+  }
+}
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
