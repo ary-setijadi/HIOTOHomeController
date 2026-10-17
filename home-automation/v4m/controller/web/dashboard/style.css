@@ -143,3 +143,8 @@ th { color: var(--muted); font-weight: 500; text-transform: uppercase; font-size
 .editable:hover { background: var(--panel2); outline: 1px dashed var(--border); }
 .cell-edit { width: 100%; padding: 4px 6px; font-size: 12.5px; box-sizing: border-box; }
 .cell-edit select { width: 100%; }
+
+/* sortable table headers */
+th[data-sort] { cursor: pointer; user-select: none; }
+th[data-sort]:hover { color: var(--text); }
+th.sorted { color: var(--accent); }

@@ -330,6 +330,8 @@ async function loadFloorsRooms() {
 
 const CATEGORIES = ['AKTUATOR','SENSOR','SENSOR_CAMERA','SENSOR_SUHU','SENSOR_GAS_DETECTOR','SENSOR_WATER_TANK','SENSOR_WEATHER','SENSOR_BELL','SENSOR_SMART_RELAY','SENSOR_SMART_PLUG','DI_DO','DI/DO'];
 let deviceTableRows = []; // full device list, used by the inline editor
+let sortField = null;     // current sort column (null = insertion order)
+let sortDir = 1;          // 1 = asc, -1 = desc
 
 function displayVal(d, field) {
   switch (field) {
@@ -410,15 +412,52 @@ function startDeviceEdit(td) {
   input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); else if (e.key === 'Escape') finish(false); };
 }
 
+function sortKey(d, field) {
+  if (field === 'room_id') return (roomsMap[d.room_id] || '~').toLowerCase();
+  if (field === 'floor_id') return (floorsMap[d.floor_id] || '~').toLowerCase();
+  const v = d[field];
+  if (typeof v === 'number') return v;
+  return (v == null ? '' : String(v)).toLowerCase();
+}
+
+function sortDevices(devs) {
+  if (!sortField) return devs;
+  const arr = devs.slice();
+  arr.sort((a, b) => {
+    const ka = sortKey(a, sortField), kb = sortKey(b, sortField);
+    if (ka < kb) return -sortDir;
+    if (ka > kb) return sortDir;
+    return 0;
+  });
+  return arr;
+}
+
+function updateSortHeaders() {
+  document.querySelectorAll('#deviceTable thead th[data-sort]').forEach((th) => {
+    const active = th.dataset.sort === sortField;
+    th.classList.toggle('sorted', active && !!sortField);
+    th.textContent = th.dataset.label + (active ? (sortDir === 1 ? ' ▲' : ' ▼') : '');
+  });
+}
+
 function renderDevices(devs) {
   for (const d of devs) { deviceNames[d.guid] = d.name; lastSeenByGuid[d.guid] = d.last_seen || ''; }
   deviceTableRows = devs;
+  devs = sortDevices(devs);
   const body = document.querySelector('#deviceTable tbody'); body.innerHTML = '';
   if (!renderDevices._wired) {
     renderDevices._wired = true;
     body.addEventListener('click', (e) => {
       const td = e.target.closest('td[data-edit]');
       if (td && !td.querySelector('input,select')) startDeviceEdit(td);
+    });
+    document.querySelector('#deviceTable thead').addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-sort]');
+      if (!th) return;
+      const field = th.dataset.sort;
+      if (sortField === field) sortDir = -sortDir;
+      else { sortField = field; sortDir = 1; }
+      renderDevices(deviceTableRows);
     });
   }
   let online = 0, stale = 0, offline = 0;
@@ -460,6 +499,7 @@ function renderDevices(devs) {
   }
   const sum = $('#hb-summary');
   if (sum) sum.textContent = `${devs.length} devices · ${online} online · ${stale} stale · ${offline} offline`;
+  updateSortHeaders();
   renderFloors(); // refresh floor tiles with heartbeat dots
 }
 async function refreshDevices() { try { renderDevices(await fetch('/api/devices').then((r) => r.json())); } catch {} }
