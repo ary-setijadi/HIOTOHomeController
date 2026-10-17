@@ -97,10 +97,13 @@ static void sort_nodes(void) {
   }
 }
 
-/* Use the registry name as the human label when available. */
+/* Use the registry name as the human label and copy its room. */
 static void label_from_registry(MonNode *n) {
   const char *nm = registry_name(n->id);
   if (nm && nm[0]) copy_str(n->label, sizeof n->label, nm);
+  const char *rm = registry_room_of(n->id);
+  copy_str(n->room, sizeof n->room, (rm && rm[0]) ? rm : "Lainnya");
+  n->actuator = registry_is_actuator(n->id);
 }
 
 /* Drop nodes that are not part of this floor (after the registry loads). */
@@ -111,6 +114,11 @@ void monitor_prune(void) {
     if (registry_contains(s_nodes[i].id)) s_nodes[w++] = s_nodes[i];
   }
   s_count = w;
+}
+
+/* Refresh label + room of every tracked node from the registry. */
+void monitor_apply_registry(void) {
+  for (int i = 0; i < s_count; i++) label_from_registry(&s_nodes[i]);
 }
 
 /* --- topic ingestion ----------------------------------------------------- */
@@ -143,13 +151,16 @@ static void feed_iot(const char *topic, const uint8_t *payload, size_t len) {
     if (doc["device"].is<const char *>()) copy_str(n->label, sizeof n->label, doc["device"].as<const char *>());
     const char *st = doc["status"] | "online";
     n->online = strcmp(st, "offline") != 0;
-    copy_str(n->value, sizeof n->value, n->online ? "online" : "offline");
+    copy_str(n->value, sizeof n->value, "-");
   } else if (!strcmp(suffix, "telemetry")) {
     strcpy(n->kind, "telemetry");
     n->online = true;
     if (!err && doc["device"].is<const char *>())
       copy_str(n->label, sizeof n->label, doc["device"].as<const char *>());
-    if (!err) summarize_json(doc, n->value, sizeof n->value);
+    if (!err) {
+      if (doc["relay"].is<bool>()) strcpy(n->kind, "relay");
+      summarize_json(doc, n->value, sizeof n->value);
+    }
   } else {
     /* commands / other: just count as alive, keep previous info */
     n->online = true;
@@ -175,7 +186,7 @@ static void feed_guid_value(const char *topic, const uint8_t *payload, size_t le
   label_from_registry(n);
   if (!strcmp(topic, "Status")) {
     strcpy(n->kind, "status");
-    copy_str(n->value, sizeof n->value, "heartbeat");
+    copy_str(n->value, sizeof n->value, "-");
   } else {
     strcpy(n->kind, "relay");
     /* HIOTO lamps/relays are ACTIVE-LOW: 0 = ON, 1 = OFF. */

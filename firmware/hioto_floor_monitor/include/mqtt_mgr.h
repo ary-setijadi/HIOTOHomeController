@@ -12,3 +12,7 @@ void mqtt_mgr_poll(void);           /* connect / keepalive / periodic telemetry 
 bool mqtt_mgr_connected(void);
 void mqtt_mgr_publish_state(void);  /* publish telemetry now */
 const char *mqtt_mgr_status_text(void);
+
+/* HIOTO actuator command: publish "Aktuator" "<guid>#<value>".
+ * Lamps/relays are ACTIVE-LOW: 0 = ON, 1 = OFF. */
+bool mqtt_publish_actuator(const char *guid, int value);

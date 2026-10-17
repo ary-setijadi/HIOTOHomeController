@@ -13,9 +13,11 @@
 struct MonNode {
   char id[40];    /* guid / iot device id */
   char label[32]; /* human name (deviceName / device / id) */
+  char room[24];  /* floor room (from the controller registry), "Lainnya" */
   char kind[16];  /* status | telemetry | sensor | relay */
   char value[64]; /* last value summary, e.g. "23.4C / 61%" */
   bool online;
+  bool actuator;    /* registry type AKTUATOR -> row can be toggled */
   uint32_t last_ms; /* millis() of last traffic */
 };
 
@@ -36,6 +38,9 @@ void monitor_feed(const char *topic, const uint8_t *payload, size_t len);
 
 /* Age nodes out; call from loop(). */
 void monitor_poll(void);
+
+/* Re-apply registry labels/rooms to every tracked node (after a registry load). */
+void monitor_apply_registry(void);
 
 /* Remove nodes that are not part of this floor (call once the registry loads). */
 void monitor_prune(void);

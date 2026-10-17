@@ -36,10 +36,18 @@ static lv_obj_t *s_lbl_net = NULL;
 static lv_obj_t *s_lbl_summary = NULL;
 static lv_obj_t *s_lbl_uptime = NULL;
 static lv_obj_t *s_row[MON_ROWS_MAX];
-static lv_obj_t *s_row_dot[MON_ROWS_MAX];
 static lv_obj_t *s_row_name[MON_ROWS_MAX];
 static lv_obj_t *s_row_val[MON_ROWS_MAX];
 static lv_obj_t *s_row_age[MON_ROWS_MAX];
+static lv_obj_t *s_row_toggle[MON_ROWS_MAX];   /* lamp on/off pill (tappable) */
+static lv_obj_t *s_row_tog_lbl[MON_ROWS_MAX];
+static int s_row_sel[MON_ROWS_MAX]; /* row -> monitor node index */
+
+/* room tabs */
+static lv_obj_t *s_tab_bar = NULL;
+static int s_sel_room = -1;      /* -1 = Semua */
+static int s_tab_roomcount = -1;
+static bool s_tabs_dirty = false;
 static lv_obj_t *s_lbl_more = NULL;
 static lv_obj_t *s_lbl_env[4];   /* suhu, cahaya, sinyal, memori */
 static lv_obj_t *s_lbl_net2[3];  /* wifi, mqtt, ip */
@@ -94,9 +102,23 @@ int ui_page(void) { return s_page; }
 /* ------------------------------------------------------------------------- */
 /*  Dashboard                                                                 */
 /* ------------------------------------------------------------------------- */
+static void toggle_click_cb(lv_event_t *e) {
+  lv_event_stop_bubbling(e);
+  int idx = (int)(intptr_t)lv_event_get_user_data(e);
+  if (idx < 0 || idx >= MON_ROWS_MAX) return;
+  MonNode *n = monitor_node(s_row_sel[idx]);
+  if (!n || !n->actuator) return;
+  /* HIOTO lamps/relays are ACTIVE-LOW: 0 = ON, 1 = OFF */
+  const bool on = !strcmp(n->value, "ON");
+  mqtt_publish_actuator(n->id, on ? 1 : 0);
+  snprintf(n->value, sizeof n->value, "%s", on ? "OFF" : "ON"); /* optimistic */
+  ui_refresh();
+}
+
 static void row_click_cb(lv_event_t *e) {
   int idx = (int)(intptr_t)lv_event_get_user_data(e);
-  MonNode *n = monitor_node(idx);
+  if (idx < 0 || idx >= MON_ROWS_MAX) return;
+  MonNode *n = monitor_node(s_row_sel[idx]);
   if (n) ui_detail_select(n->id);
 }
 
@@ -115,28 +137,75 @@ static void mk_row(lv_obj_t *parent, int i) {
   lv_obj_add_flag(row, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(row, row_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
 
-  s_row_dot[i] = lv_obj_create(row);
-  lv_obj_set_size(s_row_dot[i], 10, 10);
-  lv_obj_set_style_radius(s_row_dot[i], 5, 0);
-  lv_obj_set_style_bg_color(s_row_dot[i], lv_color_hex(COL_DIM), 0);
-  lv_obj_set_style_bg_opa(s_row_dot[i], LV_OPA_COVER, 0);
-  lv_obj_set_style_border_width(s_row_dot[i], 0, 0);
-
   s_row_name[i] = mk_label(row, "-", &lv_font_montserrat_14, COL_TEXT);
-  lv_obj_set_width(s_row_name[i], 116);
+  lv_obj_set_width(s_row_name[i], 96);
   lv_label_set_long_mode(s_row_name[i], LV_LABEL_LONG_CLIP);
 
   s_row_val[i] = mk_label(row, "-", &lv_font_montserrat_12, COL_MUTED);
-  lv_obj_set_width(s_row_val[i], 100);
+  lv_obj_set_width(s_row_val[i], 48);
   lv_label_set_long_mode(s_row_val[i], LV_LABEL_LONG_CLIP);
   lv_obj_set_style_text_align(s_row_val[i], LV_TEXT_ALIGN_RIGHT, 0);
 
   s_row_age[i] = mk_label(row, "-", &lv_font_montserrat_12, COL_DIM);
-  lv_obj_set_width(s_row_age[i], 42);
+  lv_obj_set_width(s_row_age[i], 34);
   lv_obj_set_style_text_align(s_row_age[i], LV_TEXT_ALIGN_RIGHT, 0);
+
+  /* tappable ON/OFF pill for lamp/actuator rows (toggles the lamp) */
+  s_row_toggle[i] = lv_btn_create(row);
+  lv_obj_set_size(s_row_toggle[i], 58, 32);
+  lv_obj_set_style_radius(s_row_toggle[i], 16, 0);
+  lv_obj_set_style_bg_color(s_row_toggle[i], lv_color_hex(COL_DIM), 0);
+  lv_obj_set_style_bg_opa(s_row_toggle[i], LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(s_row_toggle[i], 0, 0);
+  lv_obj_set_style_pad_all(s_row_toggle[i], 0, 0);
+  lv_obj_add_event_cb(s_row_toggle[i], toggle_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+  s_row_tog_lbl[i] = mk_label(s_row_toggle[i], "-", &lv_font_montserrat_12, COL_TEXT);
+  lv_obj_center(s_row_tog_lbl[i]);
+  lv_obj_add_flag(s_row_toggle[i], LV_OBJ_FLAG_HIDDEN);
 
   lv_obj_add_flag(row, LV_OBJ_FLAG_HIDDEN);
   s_row[i] = row;
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Room tabs                                                                 */
+/* ------------------------------------------------------------------------- */
+static void build_tabs(void);
+
+static void tab_click_cb(lv_event_t *e) {
+  int idx = (int)(intptr_t)lv_event_get_user_data(e);
+  s_sel_room = idx;
+  s_tabs_dirty = true; /* rebuild + refilter on the next ui_refresh() */
+}
+
+static void build_tabs(void) {
+  if (!s_tab_bar) return;
+  int rn = registry_room_count();
+  if (s_sel_room >= rn) s_sel_room = -1;
+  lv_obj_clean(s_tab_bar);
+
+  lv_obj_t *b = lv_btn_create(s_tab_bar);
+  lv_obj_set_size(b, 74, 28);
+  lv_obj_set_style_bg_color(b, lv_color_hex(s_sel_room < 0 ? COL_ACCENT : COL_CARD), 0);
+  lv_obj_set_style_pad_all(b, 2, 0);
+  lv_obj_add_event_cb(b, tab_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)-1);
+  mk_label(b, "Semua", &lv_font_montserrat_12, COL_TEXT);
+
+  /* real rooms first, "Lainnya" last */
+  for (int pass = 0; pass < 2; pass++) {
+    for (int i = 0; i < rn; i++) {
+      const char *name = registry_room_name(i);
+      if (!name) continue;
+      bool is_other = !strcmp(name, "Lainnya");
+      if ((pass == 0 && is_other) || (pass == 1 && !is_other)) continue;
+      lv_obj_t *bt = lv_btn_create(s_tab_bar);
+      lv_obj_set_size(bt, 132, 28);
+      lv_obj_set_style_bg_color(bt, lv_color_hex(i == s_sel_room ? COL_ACCENT : COL_CARD), 0);
+      lv_obj_set_style_pad_all(bt, 2, 0);
+      lv_obj_add_event_cb(bt, tab_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+      mk_label(bt, name, &lv_font_montserrat_12, COL_TEXT);
+    }
+  }
 }
 
 static void mk_dashboard(lv_obj_t *root) {
@@ -178,7 +247,19 @@ static void mk_dashboard(lv_obj_t *root) {
   lv_obj_t *list = mk_card(mid, 296, LV_PCT(100));
   lv_obj_set_flex_flow(list, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(list, 4, 0);
-  mk_label(list, "PERANGKAT", &lv_font_montserrat_12, COL_MUTED);
+
+  /* room tab bar (scrolls horizontally when there are many rooms) */
+  s_tab_bar = lv_obj_create(list);
+  lv_obj_set_size(s_tab_bar, LV_PCT(100), 30);
+  lv_obj_set_style_bg_opa(s_tab_bar, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_border_width(s_tab_bar, 0, 0);
+  lv_obj_set_style_pad_all(s_tab_bar, 0, 0);
+  lv_obj_set_style_pad_column(s_tab_bar, 4, 0);
+  lv_obj_set_flex_flow(s_tab_bar, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(s_tab_bar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_scroll_dir(s_tab_bar, LV_DIR_HOR);
+  lv_obj_set_scrollbar_mode(s_tab_bar, LV_SCROLLBAR_MODE_OFF);
+  build_tabs();
 
   lv_obj_t *rows = lv_obj_create(list);
   lv_obj_set_size(rows, LV_PCT(100), LV_PCT(100));
@@ -271,6 +352,8 @@ static void mk_detail(lv_obj_t *root) {
   lv_obj_set_width(s_det_value, LV_PCT(100));
   lv_label_set_long_mode(s_det_value, LV_LABEL_LONG_WRAP);
   s_det_meta = mk_label(card, "", &lv_font_montserrat_12, COL_DIM);
+  lv_obj_set_width(s_det_meta, LV_PCT(100));
+  lv_label_set_long_mode(s_det_meta, LV_LABEL_LONG_WRAP);
 
   /* back button sits in the safe interior zone (edges are outside the
    * resistive mapping until the panel is calibrated); the whole strip is
@@ -376,27 +459,45 @@ static void format_uptime(char *buf, size_t n) {
 }
 
 static void update_rows(void) {
-  const int n = monitor_count();
-  for (int i = 0; i < MON_ROWS_MAX; i++) {
+  const char *sel = (s_sel_room >= 0) ? registry_room_name(s_sel_room) : NULL;
+  int matched = 0, shown = 0;
+  for (int i = 0; i < monitor_count(); i++) {
     MonNode *node = monitor_node(i);
-    if (!node || i >= n) {
-      lv_obj_add_flag(s_row[i], LV_OBJ_FLAG_HIDDEN);
-      continue;
-    }
-    lv_obj_clear_flag(s_row[i], LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(s_row_name[i], node->label);
-    lv_label_set_text(s_row_val[i], node->value);
+    if (!node) continue;
+    if (sel && strcmp(node->room, sel)) continue;
+    matched++;
+    if (shown >= MON_ROWS_MAX) continue;
+    s_row_sel[shown] = i;
+    lv_obj_clear_flag(s_row[shown], LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(s_row_name[shown], node->label);
+    lv_label_set_text(s_row_val[shown], node->value);
     char age[16];
     uint32_t sec = (millis() - node->last_ms) / 1000UL;
     if (sec < 60) snprintf(age, sizeof age, "%lus", (unsigned long)sec);
     else snprintf(age, sizeof age, "%lum", (unsigned long)(sec / 60UL));
-    lv_label_set_text(s_row_age[i], age);
-    lv_obj_set_style_bg_color(s_row_dot[i], lv_color_hex(node->online ? COL_GREEN : COL_RED), 0);
-    lv_obj_set_style_text_color(s_row_name[i], lv_color_hex(node->online ? COL_TEXT : COL_DIM), 0);
+    lv_label_set_text(s_row_age[shown], age);
+    lv_obj_set_style_text_color(s_row_name[shown], lv_color_hex(node->online ? COL_TEXT : COL_DIM), 0);
+
+    /* lamp/actuator rows get a tappable ON/OFF pill on the right */
+    if (node->actuator) {
+      const bool on = !strcmp(node->value, "ON");
+      lv_obj_clear_flag(s_row_toggle[shown], LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_style_bg_color(s_row_toggle[shown], lv_color_hex(on ? COL_GREEN : COL_DIM), 0);
+      lv_label_set_text(s_row_tog_lbl[shown], on ? "ON" : (node->value[0] == '-' ? "-" : "OFF"));
+      lv_obj_set_style_text_color(s_row_val[shown], lv_color_hex(on ? COL_GREEN : COL_DIM), 0);
+    } else {
+      lv_obj_add_flag(s_row_toggle[shown], LV_OBJ_FLAG_HIDDEN);
+      lv_obj_set_style_text_color(s_row_val[shown], lv_color_hex(COL_MUTED), 0);
+    }
+    shown++;
   }
-  if (registry_count() > n) {
-    lv_label_set_text_fmt(s_lbl_more, "%d dari %d perangkat lantai\n(geser untuk lihat semua)",
-                          n, registry_count());
+  for (int i = shown; i < MON_ROWS_MAX; i++) lv_obj_add_flag(s_row[i], LV_OBJ_FLAG_HIDDEN);
+
+  if (matched > shown) {
+    lv_label_set_text_fmt(s_lbl_more, "%d dari %d perangkat (geser)", shown, matched);
+    lv_obj_clear_flag(s_lbl_more, LV_OBJ_FLAG_HIDDEN);
+  } else if (matched == 0) {
+    lv_label_set_text(s_lbl_more, "tidak ada perangkat");
     lv_obj_clear_flag(s_lbl_more, LV_OBJ_FLAG_HIDDEN);
   } else {
     lv_obj_add_flag(s_lbl_more, LV_OBJ_FLAG_HIDDEN);
@@ -420,7 +521,7 @@ static void update_detail(void) {
   uint32_t sec = (millis() - n->last_ms) / 1000UL;
   if (sec < 60) snprintf(age, sizeof age, "terakhir %lus lalu", (unsigned long)sec);
   else snprintf(age, sizeof age, "terakhir %lum lalu", (unsigned long)(sec / 60UL));
-  lv_label_set_text_fmt(s_det_meta, "id: %s  ·  %s", n->id, age);
+  lv_label_set_text_fmt(s_det_meta, "id: %s\nroom: %s  ·  %s", n->id, n->room, age);
 }
 
 static void update_info(void) {
@@ -487,6 +588,13 @@ void ui_init(void) {
 }
 
 void ui_refresh(void) {
+  /* rebuild room tabs when the registry (room list) changes or a tab was tap */
+  if (s_tabs_dirty || registry_room_count() != s_tab_roomcount) {
+    s_tabs_dirty = false;
+    s_tab_roomcount = registry_room_count();
+    build_tabs();
+  }
+
   /* top bar */
   if (wifi_mgr_portal_active()) {
     lv_label_set_text(s_lbl_net, "SETUP AP");

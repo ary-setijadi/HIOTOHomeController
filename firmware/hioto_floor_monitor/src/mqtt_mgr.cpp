@@ -175,6 +175,15 @@ void mqtt_mgr_publish_state(void) {
   if (s_client.connected()) publish_telemetry_now();
 }
 
+bool mqtt_publish_actuator(const char *guid, int value) {
+  if (!s_client.connected() || !guid || !guid[0]) return false;
+  char buf[48];
+  snprintf(buf, sizeof buf, "%s#%d", guid, value);
+  bool ok = s_client.publish("Aktuator", buf, false);
+  Serial.printf("[mqtt] actuator %s -> %s\n", buf, ok ? "ok" : "fail");
+  return ok;
+}
+
 const char *mqtt_mgr_status_text(void) {
   return s_client.connected() ? "online" : "offline";
 }

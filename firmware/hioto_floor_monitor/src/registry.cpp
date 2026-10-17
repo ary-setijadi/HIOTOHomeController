@@ -10,6 +10,8 @@
 struct Entry {
   char guid[40];
   char name[36];
+  char room[24];
+  bool actuator; /* registry type == AKTUATOR (lamp/relay) */
 };
 
 static Entry s_entries[64];
@@ -17,6 +19,10 @@ static int s_count = 0;
 static bool s_ready = false;
 static uint32_t s_last_try = 0;
 static char s_status[48] = "menunggu...";
+
+#define REG_MAX_ROOMS 8
+static char s_rooms[REG_MAX_ROOMS][24];
+static int s_room_count = 0;
 
 static void copy_str(char *dst, size_t dst_sz, const char *src) {
   if (!src) src = "";
@@ -29,6 +35,57 @@ static void upper(char *out, size_t n, const char *src) {
   for (; src[i] && i + 1 < n; i++) out[i] = (char)toupper((unsigned char)src[i]);
   out[i] = '\0';
 }
+
+/* Room taken from the HIOTO device name: the segment after "…FLOOR".
+ * "LAMP.12-1ST.FLOOR-LIVING ROOM-251-02"  -> "Living Room"
+ * "LIGHT SWITCH-…-UNCATEGORIES-…"          -> "Lainnya"
+ */
+static void derive_room(const char *name, char *out, size_t n) {
+  const char *p = strstr(name, "FLOOR");
+  if (!p) {
+    copy_str(out, n, "Lainnya");
+    return;
+  }
+  p += 5;
+  while (*p == '-' || *p == ' ') p++;
+  const char *end = p;
+  while (*end && *end != '-') end++;
+  char tok[28] = {0};
+  size_t len = (size_t)(end - p);
+  if (len >= sizeof tok) len = sizeof tok - 1;
+  memcpy(tok, p, len);
+
+  if (len == 0 || strstr(tok, "UNCATEG") || !strcmp(tok, "NONE") || !strcmp(tok, "UNKNOWN")) {
+    copy_str(out, n, "Lainnya");
+    return;
+  }
+  /* Title Case for readability. */
+  size_t j = 0;
+  bool start = true;
+  for (size_t i = 0; tok[i] && j + 1 < n; i++) {
+    char c = tok[i];
+    if (c == ' ') {
+      out[j++] = ' ';
+      start = true;
+    } else if (start) {
+      out[j++] = (char)toupper((unsigned char)c);
+      start = false;
+    } else {
+      out[j++] = (char)tolower((unsigned char)c);
+    }
+  }
+  out[j] = '\0';
+  if (!out[0]) copy_str(out, n, "Lainnya");
+}
+
+static void add_room(const char *room) {
+  for (int i = 0; i < s_room_count; i++)
+    if (!strcmp(s_rooms[i], room)) return;
+  if (s_room_count >= REG_MAX_ROOMS) return;
+  copy_str(s_rooms[s_room_count], sizeof s_rooms[0], room);
+  s_room_count++;
+}
+
 
 /* The HIOTO controller derives a device floor from its NAME ("1ST", "2ND",
  * "3RD", "4TH"), falling back to the explicit floor_id for registered
@@ -137,6 +194,7 @@ static bool fetch_registry(void) {
   char line[256];
   bool header = true;
   int n = 0;
+  s_room_count = 0;
   const int max = (int)(sizeof s_entries / sizeof s_entries[0]);
   while (read_line(http.getStream(), line, sizeof line, 2500)) {
     if (header) { /* skip the header row */
@@ -149,10 +207,16 @@ static bool fetch_registry(void) {
     if (fc >= 12) {
       const char *guid = f[0];
       const char *name = f[3];
+      const char *type = f[2];
       int fid = atoi(f[11]);
-      if (guid[0] && matches_floor(name, fid) && n < max) {
+      if (!strcmp(guid, g_settings.device_id)) {
+        /* our own panel is not a floor node */
+      } else if (guid[0] && matches_floor(name, fid) && n < max) {
         copy_str(s_entries[n].guid, sizeof s_entries[n].guid, guid);
         copy_str(s_entries[n].name, sizeof s_entries[n].name, name);
+        s_entries[n].actuator = (strcmp(type, "AKTUATOR") == 0);
+        derive_room(name, s_entries[n].room, sizeof s_entries[n].room);
+        add_room(s_entries[n].room);
         n++;
       }
     }
@@ -171,6 +235,9 @@ static bool fetch_registry(void) {
   snprintf(s_status, sizeof s_status, "%d perangkat lantai", s_count);
   Serial.printf("[reg] loaded %d devices for floor '%s'\n", s_count,
                 g_settings.floor_label);
+  Serial.printf("[reg] rooms:");
+  for (int i = 0; i < s_room_count; i++) Serial.printf(" %s;", s_rooms[i]);
+  Serial.println();
   return true;
 }
 
@@ -204,5 +271,24 @@ bool registry_contains(const char *guid) {
 }
 
 int registry_count(void) { return s_count; }
+
+const char *registry_room_of(const char *guid) {
+  for (int i = 0; i < s_count; i++)
+    if (!strcmp(s_entries[i].guid, guid)) return s_entries[i].room;
+  return NULL;
+}
+
+bool registry_is_actuator(const char *guid) {
+  for (int i = 0; i < s_count; i++)
+    if (!strcmp(s_entries[i].guid, guid)) return s_entries[i].actuator;
+  return false;
+}
+
+int registry_room_count(void) { return s_room_count; }
+
+const char *registry_room_name(int index) {
+  if (index < 0 || index >= s_room_count) return NULL;
+  return s_rooms[index];
+}
 
 const char *registry_status(void) { return s_status; }

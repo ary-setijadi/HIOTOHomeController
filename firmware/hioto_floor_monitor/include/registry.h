@@ -26,4 +26,15 @@ bool registry_contains(const char *guid);
 
 int registry_count(void);
 
+/* Room of a guid on this floor (derived from the device name, e.g.
+ * "LAMP.12-1ST.FLOOR-LIVING ROOM-251-02" -> "Living Room"), or NULL. */
+const char *registry_room_of(const char *guid);
+
+/* Registry type "AKTUATOR" (lamp/relay) — such rows get an ON/OFF toggle. */
+bool registry_is_actuator(const char *guid);
+
+/* Unique room names discovered on this floor (insertion order). */
+int registry_room_count(void);
+const char *registry_room_name(int index);
+
 const char *registry_status(void);

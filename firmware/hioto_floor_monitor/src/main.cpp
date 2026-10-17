@@ -518,6 +518,7 @@ void loop() {
   if (registry_poll()) {
     Serial.printf("[reg] ready: %s\n", registry_status());
     monitor_prune();
+    monitor_apply_registry();
   }
   serial_poll();
   status_led();

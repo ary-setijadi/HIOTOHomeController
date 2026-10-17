@@ -16,7 +16,9 @@ devices with their human names, straight from the HIOTO controller.
 | Wi-Fi | Station mode with NVS credentials; `HIOTO-Monitor-Setup` captive portal on first boot |
 | MQTT | Publishes `iot/{id}/telemetry` (10 s), retained `iot/{id}/status` (LWT), plus HIOTO-compatible `Status` heartbeat and `sensor_suhu/<guid>` (every 30 s); subscribes `iot/...`, `Sensor`, `Status`, `sensor_suhu/+`, `sensor_gas_detector/+`, `sensor_water_tank/+`, `sensor_weather/+`, `Log/+` |
 | Floor registry | Fetches `GET http://<ctrl>:8081/api/devices` once, keeps only this floor's devices (floor token `1ST`/`2ND`/`3RD`/`4TH` in the name, or matching `floor_id`), and uses their real names on the dashboard |
-| Floor view | Up to 4 rows visible (16 tracked), sorted by id: name, last value, age, online dot. Offline after 150 s without traffic |
+| Floor view | Room tabs (`Semua` + per-room + `Lainnya` last) built from the controller registry; each tab lists that room's devices (up to 32 tracked, scrollable) |
+| Heartbeat | shown on the **detail page** (ONLINE/OFFLINE + last seen); list rows stay clean |
+| Lamp toggle | lamp/actuator rows (registry type `AKTUATOR`) get a tappable **ON/OFF pill** on the right; tapping it publishes the HIOTO `Aktuator` command (`<guid>#0` = ON, `#1` = OFF, active-low). Tapping the rest of the row opens the detail page |
 | Environment | Panel die temperature, LDR light % (approx. lux), RSSI, free heap |
 | Touch | XPT2046 via TFT_eSPI; tap a row → detail page; on-screen calibration from the Info page |
 | Buttons | BOOT short press cycles pages (Dashboard → Detail → Info); hold ≥ 4 s = factory reset |
@@ -24,8 +26,8 @@ devices with their human names, straight from the HIOTO controller.
 
 ## Pages
 
-1. **Dashboard** — top bar (HIOTO · floor · Wi-Fi/MQTT), floor device list,
-   environment and status cards, footer with `online/total` and uptime.
+1. **Dashboard** — top bar (HIOTO · floor · Wi-Fi/MQTT), **room tabs** with the
+   floor device list, environment and status cards, footer with `online/total` and uptime.
 2. **Detail** — one node: status, kind, last value, age, id, big **Kembali**.
 3. **Info** — device id, floor, Wi-Fi/IP, MQTT endpoint, MAC, flash/RAM, uptime,
    panel, registry status; **Kembali / Kalibrasi Layar / Reboot**.
