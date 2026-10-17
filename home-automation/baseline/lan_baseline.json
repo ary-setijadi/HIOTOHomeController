@@ -1,0 +1,14 @@
+{
+  "192.168.1.22": {
+    "banner": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.2",
+    "mac": ""
+  },
+  "192.168.1.23": {
+    "banner": "SSH-2.0-OpenSSH_9.2p1 Debian-2+deb12u5",
+    "mac": ""
+  },
+  "192.168.1.99": {
+    "banner": "SSH-2.0-OpenSSH_10.0p2 Debian-7+deb13u4",
+    "mac": ""
+  }
+}

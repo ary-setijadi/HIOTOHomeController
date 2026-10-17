@@ -1,0 +1,1180 @@
+{
+  "rules": [
+    {
+      "input_guid": "679bf788-eddf-46dc-a92e-f275e97d5c0e",
+      "input_value": 0,
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "output_value": 1
+    },
+    {
+      "input_guid": "679bf788-eddf-46dc-a92e-f275e97d5c0e",
+      "input_value": 1,
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5b8bd379-beaf-4315-9765-0f8495717c16",
+      "input_value": 0,
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5b8bd379-beaf-4315-9765-0f8495717c16",
+      "input_value": 1,
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "output_value": 0
+    },
+    {
+      "input_guid": "20a18e7a-61e2-4c50-baa8-41b5e64db12f",
+      "input_value": 0,
+      "output_guid": "904a5ac4-05ff-4f08-86cd-879cd3aa2d89",
+      "output_value": 1
+    },
+    {
+      "input_guid": "20a18e7a-61e2-4c50-baa8-41b5e64db12f",
+      "input_value": 1,
+      "output_guid": "904a5ac4-05ff-4f08-86cd-879cd3aa2d89",
+      "output_value": 0
+    },
+    {
+      "input_guid": "f603e38c-fa72-4d97-8f0f-455104ae6953",
+      "input_value": 0,
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "output_value": 1
+    },
+    {
+      "input_guid": "f603e38c-fa72-4d97-8f0f-455104ae6953",
+      "input_value": 1,
+      "output_guid": "d42cd199-a203-4408-876c-991a89939356",
+      "output_value": 0
+    },
+    {
+      "input_guid": "b4108f5e-5918-4e3c-a7ad-edae82988568",
+      "input_value": 0,
+      "output_guid": "9c28e2ef-bd5e-4841-b53a-dc0d56100e71",
+      "output_value": 1
+    },
+    {
+      "input_guid": "b4108f5e-5918-4e3c-a7ad-edae82988568",
+      "input_value": 1,
+      "output_guid": "9c28e2ef-bd5e-4841-b53a-dc0d56100e71",
+      "output_value": 0
+    },
+    {
+      "input_guid": "c405d391-49cc-4ab5-b41a-96502e352199",
+      "input_value": 0,
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "output_value": 1
+    },
+    {
+      "input_guid": "c405d391-49cc-4ab5-b41a-96502e352199",
+      "input_value": 1,
+      "output_guid": "a2b1ecf3-772b-4cbe-b04a-280d24668609",
+      "output_value": 0
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "input_value": 0,
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "output_value": 1
+    },
+    {
+      "input_guid": "a95b4dff-40bf-41c3-87fb-2109d84fd025",
+      "input_value": 1,
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "output_value": 0
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 0,
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "output_value": 1
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 0,
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 1,
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "output_value": 1
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 1,
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 2,
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "output_value": 0
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 2,
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 3,
+      "output_guid": "2fd742a0-29c9-4210-b84b-43816ef706f6",
+      "output_value": 0
+    },
+    {
+      "input_guid": "119c5cf0-2108-4cb8-bc1e-48b17bf018a9",
+      "input_value": 3,
+      "output_guid": "f78ebeb3-5aa6-4154-ad54-61e33e081f0d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 0,
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "output_value": 1
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 0,
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 1,
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "output_value": 1
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 1,
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 2,
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "output_value": 0
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 2,
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 3,
+      "output_guid": "2e6ecdaf-1a02-4f94-9597-00703c10fb83",
+      "output_value": 0
+    },
+    {
+      "input_guid": "23a3be43-f306-46ef-9df5-cb519f49c2f5",
+      "input_value": 3,
+      "output_guid": "0157bfd5-ad14-4e93-83f8-11aa0c76831b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 0,
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "output_value": 1
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 0,
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "output_value": 1
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 1,
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "output_value": 1
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 1,
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "output_value": 0
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 2,
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "output_value": 0
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 2,
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "output_value": 1
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 3,
+      "output_guid": "10aa91d2-31e1-40a2-8de1-4f3e48ec3138",
+      "output_value": 0
+    },
+    {
+      "input_guid": "05292330-3bf6-408d-9f59-737a8bf4accb",
+      "input_value": 3,
+      "output_guid": "a35d8148-9289-47c5-9bd7-dc0387c185e4",
+      "output_value": 0
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 0,
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 0,
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "output_value": 1
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 1,
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 1,
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "output_value": 0
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 2,
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 2,
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "output_value": 1
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 3,
+      "output_guid": "bd9b52be-a06d-4843-be71-f478cf661c1f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "eb527bd8-293a-4d2b-80ae-0f1f130f018a",
+      "input_value": 3,
+      "output_guid": "daaca2b3-9f03-4f81-ac38-fb1765cba1d0",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 0,
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 0,
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 1,
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 1,
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 2,
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 2,
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 3,
+      "output_guid": "a07fee40-ee77-4f72-940b-f36a0ee4fe1b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fdeece67-270f-40b4-b6b8-7b0b2004b96f",
+      "input_value": 3,
+      "output_guid": "c26983d1-0e61-494c-92c3-178673efb1cf",
+      "output_value": 0
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 0,
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "output_value": 1
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 0,
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "output_value": 1
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 1,
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "output_value": 0
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 1,
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "output_value": 1
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 2,
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "output_value": 1
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 2,
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "output_value": 0
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 3,
+      "output_guid": "0e280e04-1e0a-4968-a39e-1c3363f2d8b4",
+      "output_value": 0
+    },
+    {
+      "input_guid": "1bb3625d-6891-414b-bad9-9d8157f0a5dd",
+      "input_value": 3,
+      "output_guid": "04e89950-271d-48e2-9111-5d1b04a75e71",
+      "output_value": 0
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 0,
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "output_value": 1
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 0,
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "output_value": 1
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 1,
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "output_value": 1
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 1,
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "output_value": 0
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 2,
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "output_value": 0
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 2,
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "output_value": 1
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 3,
+      "output_guid": "c481f08f-cd9c-4d6c-9a7c-6aa4665e33f6",
+      "output_value": 0
+    },
+    {
+      "input_guid": "4dce88fd-0ed9-4064-a90b-1df439111009",
+      "input_value": 3,
+      "output_guid": "9b3f451a-a03c-40c3-a5f6-693b13fb1f84",
+      "output_value": 0
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 0,
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "output_value": 1
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 0,
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "output_value": 1
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 1,
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "output_value": 1
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 1,
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "output_value": 0
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 2,
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "output_value": 0
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 2,
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "output_value": 1
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 3,
+      "output_guid": "d2056636-eb4d-408b-b670-454c21c9b89a",
+      "output_value": 0
+    },
+    {
+      "input_guid": "aa4efa88-204c-4108-9699-b6b286c4be7a",
+      "input_value": 3,
+      "output_guid": "fba81a37-d97b-431e-9094-e98e6eca0856",
+      "output_value": 0
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 0,
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "output_value": 1
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 0,
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "output_value": 1
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 1,
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "output_value": 1
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 1,
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "output_value": 0
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 2,
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "output_value": 0
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 2,
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "output_value": 1
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 3,
+      "output_guid": "e517edc3-3460-40a6-8d7b-e160c489ba72",
+      "output_value": 0
+    },
+    {
+      "input_guid": "457b100f-28da-4fd6-85a3-ae83fa021119",
+      "input_value": 3,
+      "output_guid": "0fc7a887-6032-4903-a566-3c1125fc3a8c",
+      "output_value": 0
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 0,
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "output_value": 1
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 0,
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 1,
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "output_value": 1
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 1,
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 2,
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "output_value": 0
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 2,
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 3,
+      "output_guid": "a6b5e579-1975-4f71-a80f-c9c1b4786610",
+      "output_value": 0
+    },
+    {
+      "input_guid": "91ca775b-0724-4e2a-867e-c1eec81e48ab",
+      "input_value": 3,
+      "output_guid": "a4348e66-7561-4e9e-abd0-9a718797202d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 0,
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 0,
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 1,
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 1,
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 2,
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 2,
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 3,
+      "output_guid": "ff2d3d4e-8d72-4d96-bf53-52d83c42b645",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5f9f1c35-6e46-4cd0-a67e-c19e616973b6",
+      "input_value": 3,
+      "output_guid": "9e4b919a-b8ce-413f-bc9a-6807e524af30",
+      "output_value": 0
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 0,
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "output_value": 1
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 0,
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "output_value": 1
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 1,
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "output_value": 1
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 1,
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "output_value": 0
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 2,
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "output_value": 0
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 2,
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "output_value": 1
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 3,
+      "output_guid": "0fd0b558-7ad3-48c6-b600-23d1af09a710",
+      "output_value": 0
+    },
+    {
+      "input_guid": "f9426e26-34aa-4aa3-aab0-f77865acfdd6",
+      "input_value": 3,
+      "output_guid": "736d6b86-6be7-4fa4-92df-e053c68ab697",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 0,
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 0,
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 1,
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 1,
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 2,
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 2,
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "output_value": 1
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 3,
+      "output_guid": "8f80284b-98f9-4ea5-a624-5cc86487d279",
+      "output_value": 0
+    },
+    {
+      "input_guid": "5aeb08e4-4dd2-435f-a0f9-b3f1e67a2e9d",
+      "input_value": 3,
+      "output_guid": "c3e39094-97c7-41fc-8a7d-a23797c6f8bc",
+      "output_value": 0
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 0,
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 0,
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "output_value": 1
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 1,
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 1,
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "output_value": 0
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 2,
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 2,
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "output_value": 1
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 3,
+      "output_guid": "ef2c768b-f84e-4f55-94d4-de32b167216b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "01c81d88-386d-4db9-9e8e-71cf74e038ba",
+      "input_value": 3,
+      "output_guid": "86913819-485e-4be8-8573-d11c0c913504",
+      "output_value": 0
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 0,
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "output_value": 1
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 0,
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "output_value": 1
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 1,
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "output_value": 1
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 1,
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "output_value": 0
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 2,
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "output_value": 0
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 2,
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "output_value": 1
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 3,
+      "output_guid": "c2164799-7b76-43ce-85dd-301fb63cc3db",
+      "output_value": 0
+    },
+    {
+      "input_guid": "29820550-cd89-4d3b-8fe8-724fa1fb02e1",
+      "input_value": 3,
+      "output_guid": "8eb52547-94f2-4d40-ba0b-386a424ae4eb",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 0,
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 0,
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 1,
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 1,
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 2,
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 2,
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 3,
+      "output_guid": "81a77e21-4424-4150-9f14-1202611e4b74",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fa409d68-5b51-40ce-9642-27b10df3e5f1",
+      "input_value": 3,
+      "output_guid": "aa4866f6-12b0-44fe-ad6d-3ff225a3d55f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 0,
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 0,
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 1,
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 1,
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 2,
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 2,
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 3,
+      "output_guid": "5a119b76-a033-4db7-859a-f4b7d7727509",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e4681593-8b64-47b3-acbe-1fcc3578901f",
+      "input_value": 3,
+      "output_guid": "cd490df5-d4c0-4adf-951d-b29d61f82a58",
+      "output_value": 0
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 0,
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "output_value": 1
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 0,
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "output_value": 1
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 1,
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "output_value": 1
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 1,
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "output_value": 0
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 2,
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "output_value": 0
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 2,
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "output_value": 1
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 3,
+      "output_guid": "a7b2c1c6-6b9a-41ab-93cb-22f06ee8b4b8",
+      "output_value": 0
+    },
+    {
+      "input_guid": "7d369e90-7d8e-480c-89c9-07c38edfdb90",
+      "input_value": 3,
+      "output_guid": "f5f65f09-89f0-4ac6-850f-b6dc95750053",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 0,
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 0,
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 1,
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 1,
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 2,
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 2,
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "output_value": 1
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 3,
+      "output_guid": "2a938835-0a50-4e17-b317-5835ee285357",
+      "output_value": 0
+    },
+    {
+      "input_guid": "fc3b0fdf-a7e9-416e-835a-f7b65eab6052",
+      "input_value": 3,
+      "output_guid": "183e2821-b1b5-4a75-85f3-6371642954ad",
+      "output_value": 0
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 0,
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "output_value": 1
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 0,
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 1,
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "output_value": 1
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 1,
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 2,
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "output_value": 0
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 2,
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "output_value": 1
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 3,
+      "output_guid": "e38b24ef-1b57-417d-a60d-0e80046b33ef",
+      "output_value": 0
+    },
+    {
+      "input_guid": "411d1f8a-7560-4719-b8b3-a32b285bdcaf",
+      "input_value": 3,
+      "output_guid": "3905f7ae-f547-49e4-832a-7f8b3576977b",
+      "output_value": 0
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "input_value": 0,
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "input_value": 1,
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "output_value": 1
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "input_value": 2,
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "10ac33c4-1252-421a-86ae-72b32dd6d075",
+      "input_value": 3,
+      "output_guid": "3d204066-48da-479a-a106-3f0dcc35822f",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 0,
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 0,
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 1,
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 1,
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 2,
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 2,
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "output_value": 1
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 3,
+      "output_guid": "9a40265c-9b36-48b9-a49d-90e06059520d",
+      "output_value": 0
+    },
+    {
+      "input_guid": "e11319a9-7712-45d9-b3fd-9b4be29987d8",
+      "input_value": 3,
+      "output_guid": "ce14ca1f-40f1-4455-8eaa-3cdead8b7e07",
+      "output_value": 0
+    },
+    {
+      "input_guid": "b6b0aa57-fb1c-41c9-b716-85aa41f4bce4",
+      "input_value": 0,
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "output_value": 1
+    },
+    {
+      "input_guid": "b6b0aa57-fb1c-41c9-b716-85aa41f4bce4",
+      "input_value": 1,
+      "output_guid": "4a0a8361-0856-48fc-93fc-96767415e812",
+      "output_value": 0
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 0,
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "output_value": 1
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 0,
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "output_value": 1
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 1,
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "output_value": 1
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 1,
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "output_value": 0
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 2,
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "output_value": 0
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 2,
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "output_value": 1
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 3,
+      "output_guid": "7b1481f8-2ae7-48da-a24d-292d2eb21d84",
+      "output_value": 0
+    },
+    {
+      "input_guid": "03f1944a-ffd7-4425-bee1-75228c231104",
+      "input_value": 3,
+      "output_guid": "bf27b485-7865-46cc-a3ea-a6ebc91c5146",
+      "output_value": 0
+    }
+  ]
+}
