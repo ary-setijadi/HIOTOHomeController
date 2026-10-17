@@ -395,7 +395,7 @@ function startDeviceEdit(td) {
     input.dataset.done = '1';
     if (!save) { td.textContent = displayVal(dev, field); return; }
     let val;
-    if (kind === 'number') val = Number(input.value) || 0;
+    if (kind === 'number' || kind === 'room' || kind === 'floor') val = Number(input.value) || 0;
     else val = input.value;
     const payload = {};
     payload[field] = val;
