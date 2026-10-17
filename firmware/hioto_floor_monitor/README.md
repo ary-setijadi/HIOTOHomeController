@@ -16,9 +16,9 @@ devices with their human names, straight from the HIOTO controller.
 | Wi-Fi | Station mode with NVS credentials; `HIOTO-Monitor-Setup` captive portal on first boot |
 | MQTT | Publishes `iot/{id}/telemetry` (10 s), retained `iot/{id}/status` (LWT), plus HIOTO-compatible `Status` heartbeat and `sensor_suhu/<guid>` (every 30 s); subscribes `iot/...`, `Sensor`, `Status`, `sensor_suhu/+`, `sensor_gas_detector/+`, `sensor_water_tank/+`, `sensor_weather/+`, `Log/+` |
 | Floor registry | Fetches `GET http://<ctrl>:8081/api/devices` once, keeps only this floor's devices (floor token `1ST`/`2ND`/`3RD`/`4TH` in the name, or matching `floor_id`), and uses their real names on the dashboard |
-| Floor view | Room tabs (`Semua` + per-room + `Lainnya` last) built from the controller registry; each tab lists that room's devices (up to 32 tracked, scrollable) |
+| Floor view | Room tabs (`Semua` + per-room + `Lainnya` last) built from the controller registry; each tab lists that room's devices **sorted by name** (up to 32 tracked, scrollable) |
 | Heartbeat | shown on the **detail page** (ONLINE/OFFLINE + last seen); list rows stay clean |
-| Lamp toggle | lamp/actuator rows (registry type `AKTUATOR`) get a tappable **ON/OFF pill** on the right; tapping it publishes the HIOTO `Aktuator` command (`<guid>#0` = ON, `#1` = OFF, active-low). Tapping the rest of the row opens the detail page |
+| Lamp toggle | lamp/actuator rows (registry type `AKTUATOR`) get a tappable **ON/OFF pill** on the right; tapping it publishes the HIOTO `Aktuator` command (`<guid>#0` = ON, `#1` = OFF, active-low). Tapping the rest of the row opens the detail page. Lamp state is also learned from the controller's `Aktuator` broadcast, so a physical switch turning a lamp on/off shows up immediately (and Status heartbeats never clobber it) |
 | Environment | Panel die temperature, LDR light % (approx. lux), RSSI, free heap |
 | Touch | XPT2046 via TFT_eSPI; tap a row → detail page; on-screen calibration from the Info page |
 | Buttons | BOOT short press cycles pages (Dashboard → Detail → Info); hold ≥ 4 s = factory reset |

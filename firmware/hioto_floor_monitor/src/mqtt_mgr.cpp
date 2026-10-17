@@ -22,9 +22,10 @@ static char s_topic_status[48];
 static char s_topic_suhu[48];
 static uint32_t s_last_hb = 0;
 
-/* Topics we listen to in order to build the floor view. */
+/* Topics we listen to in order to build the floor view.
+ * Aktuator carries the actuator state broadcast (guid#0|1, 0 = ON, 1 = OFF). */
 static const char *kFloorSubs[] = {
-    "iot/#", "Sensor", "Status", "sensor_suhu/+", "sensor_gas_detector/+",
+    "iot/#", "Sensor", "Status", "Aktuator", "sensor_suhu/+", "sensor_gas_detector/+",
     "sensor_water_tank/+", "sensor_weather/+", "Log/+",
 };
 static const size_t kFloorSubCount = sizeof(kFloorSubs) / sizeof(kFloorSubs[0]);

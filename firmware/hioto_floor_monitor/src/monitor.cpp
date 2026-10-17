@@ -84,12 +84,15 @@ static MonNode *upsert(const char *id) {
   return slot;
 }
 
-/* Keep the array sorted by id for a stable dashboard ordering. */
+/* Keep the array sorted by human name (devices are listed by name, not guid). */
 static void sort_nodes(void) {
   for (int i = 1; i < s_count; i++) {
     MonNode t = s_nodes[i];
     int j = i - 1;
-    while (j >= 0 && strcmp(s_nodes[j].id, t.id) > 0) {
+    while (j >= 0) {
+      int c = strcmp(s_nodes[j].label, t.label);
+      if (c == 0) c = strcmp(s_nodes[j].id, t.id);
+      if (c <= 0) break;
       s_nodes[j + 1] = s_nodes[j];
       j--;
     }
@@ -151,7 +154,7 @@ static void feed_iot(const char *topic, const uint8_t *payload, size_t len) {
     if (doc["device"].is<const char *>()) copy_str(n->label, sizeof n->label, doc["device"].as<const char *>());
     const char *st = doc["status"] | "online";
     n->online = strcmp(st, "offline") != 0;
-    copy_str(n->value, sizeof n->value, "-");
+    /* keep any known telemetry value */
   } else if (!strcmp(suffix, "telemetry")) {
     strcpy(n->kind, "telemetry");
     n->online = true;
@@ -168,7 +171,8 @@ static void feed_iot(const char *topic, const uint8_t *payload, size_t len) {
   sort_nodes();
 }
 
-/* Legacy HIOTO topics: Sensor / Status = "guid#value" */
+/* Legacy HIOTO topics: Sensor / Status / Aktuator = "guid#value".
+ * Aktuator is the actuator state broadcast: 0 = ON, 1 = OFF (active-low). */
 static void feed_guid_value(const char *topic, const uint8_t *payload, size_t len) {
   char buf[96];
   if (len >= sizeof buf) len = sizeof buf - 1;
@@ -185,14 +189,19 @@ static void feed_guid_value(const char *topic, const uint8_t *payload, size_t le
   n->online = true;
   label_from_registry(n);
   if (!strcmp(topic, "Status")) {
-    strcpy(n->kind, "status");
-    copy_str(n->value, sizeof n->value, "-");
+    /* heartbeat: keep any known ON/OFF state, never clobber the value */
+    if (n->kind[0] == '\0') strcpy(n->kind, "status");
   } else {
     strcpy(n->kind, "relay");
     /* HIOTO lamps/relays are ACTIVE-LOW: 0 = ON, 1 = OFF. */
-    if (!strcmp(val, "0")) copy_str(n->value, sizeof n->value, "ON");
-    else if (!strcmp(val, "1")) copy_str(n->value, sizeof n->value, "OFF");
-    else copy_str(n->value, sizeof n->value, val);
+    char newval[64];
+    if (!strcmp(val, "0")) copy_str(newval, sizeof newval, "ON");
+    else if (!strcmp(val, "1")) copy_str(newval, sizeof newval, "OFF");
+    else copy_str(newval, sizeof newval, val);
+    if (strcmp(n->value, newval)) {
+      copy_str(n->value, sizeof n->value, newval);
+      Serial.printf("[%s] %s -> %s\n", topic, id, newval);
+    }
   }
   sort_nodes();
 }
@@ -247,7 +256,7 @@ void monitor_feed(const char *topic, const uint8_t *payload, size_t len) {
              !strncmp(topic, "sensor_water_tank/", 18) || !strncmp(topic, "sensor_weather/", 15) ||
              !strncmp(topic, "Log/", 4)) {
     feed_sensor_json(topic, payload, len);
-  } else if (!strcmp(topic, "Sensor") || !strcmp(topic, "Status")) {
+  } else if (!strcmp(topic, "Sensor") || !strcmp(topic, "Status") || !strcmp(topic, "Aktuator")) {
     feed_guid_value(topic, payload, len);
   }
 }
