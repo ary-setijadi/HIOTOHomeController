@@ -6,6 +6,33 @@ let actuators = [];
 let editing = false; // set while a device name is being edited inline
 let floorsMap = {}; // id -> name
 let roomsMap = {};  // id -> name
+const deviceNames = {}; // guid -> name (for rule display)
+const lastSeenByGuid = {}; // guid -> last_seen (for floor-tile heartbeat dots)
+let deviceList = [];     // full device list (for rule edit/add selects)
+let currentRuleRows = []; // last-fetched rule_devices (for group lookup)
+let ruleActions = null;   // current rule-action-list instance
+let clockOffsetMs = 0;    // server epoch ms - client Date.now()
+function nameOf(guid) { return deviceNames[guid] || guid; }
+function serverNowMs() { return Date.now() + clockOffsetMs; }
+// Heartbeat classification from a device's last_seen timestamp (server clock).
+function heartbeat(lastSeen) {
+  if (!lastSeen) return { label: 'never', cls: 'hb-off' };
+  const t = Date.parse(lastSeen);
+  if (isNaN(t)) return { label: '?', cls: 'hb-off' };
+  const age = serverNowMs() - t;
+  if (age < 120000) return { label: 'online', cls: 'hb-on' };
+  if (age < 3600000) return { label: 'stale', cls: 'hb-stale' };
+  return { label: 'offline', cls: 'hb-off' };
+}
+// Small colored dot for a device's heartbeat, for the compact floor tiles.
+function hbDot(serial) {
+  const ls = lastSeenByGuid[serial];
+  const hb = heartbeat(ls);
+  const d = document.createElement('span');
+  d.className = 'hb-dot ' + hb.cls;
+  d.title = 'heartbeat: ' + hb.label + (ls ? ' · ' + String(ls).slice(0, 19) : ' · never seen');
+  return d;
+}
 
 const FLOOR_ORDER = ['Lantai 1', 'Lantai 2', 'Lantai 3', 'Lantai 4', 'Lainnya'];
 const flKey = (fl) => fl.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -77,7 +104,7 @@ function deviceRow(item, kind) {
   const row = document.createElement('div'); row.className = 'dev-row';
   const serial = makeName(item.name, item.serial);
   const t = document.createElement('span'); t.className = 'type'; t.textContent = item.category || (item.type === 2 ? 'analog' : 'digital');
-  row.append(serial, t, badge(item.value, item.type, kind));
+  row.append(serial, hbDot(item.serial), t, badge(item.value, item.type, kind));
   if (kind === 'actuator' && item.override) { const ov = document.createElement('span'); ov.className = 'ov-badge'; ov.textContent = 'OVERRIDE'; row.appendChild(ov); }
   const controls = document.createElement('div'); controls.className = 'controls';
   if (item.type === 2) {
@@ -132,28 +159,160 @@ function renderFloors() {
 function whenText(w) {
   if (!w) return '?';
   if (w.type === 'time') return `⏱ ${w.at || (w.from || '00:00') + '–' + (w.to || '23:59')}`;
-  let s = `${w.sensor} ${w.op} ${w.threshold}`;
+  let s = `${nameOf(w.sensor)} ${w.op} ${w.threshold}`;
   if (w.hysteresis) s += ` (±${w.hysteresis})`;
   return s;
 }
 function renderRules(rules) {
   const c = $('#rules'); c.innerHTML = '';
-  const rd = (rules.rule_devices || []).map((r) => ({ name: `rd: ${r.input_guid} = ${r.input_value} → ${r.output_guid} = ${r.output_value}`, isRd: true }));
+
+  const rd = rules.rule_devices || [];
+
+  // A switch is 2-channel when any of its rules use input value 2 or 3.
+  const twoBit = {};
+  for (const r of rd) { if (Number(r.input_value) >= 2) twoBit[r.input_guid] = true; }
+  const fmtIn = (g, v) => {
+    const n = Number(v);
+    if (twoBit[g]) return (['00', '01', '10', '11'][n] ?? String(v));
+    return String(v);
+  };
+  const fmtOut = (v) => (Number(v) === 0 ? 'ON' : Number(v) === 1 ? 'OFF' : String(v));
+
+  // Group rule_devices by actuator (output_guid) so a lamp's full wiring
+  // (and any contradiction) is visible together.
+  const groups = new Map();
+  for (const r of rd) {
+    if (!groups.has(r.output_guid)) groups.set(r.output_guid, []);
+    groups.get(r.output_guid).push(r);
+  }
+
+  const sorted = [...groups.entries()].sort((a, b) => nameOf(a[0]).localeCompare(nameOf(b[0])));
+  for (const [outGuid, rows] of sorted) {
+    const head = document.createElement('div');
+    head.className = 'rule-act-head';
+    head.textContent = nameOf(outGuid);
+    head.title = outGuid;
+    c.appendChild(head);
+
+    rows.sort((a, b) => nameOf(a.input_guid).localeCompare(nameOf(b.input_guid)) || Number(a.input_value) - Number(b.input_value));
+    for (const r of rows) {
+      const row = document.createElement('div');
+      row.className = 'rule-row rule-sub';
+      const txt = document.createElement('span');
+      txt.className = 'rule-text';
+      txt.textContent = `${nameOf(r.input_guid)} = ${fmtIn(r.input_guid, r.input_value)} → ${fmtOut(r.output_value)}`;
+      txt.title = `${r.input_guid} = ${r.input_value} → ${r.output_guid} = ${r.output_value}`;
+      const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.className = 'small';
+      const del = document.createElement('button'); del.textContent = 'Delete'; del.className = 'danger small';
+      edit.onclick = () => editRule(r);
+      del.onclick = () => deleteRule(r.id);
+      row.append(txt, edit, del);
+      c.appendChild(row);
+    }
+  }
+
+  // Advanced (threshold) rules — names too.
   const adv = (rules.advanced || []).map((r) => ({
-    name: `${r.name} [adv]: IF ${whenText(r.when)} THEN ${(r.then || []).map((a) => `${a.actuator}=${a.value}`).join(', ')}${(r.else || []).length ? ' ELSE ' + r.else.map((a) => `${a.actuator}=${a.value}`).join(', ') : ''}`,
+    name: `${r.name} [adv]: IF ${whenText(r.when)} THEN ${(r.then || []).map((a) => `${nameOf(a.actuator)}=${fmtOut(a.value)}`).join(', ')}${(r.else || []).length ? ' ELSE ' + r.else.map((a) => `${nameOf(a.actuator)}=${fmtOut(a.value)}`).join(', ') : ''}`,
     isRd: false,
   }));
-  for (const r of rd.concat(adv)) {
+  for (const r of adv) {
     const row = document.createElement('div'); row.className = 'rule-row';
     const txt = document.createElement('span'); txt.className = 'rule-text'; txt.textContent = r.name;
-    if (r.isRd) { const tag = document.createElement('span'); tag.className = 'ov-badge'; tag.textContent = 'rule_devices'; row.appendChild(tag); }
     row.appendChild(txt);
     c.appendChild(row);
   }
+
   if (!rd.length && !adv.length) { const row = document.createElement('div'); row.className = 'rule-row'; row.textContent = 'no rules'; c.appendChild(row); }
 }
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// ---- rule management (add / edit / delete) ----
+function deviceSelect(kind, selected) {
+  const sel = document.createElement('select');
+  const list = deviceList.filter((d) => kind === 'sensor' ? (d.kind === 'sensor' || d.kind === 'hybrid') : (d.kind === 'actuator' || d.kind === 'hybrid'));
+  list.sort((a, b) => (a.name || a.guid).localeCompare(b.name || b.guid));
+  for (const d of list) { const o = document.createElement('option'); o.value = d.guid; o.textContent = d.name || d.guid; sel.appendChild(o); }
+  if (selected) sel.value = selected;
+  return sel;
+}
+function outputValueSelect(selected) {
+  const sel = document.createElement('select');
+  const on = document.createElement('option'); on.value = '0'; on.textContent = 'ON'; sel.appendChild(on);
+  const off = document.createElement('option'); off.value = '1'; off.textContent = 'OFF'; sel.appendChild(off);
+  if (selected !== undefined) sel.value = String(selected);
+  return sel;
+}
+// A list of actuator -> value rows (mirrors the timer rule's action list).
+function ruleActionList(initialActs) {
+  const acts = (initialActs && initialActs.length)
+    ? initialActs.map((a) => ({ output_guid: a.output_guid, output_value: Number(a.output_value) }))
+    : [{ output_guid: '', output_value: 0 }];
+  const box = document.createElement('div');
+  box.className = 'rule-actions';
+  function render() {
+    box.innerHTML = '';
+    acts.forEach((act, i) => {
+      const row = document.createElement('div'); row.className = 'action-row';
+      const sel = deviceSelect('actuator', act.output_guid);
+      const val = outputValueSelect(act.output_value);
+      sel.onchange = () => { act.output_guid = sel.value; };
+      val.onchange = () => { act.output_value = Number(val.value); };
+      const rm = document.createElement('button'); rm.textContent = '✕'; rm.type = 'button'; rm.className = 'danger small'; rm.title = 'remove';
+      rm.onclick = () => { acts.splice(i, 1); if (!acts.length) acts.push({ output_guid: '', output_value: 0 }); render(); };
+      row.append(sel, val, rm);
+      box.appendChild(row);
+    });
+    const add = document.createElement('button'); add.textContent = '+ actuator'; add.type = 'button'; add.className = 'small';
+    add.onclick = () => { acts.push({ output_guid: '', output_value: 0 }); render(); };
+    box.appendChild(add);
+  }
+  render();
+  return { box, acts };
+}
+// Rows sharing the currently-selected (switch, value).
+function currentGroup() {
+  const g = $('#rule-in-guid').value;
+  const v = Number($('#rule-in-val').value);
+  return currentRuleRows.filter((r) => r.input_guid === g && Number(r.input_value) === v);
+}
+// Load the selected rule's actuators into the action list (blank for a new rule).
+function loadRuleGroup() {
+  const box = $('#rule-action-list');
+  if (!box) return;
+  const rows = currentGroup();
+  const acts = rows.length ? rows.map((r) => ({ output_guid: r.output_guid, output_value: Number(r.output_value) })) : null;
+  box.innerHTML = '';
+  const inst = ruleActionList(acts);
+  box.appendChild(inst.box);
+  ruleActions = inst;
+  const btn = $('#btn-add-rule');
+  if (btn) btn.textContent = rows.length ? 'Save Rule' : 'Add Rule';
+}
+function populateRuleForm() {
+  const inSel = $('#rule-in-guid');
+  if (!inSel) return;
+  const inCur = inSel.value;
+  inSel.innerHTML = '';
+  const sensors = deviceList.filter((d) => d.kind === 'sensor' || d.kind === 'hybrid').sort((a, b) => (a.name || a.guid).localeCompare(b.name || b.guid));
+  for (const d of sensors) { const o = document.createElement('option'); o.value = d.guid; o.textContent = d.name || d.guid; inSel.appendChild(o); }
+  if (inCur) inSel.value = inCur;
+  loadRuleGroup();
+}
+// Clicking Edit on a rule row loads its whole (switch, value) group into the editor.
+function editRule(r) {
+  const inSel = $('#rule-in-guid'), inVal = $('#rule-in-val');
+  inSel.value = r.input_guid;
+  inVal.value = String(r.input_value);
+  loadRuleGroup();
+  inSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function deleteRule(id) {
+  if (!confirm('Delete this rule?')) return;
+  await fetch('/api/rules/' + id, { method: 'DELETE' });
+  refreshRules();
+}
 
 async function loadFloorsRooms() {
   try {
@@ -169,33 +328,154 @@ async function loadFloorsRooms() {
   } catch {}
 }
 
+const CATEGORIES = ['AKTUATOR','SENSOR','SENSOR_CAMERA','SENSOR_SUHU','SENSOR_GAS_DETECTOR','SENSOR_WATER_TANK','SENSOR_WEATHER','SENSOR_BELL','SENSOR_SMART_RELAY','SENSOR_SMART_PLUG','DI_DO','DI/DO'];
+let deviceTableRows = []; // full device list, used by the inline editor
+
+function displayVal(d, field) {
+  switch (field) {
+    case 'room_id': return d.room_id ? (roomsMap[d.room_id] || '#' + d.room_id) : '';
+    case 'floor_id': return d.floor_id ? (floorsMap[d.floor_id] || '#' + d.floor_id) : '';
+    case 'last_seen': return (d.last_seen || '').slice(0, 19);
+    default: return d[field] == null ? '' : String(d[field]);
+  }
+}
+
+function staticCell(text, cls) {
+  const td = document.createElement('td');
+  if (cls) td.className = cls;
+  td.textContent = text;
+  return td;
+}
+
+function editCell(d, field, kind, cls) {
+  const td = document.createElement('td');
+  td.className = 'editable' + (cls ? ' ' + cls : '');
+  td.textContent = displayVal(d, field);
+  td.title = 'click to edit';
+  td.dataset.edit = d.guid + '|' + field + '|' + kind;
+  return td;
+}
+
+function startDeviceEdit(td) {
+  const [guid, field, kind] = td.dataset.edit.split('|');
+  const dev = deviceTableRows.find((x) => x.guid === guid);
+  if (!dev) return;
+  const curVal = dev[field];
+  let input;
+  if (kind === 'text') {
+    input = document.createElement('input');
+    input.type = 'text'; input.value = curVal == null ? '' : String(curVal);
+  } else if (kind === 'number') {
+    input = document.createElement('input');
+    input.type = 'number'; input.step = 'any';
+    input.value = curVal == null ? '' : String(curVal);
+  } else if (kind === 'cat') {
+    input = document.createElement('select');
+    const cats = CATEGORIES.slice();
+    if (curVal && !cats.includes(curVal)) cats.unshift(curVal);
+    for (const c of cats) { const o = document.createElement('option'); o.value = c; o.textContent = c; input.appendChild(o); }
+    input.value = curVal || '';
+  } else if (kind === 'room' || kind === 'floor') {
+    input = document.createElement('select');
+    const map = kind === 'room' ? roomsMap : floorsMap;
+    const o0 = document.createElement('option'); o0.value = '0'; o0.textContent = '— none —'; input.appendChild(o0);
+    for (const id of Object.keys(map)) { const o = document.createElement('option'); o.value = id; o.textContent = map[id]; input.appendChild(o); }
+    input.value = String(curVal || 0);
+  }
+  input.className = 'cell-edit';
+  td.textContent = '';
+  td.appendChild(input);
+  input.focus();
+  if (input.select) input.select();
+
+  const finish = async (save) => {
+    if (input.dataset.done) return;
+    input.dataset.done = '1';
+    if (!save) { td.textContent = displayVal(dev, field); return; }
+    let val;
+    if (kind === 'number') val = Number(input.value) || 0;
+    else val = input.value;
+    const payload = {};
+    payload[field] = val;
+    if (field === 'type') payload.category = val; // keep category in sync with type
+    try {
+      const r = await fetch('/api/devices/' + encodeURIComponent(guid), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      if (r.ok) refreshDevices();
+      else td.textContent = displayVal(dev, field);
+    } catch { td.textContent = displayVal(dev, field); }
+  };
+  input.onblur = () => finish(true);
+  input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); else if (e.key === 'Escape') finish(false); };
+}
+
 function renderDevices(devs) {
+  for (const d of devs) { deviceNames[d.guid] = d.name; lastSeenByGuid[d.guid] = d.last_seen || ''; }
+  deviceTableRows = devs;
   const body = document.querySelector('#deviceTable tbody'); body.innerHTML = '';
+  if (!renderDevices._wired) {
+    renderDevices._wired = true;
+    body.addEventListener('click', (e) => {
+      const td = e.target.closest('td[data-edit]');
+      if (td && !td.querySelector('input,select')) startDeviceEdit(td);
+    });
+  }
+  let online = 0, stale = 0, offline = 0;
   for (const d of devs) {
     const tr = document.createElement('tr');
-    const ver = (d.version || '') + (d.minor && d.minor !== '0' ? '.' + d.minor : '');
-    const room = d.room_id ? (roomsMap[d.room_id] || '#' + d.room_id) : '';
-    const floor = d.floor_id ? (floorsMap[d.floor_id] || '#' + d.floor_id) : '';
-    tr.innerHTML =
-      `<td class="mono" title="${esc(d.guid)}">${esc(d.guid)}</td>` +
-      `<td>${esc(d.name)}</td>` +
-      `<td>${esc(d.type)}</td>` +
-      `<td class="mono">${esc(d.mac || '')}</td>` +
-      `<td>${esc(ver)}</td>` +
-      `<td>${esc(d.quantity)}</td>` +
-      `<td>${esc(room)}</td>` +
-      `<td>${esc(floor)}</td>` +
-      `<td>${esc(d.status || '')}</td>` +
-      `<td class="mono">${esc((d.last_seen || '').slice(0, 19))}</td>` +
-      `<td><button class="danger" data-revoke="${esc(d.guid)}">Revoke</button></td>`;
+    const hb = heartbeat(d.last_seen);
+    if (hb.label === 'online') online++;
+    else if (hb.label === 'stale') stale++;
+    else offline++;
+
+    tr.appendChild(staticCell(d.guid, 'mono'));
+    tr.appendChild(editCell(d, 'name', 'text'));
+    tr.appendChild(editCell(d, 'type', 'cat'));
+    tr.appendChild(editCell(d, 'mac', 'text', 'mono'));
+    tr.appendChild(editCell(d, 'version', 'text'));
+    tr.appendChild(editCell(d, 'minor', 'text'));
+    tr.appendChild(editCell(d, 'quantity', 'number'));
+    tr.appendChild(editCell(d, 'room_id', 'room'));
+    tr.appendChild(editCell(d, 'floor_id', 'floor'));
+    tr.appendChild(editCell(d, 'x_position', 'number'));
+    tr.appendChild(editCell(d, 'y_position', 'number'));
+    tr.appendChild(editCell(d, 'status', 'text'));
+
+    const hbTd = document.createElement('td');
+    const hbSpan = document.createElement('span');
+    hbSpan.className = 'hb ' + hb.cls; hbSpan.textContent = hb.label;
+    hbTd.appendChild(hbSpan);
+    tr.appendChild(hbTd);
+    tr.appendChild(staticCell((d.last_seen || '').slice(0, 19), 'mono'));
+
+    const rv = document.createElement('td');
+    const b = document.createElement('button');
+    b.className = 'danger'; b.textContent = 'Revoke'; b.dataset.revoke = d.guid;
+    b.onclick = async () => { await fetch('/api/revoke-device/' + encodeURIComponent(d.guid), { method: 'DELETE' }); refreshDevices(); };
+    rv.appendChild(b);
+    tr.appendChild(rv);
+
     body.appendChild(tr);
   }
-  body.querySelectorAll('[data-revoke]').forEach((b) => {
-    b.onclick = async () => { await fetch('/api/revoke-device/' + b.dataset.revoke, { method: 'DELETE' }); refreshDevices(); };
-  });
+  const sum = $('#hb-summary');
+  if (sum) sum.textContent = `${devs.length} devices · ${online} online · ${stale} stale · ${offline} offline`;
+  renderFloors(); // refresh floor tiles with heartbeat dots
 }
 async function refreshDevices() { try { renderDevices(await fetch('/api/devices').then((r) => r.json())); } catch {} }
-async function refreshRules() { try { renderRules(await fetch('/api/rules').then((r) => r.json())); } catch {} }
+async function refreshRules() {
+  try {
+    const [rules, devs] = await Promise.all([
+      fetch('/api/rules').then((r) => r.json()),
+      fetch('/api/devices').then((r) => r.json()),
+    ]);
+    for (const d of devs) deviceNames[d.guid] = d.name;
+    deviceList = devs;
+    currentRuleRows = rules.rule_devices || [];
+    populateRuleForm();
+    renderRules(rules);
+  } catch {}
+}
 
 // ---- timer rules ----
 function timerName(guid) {
@@ -755,6 +1035,17 @@ $('#btn-import-rules').onclick = async () => {
   try { const r = await post('/api/import-rules', { rules: JSON.parse(text) }); alert(`imported ${r.imported} rules`); $('#rules-json').value = ''; refreshRules(); }
   catch { alert('invalid JSON'); }
 };
+$('#btn-add-rule').onclick = async () => {
+  const input_guid = $('#rule-in-guid').value;
+  if (!input_guid) { alert('Choose an input switch.'); return; }
+  const input_value = Number($('#rule-in-val').value);
+  const actions = (ruleActions ? ruleActions.acts : []).filter((a) => a.output_guid).map((a) => ({ output_guid: a.output_guid, output_value: Number(a.output_value) }));
+  if (!actions.length) { alert('Add at least one actuator.'); return; }
+  const r = await fetch('/api/rule-group', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input_guid, input_value, actions }) }).then((x) => x.json());
+  if (r && r.saved !== undefined) refreshRules();
+};
+$('#rule-in-guid').onchange = loadRuleGroup;
+$('#rule-in-val').onchange = loadRuleGroup;
 $('#btn-hist-refresh').onclick = loadHistory;
 $('#hist-device').onchange = loadHistory;
 $('#hist-metric').onchange = loadHistory;
@@ -786,7 +1077,6 @@ loadTimerRules();
 timerKindUI();
 
 // ---- Orange Pi clock (topbar) ----
-let clockOffsetMs = 0; // server epoch ms minus client Date.now()
 let clockTzOffset = 0; // Pi UTC offset (seconds east)
 let clockZone = '';
 
@@ -811,6 +1101,7 @@ async function syncClock() {
     clockTzOffset = r.offset || 0;
     clockZone = r.zone || '';
     tickClock();
+    refreshDevices(); // re-render heartbeat against the corrected server clock
   } catch {}
 }
 

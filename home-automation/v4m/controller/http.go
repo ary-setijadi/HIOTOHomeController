@@ -149,42 +149,62 @@ func startHTTP(db *DB, st *state, cfg config, publish func(string, float64), dev
 		}
 
 		if len(parts) == 1 && r.Method == http.MethodPut {
-			var b struct {
-				Name string `json:"name"`
-				Type string `json:"type"`
-				MAC  string `json:"mac"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+			var body map[string]interface{}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 				send(rw, 400, map[string]string{"error": "bad json"})
 				return
 			}
-			// Partial update: only overwrite the fields that were provided.
-			if cur, ok := db.getDevice(guid); ok {
-				name, typ, mac := b.Name, b.Type, b.MAC
-				if name == "" {
-					name = cur.Name
-				}
-				if typ == "" {
-					typ = cur.Type
-				}
-				if mac == "" {
-					mac = cur.MAC
-				}
-				if err := db.updateDevice(guid, name, typ, mac); err != nil {
-					send(rw, 500, map[string]string{"error": err.Error()})
-					return
-				}
-				// Keep the in-memory registry in sync so live broadcasts
-				// don't push the stale name back to the dashboard.
-				if dev, ok := deviceMap[guid]; ok {
-					dev.Name = name
-					dev.Type = typ
-					dev.MAC = mac
-					deviceMap[guid] = dev
-				}
+			cur, ok := db.getDevice(guid)
+			if !ok {
+				send(rw, 404, map[string]string{"error": "not found"})
+				return
+			}
+			// Presence-based partial update: a key present in the body overwrites
+			// the field; an absent key leaves the current value untouched.
+			merged := cur
+			setStr(&merged.Name, body["name"])
+			setStr(&merged.Type, body["type"])
+			setStr(&merged.MAC, body["mac"])
+			setStr(&merged.Version, body["version"])
+			setStr(&merged.Minor, body["minor"])
+			setStr(&merged.Status, body["status"])
+			setStr(&merged.StatusDevice, body["status_device"])
+			setStr(&merged.Category, body["category"])
+			setInt(&merged.Quantity, body["quantity"])
+			setInt(&merged.RoomID, body["room_id"])
+			setInt(&merged.FloorID, body["floor_id"])
+			setFloat(&merged.XPosition, body["x_position"])
+			setFloat(&merged.YPosition, body["y_position"])
+			merged.GUID = guid
+			if merged.Category == "" {
+				merged.Category = merged.Type
+			}
+			if err := db.updateDevice(merged); err != nil {
+				send(rw, 500, map[string]string{"error": err.Error()})
+				return
+			}
+			// Keep the in-memory registry in sync so live broadcasts don't
+			// push stale values back to the dashboard.
+			if dev, ok := deviceMap[guid]; ok {
+				dev.Name = merged.Name
+				dev.Type = merged.Type
+				dev.MAC = merged.MAC
+				dev.Status = merged.Status
+				dev.StatusDevice = merged.StatusDevice
+				dev.Version = merged.Version
+				dev.Minor = merged.Minor
+				dev.Category = merged.Category
+				dev.Quantity = merged.Quantity
+				dev.RoomID = merged.RoomID
+				dev.FloorID = merged.FloorID
+				dev.XPosition = merged.XPosition
+				dev.YPosition = merged.YPosition
+				dev.Kind = kindOf(dev.Type)
+				dev.ValueType = valueTypeOf(dev.Type)
+				deviceMap[guid] = dev
 			}
 			log.Printf("[update] %s", guid)
-			send(rw, 200, map[string]bool{"ok": true})
+			send(rw, 200, merged)
 			return
 		}
 		send(rw, 404, map[string]string{"error": "not found"})
@@ -302,28 +322,76 @@ func startHTTP(db *DB, st *state, cfg config, publish func(string, float64), dev
 		send(rw, 200, map[string]bool{"ok": true})
 	})
 
-	// DELETE /api/rules/<id>
+	// DELETE /api/rules/<id>  and  PUT /api/rules/<id>
 	mux.HandleFunc("/api/rules/", func(rw http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			send(rw, 405, map[string]string{"error": "method not allowed"})
-			return
-		}
 		id, err := strconv.ParseInt(strings.TrimPrefix(r.URL.Path, "/api/rules/"), 10, 64)
 		if err != nil {
 			send(rw, 400, map[string]string{"error": "bad id"})
 			return
 		}
-		if err := db.deleteRuleDevice(id); err != nil {
+		switch r.Method {
+		case http.MethodDelete:
+			if err := db.deleteRuleDevice(id); err != nil {
+				send(rw, 500, map[string]string{"error": err.Error()})
+				return
+			}
+			reloadRules(st, db)
+			log.Printf("[rule] deleted id %d", id)
+			send(rw, 200, map[string]bool{"ok": true})
+		case http.MethodPut:
+			var r2 RuleDevice
+			if err := json.NewDecoder(r.Body).Decode(&r2); err != nil {
+				send(rw, 400, map[string]string{"error": "bad json"})
+				return
+			}
+			if strings.TrimSpace(r2.InputGUID) == "" || strings.TrimSpace(r2.OutputGUID) == "" {
+				send(rw, 400, map[string]string{"error": "input_guid and output_guid required"})
+				return
+			}
+			if err := db.updateRuleDevice(id, r2); err != nil {
+				send(rw, 500, map[string]string{"error": err.Error()})
+				return
+			}
+			reloadRules(st, db)
+			log.Printf("[rule] updated id %d -> %s = %v -> %s = %v", id, r2.InputGUID, r2.InputValue, r2.OutputGUID, r2.OutputValue)
+			send(rw, 200, map[string]bool{"ok": true})
+		default:
+			send(rw, 405, map[string]string{"error": "method not allowed"})
+		}
+	})
+
+	// PUT /api/rule-group  {input_guid, input_value, actions:[{output_guid,output_value}, ...]}
+	// Replaces the whole "one switch state -> many actuators" rule atomically.
+	mux.HandleFunc("/api/rule-group", func(rw http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			send(rw, 405, map[string]string{"error": "method not allowed"})
+			return
+		}
+		var b struct {
+			InputGUID  string       `json:"input_guid"`
+			InputValue float64      `json:"input_value"`
+			Actions    []RuleDevice `json:"actions"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
+			send(rw, 400, map[string]string{"error": "bad json"})
+			return
+		}
+		if strings.TrimSpace(b.InputGUID) == "" {
+			send(rw, 400, map[string]string{"error": "input_guid required"})
+			return
+		}
+		for i := range b.Actions {
+			b.Actions[i].InputGUID = b.InputGUID
+			b.Actions[i].InputValue = b.InputValue
+		}
+		if err := db.replaceRuleGroup(b.InputGUID, b.InputValue, b.Actions); err != nil {
 			send(rw, 500, map[string]string{"error": err.Error()})
 			return
 		}
 		reloadRules(st, db)
-		log.Printf("[rule] deleted id %d", id)
-		send(rw, 200, map[string]bool{"ok": true})
+		log.Printf("[rule-group] %s = %v -> %d actuators", b.InputGUID, b.InputValue, len(b.Actions))
+		send(rw, 200, map[string]int{"saved": len(b.Actions)})
 	})
-
-	// floors/rooms (HIOTO scheme) for the dashboard + a registration app to
-	// build pickers; mirrors the :8000 API.
 	mux.HandleFunc("/api/floors", func(rw http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			send(rw, 405, map[string]string{"error": "method not allowed"})

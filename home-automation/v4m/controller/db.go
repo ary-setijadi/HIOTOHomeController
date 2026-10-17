@@ -198,11 +198,22 @@ func (d *DB) deleteDevice(guid string) error {
 	return err
 }
 
-// updateDevice changes the mutable fields (name/type/mac) of a registration.
-func (d *DB) updateDevice(guid, name, typ, mac string) error {
+// updateDevice overwrites the mutable registration fields (everything the user
+// can edit) while leaving guid, last_seen, and created_at untouched.
+func (d *DB) updateDevice(dev Device) error {
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err := d.Exec(`UPDATE registrations SET name = ?, type = ?, category = ?, mac = ?, updated_at = ? WHERE guid = ?`,
-		name, typ, typ, mac, now, guid)
+	cat := dev.Category
+	if cat == "" {
+		cat = dev.Type
+	}
+	_, err := d.Exec(`UPDATE registrations SET
+		mac = ?, type = ?, name = ?, status = ?, status_device = ?,
+		version = ?, minor = ?, category = ?, quantity = ?, room_id = ?,
+		floor_id = ?, x_position = ?, y_position = ?, updated_at = ?
+		WHERE guid = ?`,
+		dev.MAC, dev.Type, dev.Name, dev.Status, dev.StatusDevice,
+		dev.Version, dev.Minor, cat, dev.Quantity, dev.RoomID,
+		dev.FloorID, dev.XPosition, dev.YPosition, now, dev.GUID)
 	return err
 }
 
@@ -306,6 +317,41 @@ func (d *DB) clearRuleDevices() error {
 func (d *DB) deleteRuleDevice(id int64) error {
 	_, err := d.Exec(`DELETE FROM rule_devices WHERE id = ?`, id)
 	return err
+}
+
+// updateRuleDevice overwrites a single rule_devices row by primary key.
+func (d *DB) updateRuleDevice(id int64, r RuleDevice) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	_, err := d.Exec(`
+UPDATE rule_devices SET input_guid = ?, input_value = ?, output_guid = ?, output_value = ?, updated_at = ?
+WHERE id = ?`,
+		r.InputGUID, floatStr(r.InputValue), r.OutputGUID, floatStr(r.OutputValue), now, id)
+	return err
+}
+
+// replaceRuleGroup replaces every rule_devices row sharing (input_guid,
+// input_value) with the given actuator actions, in one transaction. It is the
+// atomic "one switch state drives many actuators" operation.
+func (d *DB) replaceRuleGroup(inputGUID string, inputValue float64, actions []RuleDevice) error {
+	now := time.Now().UTC().Format(time.RFC3339)
+	tx, err := d.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM rule_devices WHERE input_guid = ? AND input_value = ?`,
+		inputGUID, floatStr(inputValue)); err != nil {
+		return err
+	}
+	for _, a := range actions {
+		if _, err := tx.Exec(`
+INSERT INTO rule_devices (input_guid, input_value, output_guid, output_value, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?)`,
+			inputGUID, floatStr(inputValue), a.OutputGUID, floatStr(a.OutputValue), now, now); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (d *DB) countRuleDevices() int {

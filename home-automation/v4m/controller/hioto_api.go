@@ -383,12 +383,24 @@ func hiotoUpdateDevice(rw http.ResponseWriter, r *http.Request, db *DB, guid str
 	if b.Type == "" {
 		b.Type = "SENSOR"
 	}
-	_ = db.updateDevice(guid, b.Name, b.Type, b.MAC)
+	cur, ok := db.getDevice(guid)
+	if !ok {
+		hiotoJSON(rw, 404, "not found", nil)
+		return
+	}
+	cur.Name = b.Name
+	cur.Type = b.Type
+	cur.MAC = b.MAC
+	cur.Category = b.Type
+	_ = db.updateDevice(cur)
 	// Keep the in-memory registry in sync so live broadcasts don't revert it.
 	if dev, ok := deviceMap[guid]; ok {
-		dev.Name = b.Name
-		dev.Type = b.Type
-		dev.MAC = b.MAC
+		dev.Name = cur.Name
+		dev.Type = cur.Type
+		dev.MAC = cur.MAC
+		dev.Category = cur.Category
+		dev.Kind = kindOf(dev.Type)
+		dev.ValueType = valueTypeOf(dev.Type)
 		deviceMap[guid] = dev
 	}
 	hiotoJSON(rw, 200, "Success Update Device", map[string]string{"guid": guid})

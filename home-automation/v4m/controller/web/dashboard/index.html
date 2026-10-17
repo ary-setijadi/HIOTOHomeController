@@ -56,6 +56,24 @@
 
     <section id="panel-rules" class="panel">
       <div class="panel-head"><h2>Rules</h2></div>
+
+      <div class="add-rule" style="margin-top:0">
+        <h3>Rule editor — one switch value can drive many actuators</h3>
+        <div class="reg-grid">
+          <label>Input switch<select id="rule-in-guid"></select></label>
+          <label>Switch value
+            <select id="rule-in-val">
+              <option value="0">00 (0)</option>
+              <option value="1">01 (1)</option>
+              <option value="2">10 (2)</option>
+              <option value="3">11 (3)</option>
+            </select>
+          </label>
+        </div>
+        <div id="rule-action-list" class="rule-actions"></div>
+        <button id="btn-add-rule" class="primary">Add Rule</button>
+      </div>
+
       <div id="rules" class="list"></div>
 
       <div class="panel-head" style="margin-top:18px"><h2>Timer Rules</h2></div>
@@ -147,12 +165,12 @@
         minor, quantity, room_id, floor_id, x_position, y_position, status, status_device, category, last_seen</code>).
         Export downloads the current list in the same format.</p>
 
-      <div class="panel-head" style="margin-top:18px"><h2>Registered devices</h2></div>
+      <div class="panel-head" style="margin-top:18px"><h2>Registered devices</h2><span id="hb-summary" class="hint"></span></div>
       <div class="table-wrap">
         <table id="deviceTable">
           <thead><tr>
-            <th>guid</th><th>name</th><th>type</th><th>mac</th><th>ver</th><th>qty</th>
-            <th>room</th><th>floor</th><th>status</th><th>last_seen</th><th></th>
+            <th>guid</th><th>name</th><th>type</th><th>mac</th><th>version</th><th>minor</th><th>qty</th>
+            <th>room</th><th>floor</th><th>x</th><th>y</th><th>status</th><th>heartbeat</th><th>last_seen</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
