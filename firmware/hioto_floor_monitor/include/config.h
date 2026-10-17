@@ -43,8 +43,8 @@
 /* A node that has not published within this window is shown as offline. */
 #define NODE_TIMEOUT_MS 150000
 
-/* Maximum nodes tracked on the floor dashboard. */
-#define MON_MAX_NODES 32
+/* Maximum nodes tracked on the floor dashboard (Lantai 1 has 56 devices). */
+#define MON_MAX_NODES 56
 
 /* Number of device-row widgets created (the list scrolls vertically). */
-#define MON_ROWS_MAX 32
+#define MON_ROWS_MAX 56

@@ -519,6 +519,8 @@ void loop() {
     Serial.printf("[reg] ready: %s\n", registry_status());
     monitor_prune();
     monitor_apply_registry();
+    monitor_seed_from_registry();
+    monitor_apply_status_snapshot();
   }
   serial_poll();
   status_led();

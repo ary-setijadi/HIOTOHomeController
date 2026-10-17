@@ -124,6 +124,37 @@ void monitor_apply_registry(void) {
   for (int i = 0; i < s_count; i++) label_from_registry(&s_nodes[i]);
 }
 
+/* Seed a node for every registered floor device (even if it never publishes). */
+void monitor_seed_from_registry(void) {
+  if (!registry_ready()) return;
+  for (int i = 0; i < registry_count(); i++) {
+    const char *guid = registry_guid_at(i);
+    if (!guid) continue;
+    MonNode *n = upsert(guid);
+    if (!n) continue;
+    if (!n->online && (n->value[0] == '\0' || !strcmp(n->value, "-"))) {
+      n->last_ms = 0; /* never heard from -> age shown as "-" */
+      n->online = false;
+    }
+    label_from_registry(n);
+  }
+  sort_nodes();
+}
+
+/* Unknown lamp states fall back to the controller's registry snapshot. */
+void monitor_apply_status_snapshot(void) {
+  if (!registry_ready()) return;
+  for (int i = 0; i < s_count; i++) {
+    MonNode *n = &s_nodes[i];
+    if (!n->actuator) continue;
+    if (n->value[0] && strcmp(n->value, "-")) continue; /* live value wins */
+    const char *st = registry_device_status(n->id);
+    if (!st || !st[0]) continue;
+    if (!strcmp(st, "0")) copy_str(n->value, sizeof n->value, "ON");
+    else if (!strcmp(st, "1")) copy_str(n->value, sizeof n->value, "OFF");
+  }
+}
+
 /* --- topic ingestion ----------------------------------------------------- */
 
 /* iot/{id}/telemetry | status */

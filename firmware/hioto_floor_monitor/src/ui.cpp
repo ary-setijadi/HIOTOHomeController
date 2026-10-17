@@ -473,7 +473,8 @@ static void update_rows(void) {
     lv_label_set_text(s_row_val[shown], node->value);
     char age[16];
     uint32_t sec = (millis() - node->last_ms) / 1000UL;
-    if (sec < 60) snprintf(age, sizeof age, "%lus", (unsigned long)sec);
+    if (node->last_ms == 0) strcpy(age, "-");
+    else if (sec < 60) snprintf(age, sizeof age, "%lus", (unsigned long)sec);
     else snprintf(age, sizeof age, "%lum", (unsigned long)(sec / 60UL));
     lv_label_set_text(s_row_age[shown], age);
     lv_obj_set_style_text_color(s_row_name[shown], lv_color_hex(node->online ? COL_TEXT : COL_DIM), 0);

@@ -42,6 +42,14 @@ void monitor_poll(void);
 /* Re-apply registry labels/rooms to every tracked node (after a registry load). */
 void monitor_apply_registry(void);
 
+/* Create a placeholder node for every registered floor device, so devices that
+ * are not publishing yet still appear in the list (offline, value "-"). */
+void monitor_seed_from_registry(void);
+
+/* Fill unknown actuator states from the controller's registry snapshot
+ * (status "0" = ON, "1" = OFF, active-low). Real-time values always win. */
+void monitor_apply_status_snapshot(void);
+
 /* Remove nodes that are not part of this floor (call once the registry loads). */
 void monitor_prune(void);
 

@@ -33,8 +33,15 @@ const char *registry_room_of(const char *guid);
 /* Registry type "AKTUATOR" (lamp/relay) — such rows get an ON/OFF toggle. */
 bool registry_is_actuator(const char *guid);
 
+/* Controller's last status value for a device ("0"/"1" for actuators), or NULL. */
+const char *registry_device_status(const char *guid);
+
 /* Unique room names discovered on this floor (insertion order). */
 int registry_room_count(void);
 const char *registry_room_name(int index);
+
+/* Enumerate the floor registry (insertion order). */
+const char *registry_guid_at(int index);
+const char *registry_name_at(int index);
 
 const char *registry_status(void);

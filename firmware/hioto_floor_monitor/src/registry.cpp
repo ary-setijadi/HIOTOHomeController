@@ -11,7 +11,8 @@ struct Entry {
   char guid[40];
   char name[36];
   char room[24];
-  bool actuator; /* registry type == AKTUATOR (lamp/relay) */
+  char status[8]; /* controller's last status value ("0"/"1" for actuators) */
+  bool actuator;  /* registry type == AKTUATOR (lamp/relay) */
 };
 
 static Entry s_entries[64];
@@ -208,6 +209,7 @@ static bool fetch_registry(void) {
       const char *guid = f[0];
       const char *name = f[3];
       const char *type = f[2];
+      const char *status = f[4];
       int fid = atoi(f[11]);
       if (!strcmp(guid, g_settings.device_id)) {
         /* our own panel is not a floor node */
@@ -215,6 +217,7 @@ static bool fetch_registry(void) {
         copy_str(s_entries[n].guid, sizeof s_entries[n].guid, guid);
         copy_str(s_entries[n].name, sizeof s_entries[n].name, name);
         s_entries[n].actuator = (strcmp(type, "AKTUATOR") == 0);
+        copy_str(s_entries[n].status, sizeof s_entries[n].status, status);
         derive_room(name, s_entries[n].room, sizeof s_entries[n].room);
         add_room(s_entries[n].room);
         n++;
@@ -249,9 +252,10 @@ void registry_begin(void) {
 }
 
 bool registry_poll(void) {
-  if (s_ready) return false;
   if (wifi_mgr_state() != WIFI_ST_OK) return false;
-  if (s_last_try && (millis() - s_last_try) < 15000) return false;
+  /* refetch periodically so the controller's actuator states stay in sync */
+  const uint32_t interval = s_ready ? 60000UL : 15000UL;
+  if (s_last_try && (millis() - s_last_try) < interval) return false;
   s_last_try = millis();
   return fetch_registry();
 }
@@ -284,11 +288,27 @@ bool registry_is_actuator(const char *guid) {
   return false;
 }
 
+const char *registry_device_status(const char *guid) {
+  for (int i = 0; i < s_count; i++)
+    if (!strcmp(s_entries[i].guid, guid)) return s_entries[i].status;
+  return NULL;
+}
+
 int registry_room_count(void) { return s_room_count; }
 
 const char *registry_room_name(int index) {
   if (index < 0 || index >= s_room_count) return NULL;
   return s_rooms[index];
+}
+
+const char *registry_guid_at(int index) {
+  if (index < 0 || index >= s_count) return NULL;
+  return s_entries[index].guid;
+}
+
+const char *registry_name_at(int index) {
+  if (index < 0 || index >= s_count) return NULL;
+  return s_entries[index].name;
 }
 
 const char *registry_status(void) { return s_status; }
