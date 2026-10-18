@@ -29,9 +29,9 @@
 #define LV_USE_TEXTAREA 1
 #define LV_USE_DROPDOWN 1
 #define LV_USE_BTNMATRIX 1
-#define LV_USE_BAR 0
-#define LV_USE_SLIDER 0
-#define LV_USE_SWITCH 0
+#define LV_USE_BAR 1
+#define LV_USE_SLIDER 1
+#define LV_USE_SWITCH 1
 #define LV_USE_LED 0
 
 #define LV_FONT_MONTSERRAT_12 1

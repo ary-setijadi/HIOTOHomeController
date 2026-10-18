@@ -8,6 +8,12 @@ void ui_init(void);
 /* Refresh lamp button visuals + Wi-Fi/MQTT status line (call ~4x/s). */
 void ui_refresh_states(void);
 
+/* Housekeeping: applies a pending theme rebuild. Call once per loop(). */
+void ui_poll(void);
+
+/* Request a full re-style (used after a theme change from the console). */
+void ui_theme_changed(void);
+
 /* Open the settings screen (also used on first boot without Wi-Fi). */
 void ui_open_settings(void);
 

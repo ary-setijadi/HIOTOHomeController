@@ -23,6 +23,8 @@
 #include "settings.h"
 #include "registry.h"
 #include "mqtt_mgr.h"
+#include "theme.h"
+#include "backlight.h"
 #include "ui.h"
 
 static TFT_eSPI s_tft;
@@ -33,28 +35,11 @@ static const uint32_t kDrawLines = 20;
 static lv_color_t *s_buf_a = nullptr;
 static lv_color_t *s_buf_b = nullptr;
 
-static uint8_t s_backlight_pct = 90;
 static bool s_btn_prev = false;
 static uint32_t s_btn_pressed_at = 0;
 static bool s_btn_long_done = false;
 static uint32_t s_last_ui = 0;
 static bool s_wifi_started = false;
-
-/* ------------------------------------------------------------------------- */
-/*  Backlight (PWM on GPIO27)                                                */
-/* ------------------------------------------------------------------------- */
-static void backlight_set(int pct) {
-  static bool ready = false;
-  if (pct < 5) pct = 5;
-  if (pct > 100) pct = 100;
-  s_backlight_pct = (uint8_t)pct;
-  if (!ready) {
-    ledcSetup(0, 25000, 10);
-    ledcAttachPin(PIN_LCD_BL, 0);
-    ready = true;
-  }
-  ledcWrite(0, (uint32_t)s_backlight_pct * 1023U / 100U);
-}
 
 /* ------------------------------------------------------------------------- */
 /*  LVGL flush                                                               */
@@ -252,6 +237,8 @@ static void serial_help(void) {
   Serial.println("  mqtt <host> <port> <user> <pass>");
   Serial.println("  floor <label...>           title left part");
   Serial.println("  room <label...>            title right part");
+  Serial.println("  bright <20-100>            LCD backlight percent (saved)");
+  Serial.println("  theme [0-5]                list or set the colour theme");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -263,6 +250,8 @@ static void serial_status(void) {
                 g_settings.floor_label, g_settings.room_label);
   Serial.printf("wifi='%s' mqtt=%s:%u lampu=%d\n", g_settings.wifi_ssid,
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
+  Serial.printf("bright=%u%% theme=%u (%s)\n", (unsigned)g_settings.brightness,
+                (unsigned)g_settings.theme, theme_get(g_settings.theme)->name);
   for (int i = 0; i < GEN_SLOTS; i++) {
     int ri = g_settings.slots[i].guid[0]
                  ? registry_find_guid(g_settings.slots[i].guid)
@@ -317,6 +306,29 @@ static void serial_handle_line(char *line) {
     }
     snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s", label);
     Serial.printf("[cfg] room=%s\n", g_settings.room_label);
+  } else if (!strcmp(tok[0], "bright")) {
+    if (n >= 2) {
+      int pct = atoi(tok[1]);
+      if (pct < 20) pct = 20;
+      if (pct > 100) pct = 100;
+      g_settings.brightness = (uint8_t)pct;
+      backlight_set(g_settings.brightness);
+      settings_save(&g_settings);
+      Serial.printf("[cfg] bright=%d%%\n", pct);
+    } else {
+      Serial.printf("[cfg] bright=%u%%\n", (unsigned)backlight_get());
+    }
+  } else if (!strcmp(tok[0], "theme")) {
+    if (n >= 2) {
+      int idx = atoi(tok[1]);
+      if (idx < 0 || idx >= THEME_COUNT) idx = 0;
+      g_settings.theme = (uint8_t)idx;
+      settings_save(&g_settings);
+      ui_theme_changed();
+      Serial.printf("[cfg] theme=%d (%s)\n", idx, theme_get(g_settings.theme)->name);
+    }
+    for (int i = 0; i < THEME_COUNT; i++)
+      Serial.printf("  %d = %s\n", i, g_themes[i].name);
   } else if (!strcmp(tok[0], "ldr")) {
     int adc = analogRead(PIN_LDR);
     int pct = (adc - 300) * 100 / (3900 - 300);
@@ -389,10 +401,12 @@ void setup() {
   s_tft.fillScreen(TFT_BLACK);
 
   settings_load(&g_settings);
-  backlight_set(g_settings.brightness);
+  backlight_begin(g_settings.brightness);
   Serial.printf("[cfg] dev=%s floor=%s room=%s mqtt=%s:%u\n", g_settings.device_id,
                 g_settings.floor_label, g_settings.room_label, g_settings.mqtt_host,
                 g_settings.mqtt_port);
+  Serial.printf("[cfg] bright=%u%% theme=%s\n", (unsigned)g_settings.brightness,
+                theme_get(g_settings.theme)->name);
 
   const uint32_t px = LCD_WIDTH * kDrawLines;
   s_buf_a = (lv_color_t *)heap_caps_malloc(px * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -436,6 +450,7 @@ void setup() {
 
 void loop() {
   lv_timer_handler();
+  ui_poll();
   mqtt_poll();
 
   if (registry_poll()) {

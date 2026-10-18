@@ -6,7 +6,7 @@
 struct LampSlot {
   char guid[40]; /* actuator guid ("" = unassigned) */
   char label[16]; /* short id, e.g. "LAMP.12" */
-  uint8_t icon;   /* 0 = spot lamp, 1 = general lamp */
+  uint8_t icon;   /* see ICON_NAMES in config.h */
 };
 
 struct Settings {
@@ -20,7 +20,8 @@ struct Settings {
   char floor_label[24];
   char room_label[24];
   LampSlot slots[GEN_SLOTS];
-  uint8_t brightness;
+  uint8_t brightness; /* LCD backlight, 5..100 % */
+  uint8_t theme;      /* colour theme index (theme.h) */
   uint16_t touch_cal[8];
   bool touch_cal_valid;
 };

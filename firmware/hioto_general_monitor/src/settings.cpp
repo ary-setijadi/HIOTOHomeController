@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "config.h"
+#include "theme.h"
 #include <Preferences.h>
 #include <WiFi.h>
 
@@ -30,7 +31,8 @@ void settings_load(Settings *s) {
   copy_str(s->device_id, sizeof s->device_id, DEFAULT_DEVICE_ID);
   copy_str(s->floor_label, sizeof s->floor_label, DEFAULT_FLOOR);
   copy_str(s->room_label, sizeof s->room_label, DEFAULT_ROOM);
-  s->brightness = 90;
+  s->brightness = DEFAULT_BRIGHTNESS;
+  s->theme = DEFAULT_THEME;
   {
     const char *labels[GEN_SLOTS] = {DEFAULT_SLOT_LABELS};
     for (int i = 0; i < GEN_SLOTS; i++) {
@@ -54,6 +56,7 @@ void settings_load(Settings *s) {
   prefs.getString("floor", s->floor_label, sizeof s->floor_label);
   prefs.getString("room", s->room_label, sizeof s->room_label);
   s->brightness = (uint8_t)prefs.getUChar("bright", s->brightness);
+  s->theme = (uint8_t)prefs.getUChar("theme", s->theme);
   s->touch_cal_valid = prefs.getBytes("tcal", s->touch_cal, sizeof s->touch_cal) ==
                        sizeof s->touch_cal;
   for (int i = 0; i < GEN_SLOTS; i++) {
@@ -69,6 +72,7 @@ void settings_load(Settings *s) {
 
   if (s->brightness < 20) s->brightness = 20;
   if (s->brightness > 100) s->brightness = 100;
+  if (s->theme >= THEME_COUNT) s->theme = DEFAULT_THEME;
   derive_device_id(s);
 }
 
@@ -85,6 +89,7 @@ void settings_save(const Settings *s) {
   prefs.putString("floor", s->floor_label);
   prefs.putString("room", s->room_label);
   prefs.putUChar("bright", s->brightness);
+  prefs.putUChar("theme", s->theme);
   if (s->touch_cal_valid) prefs.putBytes("tcal", s->touch_cal, sizeof s->touch_cal);
   for (int i = 0; i < GEN_SLOTS; i++) {
     char key[8];

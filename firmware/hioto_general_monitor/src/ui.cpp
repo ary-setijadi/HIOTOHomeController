@@ -6,35 +6,32 @@
 #include "settings.h"
 #include "registry.h"
 #include "mqtt_mgr.h"
+#include "theme.h"
+#include "backlight.h"
 #include "ui.h"
 
-#define COL_BG     0x0B1220
-#define COL_CARD   0x111A2E
-#define COL_CARD2  0x0E1626
-#define COL_BORDER 0x1E2A44
-#define COL_TEXT   0xE2E8F0
-#define COL_MUTED  0x7A8AA0
-#define COL_DIM    0x4A5A70
-#define COL_ACCENT 0x3B82F6
-#define COL_GREEN  0x22C55E
-#define COL_AMBER  0xF5B400
-#define COL_RED    0xEF4444
+/* Active palette. C(field) expands to the colour of the current theme. */
+static inline const UiTheme *T(void) { return theme_get(g_settings.theme); }
+#define C(field) lv_color_hex(T()->field)
 
+/* ------------------------------------------------------------------------- */
+/*  Widget handles                                                           */
+/* ------------------------------------------------------------------------- */
 static lv_obj_t *s_main = NULL;
 static lv_obj_t *s_set = NULL;
 
-/* main-screen widgets */
+/* main screen */
 static lv_obj_t *s_title = NULL;
 static lv_obj_t *s_status = NULL;
 static lv_obj_t *s_btn[GEN_SLOTS];
 static lv_obj_t *s_icon_box[GEN_SLOTS];
-static lv_obj_t *s_icon_circle[GEN_SLOTS];
-static lv_obj_t *s_icon_glow[GEN_SLOTS];
-static lv_obj_t *s_icon_base[GEN_SLOTS]; /* rect (general) or line (spot) */
+static lv_obj_t *s_icon_fill[GEN_SLOTS][4]; /* shapes painted in the lamp colour */
+static lv_obj_t *s_icon_line[GEN_SLOTS][2]; /* beam / rays */
+static lv_obj_t *s_icon_glow[GEN_SLOTS];    /* hot spot, visible when ON */
 static lv_obj_t *s_name[GEN_SLOTS];
 static lv_obj_t *s_state[GEN_SLOTS];
 
-/* settings widgets */
+/* settings screen */
 static lv_obj_t *s_ta_ssid = NULL;
 static lv_obj_t *s_ta_pass = NULL;
 static lv_obj_t *s_ta_floor = NULL;
@@ -44,7 +41,15 @@ static lv_obj_t *s_dd_dev[GEN_SLOTS];
 static lv_obj_t *s_dd_icon[GEN_SLOTS];
 static lv_obj_t *s_kb = NULL;
 static lv_obj_t *s_set_content = NULL;
+static lv_obj_t *s_slider = NULL;
+static lv_obj_t *s_lbl_bright = NULL;
+static lv_obj_t *s_dd_theme = NULL;
 
+static uint32_t s_last_refresh = 0;
+static bool s_rebuild_pending = false;
+
+/* ------------------------------------------------------------------------- */
+/*  Small helpers                                                            */
 /* ------------------------------------------------------------------------- */
 static bool str_eq_ci(const char *a, const char *b) {
   while (*a && *b) {
@@ -56,12 +61,26 @@ static bool str_eq_ci(const char *a, const char *b) {
 }
 
 static lv_obj_t *mk_label(lv_obj_t *parent, const char *txt, const lv_font_t *font,
-                          uint32_t color) {
+                          lv_color_t color) {
   lv_obj_t *l = lv_label_create(parent);
   lv_label_set_text(l, txt);
   lv_obj_set_style_text_font(l, font, 0);
-  lv_obj_set_style_text_color(l, lv_color_hex(color), 0);
+  lv_obj_set_style_text_color(l, color, 0);
   return l;
+}
+
+/* Bare container: transparent, no border, no padding, no scrolling. */
+static lv_obj_t *mk_row(lv_obj_t *parent, lv_coord_t h) {
+  lv_obj_t *row = lv_obj_create(parent);
+  lv_obj_set_size(row, LV_PCT(100), h);
+  lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_border_width(row, 0, 0);
+  lv_obj_set_style_pad_all(row, 0, 0);
+  lv_obj_set_style_pad_column(row, 6, 0);
+  lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+  return row;
 }
 
 static void mk_ta(lv_obj_t *parent, lv_obj_t **out, const char *txt, bool password) {
@@ -70,20 +89,57 @@ static void mk_ta(lv_obj_t *parent, lv_obj_t **out, const char *txt, bool passwo
   lv_textarea_set_one_line(ta, true);
   if (password) lv_textarea_set_password_mode(ta, true);
   lv_textarea_set_text(ta, txt ? txt : "");
-  lv_obj_set_style_bg_color(ta, lv_color_hex(COL_CARD2), 0);
-  lv_obj_set_style_text_color(ta, lv_color_hex(COL_TEXT), 0);
+  lv_obj_set_style_bg_color(ta, C(card2), 0);
+  lv_obj_set_style_text_color(ta, C(text), 0);
   lv_obj_set_style_text_font(ta, &lv_font_montserrat_12, 0);
-  lv_obj_set_style_border_color(ta, lv_color_hex(COL_BORDER), 0);
+  lv_obj_set_style_border_color(ta, C(border), 0);
   lv_obj_set_style_radius(ta, 8, 0);
   *out = ta;
 }
 
+static lv_obj_t *mk_shape(lv_obj_t *box, lv_coord_t w, lv_coord_t h, lv_coord_t x,
+                          lv_coord_t y, lv_coord_t radius) {
+  lv_obj_t *o = lv_obj_create(box);
+  lv_obj_set_size(o, w, h);
+  lv_obj_set_pos(o, x, y);
+  lv_obj_set_style_radius(o, radius, 0);
+  lv_obj_set_style_bg_color(o, C(icon_unk), 0);
+  lv_obj_set_style_bg_opa(o, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(o, 0, 0);
+  lv_obj_clear_flag(o, LV_OBJ_FLAG_SCROLLABLE);
+  return o;
+}
+
+static lv_obj_t *mk_bulb(lv_obj_t *box, lv_coord_t d, lv_coord_t x, lv_coord_t y) {
+  lv_obj_t *o = mk_shape(box, d, d, x, y, LV_RADIUS_CIRCLE);
+  lv_obj_set_style_border_width(o, 2, 0);
+  lv_obj_set_style_border_color(o, C(icon_unk_ring), 0);
+  return o;
+}
+
+static void mk_glow(lv_obj_t *box, int i, lv_coord_t w, lv_coord_t h, lv_coord_t x,
+                    lv_coord_t y, lv_coord_t radius) {
+  lv_obj_t *g = mk_shape(box, w, h, x, y, radius);
+  lv_obj_set_style_bg_color(g, C(glow), 0);
+  lv_obj_add_flag(g, LV_OBJ_FLAG_HIDDEN);
+  s_icon_glow[i] = g;
+}
+
+static void mk_line(lv_obj_t *box, int i, int slot, const lv_point_t *pts, uint16_t n) {
+  lv_obj_t *ln = lv_line_create(box);
+  lv_line_set_points(ln, pts, n);
+  lv_obj_set_pos(ln, 0, 0);
+  lv_obj_set_style_line_width(ln, 3, 0);
+  lv_obj_set_style_line_rounded(ln, true, 0);
+  lv_obj_set_style_line_color(ln, C(icon_unk), 0);
+  s_icon_line[i][slot] = ln;
+}
+
 /* ------------------------------------------------------------------------- */
-/*  Lamp icons (bulb body + base or beam)                                    */
+/*  Lamp icons                                                               */
 /* ------------------------------------------------------------------------- */
 static void mk_icon(int i) {
-  lv_obj_t *btn = s_btn[i];
-  lv_obj_t *box = lv_obj_create(btn);
+  lv_obj_t *box = lv_obj_create(s_btn[i]);
   lv_obj_set_size(box, 48, 44);
   lv_obj_set_pos(box, 31, 3);
   lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, 0);
@@ -92,63 +148,68 @@ static void mk_icon(int i) {
   lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
   s_icon_box[i] = box;
 
-  lv_obj_t *circle = lv_obj_create(box);
-  lv_obj_set_style_bg_color(circle, lv_color_hex(0x3E4C63), 0);
-  lv_obj_set_style_bg_opa(circle, LV_OPA_COVER, 0);
-  lv_obj_set_style_radius(circle, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_border_width(circle, 2, 0);
-  lv_obj_set_style_border_color(circle, lv_color_hex(0x5A6B85), 0);
-  s_icon_circle[i] = circle;
+  static lv_point_t spot_beam[5] = {{17, 25}, {2, 42}, {46, 42}, {31, 25}, {17, 25}};
+  static lv_point_t ray_l[2] = {{14, 24}, {7, 41}};
+  static lv_point_t ray_r[2] = {{34, 24}, {41, 41}};
 
-  /* bright highlight inside the bulb (glow when ON) */
-  lv_obj_t *glow = lv_obj_create(box);
-  lv_obj_set_size(glow, 10, 10);
-  lv_obj_set_style_radius(glow, LV_RADIUS_CIRCLE, 0);
-  lv_obj_set_style_bg_color(glow, lv_color_hex(0xFFF3C1), 0);
-  lv_obj_set_style_bg_opa(glow, LV_OPA_COVER, 0);
-  lv_obj_set_style_border_width(glow, 0, 0);
-  lv_obj_add_flag(glow, LV_OBJ_FLAG_HIDDEN);
-  s_icon_glow[i] = glow;
+  switch (g_settings.slots[i].icon % ICON_COUNT) {
+    case 0: /* Spot — lamp head with a bright expanding beam */
+      s_icon_fill[i][0] = mk_bulb(box, 24, 12, 0);
+      mk_line(box, i, 0, spot_beam, 5);
+      mk_glow(box, i, 10, 10, 19, 7, LV_RADIUS_CIRCLE);
+      break;
 
-  if (g_settings.slots[i].icon == 0) {
-    /* spot lamp: head + bright expanding beam */
-    lv_obj_set_size(circle, 24, 24);
-    lv_obj_set_pos(circle, 12, 0);
-    lv_obj_set_pos(glow, 19, 7);
-    static lv_point_t beam_pts[5] = {{17, 25}, {2, 42}, {46, 42}, {31, 25}, {17, 25}};
-    lv_obj_t *line = lv_line_create(box);
-    lv_line_set_points(line, beam_pts, 5);
-    lv_obj_set_pos(line, 0, 0);
-    lv_obj_set_style_line_color(line, lv_color_hex(0x3E4C63), 0);
-    lv_obj_set_style_line_width(line, 3, 0);
-    s_icon_base[i] = line;
-  } else {
-    /* general lamp: bulb + stem */
-    lv_obj_set_size(circle, 28, 28);
-    lv_obj_set_pos(circle, 10, -1);
-    lv_obj_set_pos(glow, 18, 6);
-    lv_obj_t *base = lv_obj_create(box);
-    lv_obj_set_size(base, 16, 7);
-    lv_obj_set_pos(base, 16, 29);
-    lv_obj_set_style_bg_color(base, lv_color_hex(0x3E4C63), 0);
-    lv_obj_set_style_bg_opa(base, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(base, 0, 0);
-    lv_obj_set_style_radius(base, 3, 0);
-    s_icon_base[i] = base;
+    case 1: /* Umum — classic bulb on a screw base */
+      s_icon_fill[i][0] = mk_bulb(box, 28, 10, 0);
+      s_icon_fill[i][1] = mk_shape(box, 16, 7, 16, 30, 3);
+      mk_glow(box, i, 10, 10, 19, 8, LV_RADIUS_CIRCLE);
+      break;
+
+    case 2: /* TL — linear tube with two end caps */
+      s_icon_fill[i][0] = mk_shape(box, 38, 12, 5, 8, 6);
+      s_icon_fill[i][1] = mk_shape(box, 5, 18, 1, 5, 2);
+      s_icon_fill[i][2] = mk_shape(box, 5, 18, 42, 5, 2);
+      mk_glow(box, i, 26, 4, 11, 12, 2);
+      break;
+
+    case 3: /* Downlight — ceiling plate, dome and two light rays */
+      s_icon_fill[i][0] = mk_shape(box, 38, 6, 5, 0, 3);
+      s_icon_fill[i][1] = mk_shape(box, 24, 15, 12, 6, 12);
+      mk_line(box, i, 0, ray_l, 2);
+      mk_line(box, i, 1, ray_r, 2);
+      mk_glow(box, i, 18, 6, 15, 12, 3);
+      break;
+
+    default: /* Taman — post lamp: head, pole, foot */
+      s_icon_fill[i][0] = mk_bulb(box, 20, 14, 2);
+      s_icon_fill[i][1] = mk_shape(box, 5, 14, 21, 24, 2);
+      s_icon_fill[i][2] = mk_shape(box, 20, 5, 14, 38, 2);
+      mk_glow(box, i, 8, 8, 20, 8, LV_RADIUS_CIRCLE);
+      break;
   }
 }
 
 static void icon_apply_state(int i, bool known, bool on) {
-  uint32_t col = !known ? 0x3E4C63 : (on ? 0xFFC107 : 0x4A5C77);
-  uint32_t ring = !known ? 0x5A6B85 : (on ? 0xFFE082 : 0x5A6B85);
-  lv_obj_set_style_bg_color(s_icon_circle[i], lv_color_hex(col), 0);
-  lv_obj_set_style_border_color(s_icon_circle[i], lv_color_hex(ring), 0);
-  if (g_settings.slots[i].icon == 0)
-    lv_obj_set_style_line_color(s_icon_base[i], lv_color_hex(col), 0);
-  else
-    lv_obj_set_style_bg_color(s_icon_base[i], lv_color_hex(col), 0);
-  if (on) lv_obj_clear_flag(s_icon_glow[i], LV_OBJ_FLAG_HIDDEN);
-  else lv_obj_add_flag(s_icon_glow[i], LV_OBJ_FLAG_HIDDEN);
+  const uint32_t fill = !known ? T()->icon_unk : (on ? T()->icon_on : T()->icon_off);
+  const uint32_t ring =
+      !known ? T()->icon_unk_ring : (on ? T()->icon_on_ring : T()->icon_off_ring);
+  const lv_color_t cfill = lv_color_hex(fill);
+  const lv_color_t cring = lv_color_hex(ring);
+
+  for (int k = 0; k < 4; k++) {
+    lv_obj_t *o = s_icon_fill[i][k];
+    if (!o) continue;
+    lv_obj_set_style_bg_color(o, cfill, 0);
+    lv_obj_set_style_border_color(o, cring, 0);
+  }
+  for (int k = 0; k < 2; k++) {
+    lv_obj_t *ln = s_icon_line[i][k];
+    if (ln) lv_obj_set_style_line_color(ln, cfill, 0);
+  }
+  if (s_icon_glow[i]) {
+    if (on) lv_obj_clear_flag(s_icon_glow[i], LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(s_icon_glow[i], LV_OBJ_FLAG_HIDDEN);
+  }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -185,7 +246,7 @@ static void settings_click_cb(lv_event_t *e) {
 
 static void mk_main(void) {
   s_main = lv_obj_create(NULL);
-  lv_obj_set_style_bg_color(s_main, lv_color_hex(COL_BG), 0);
+  lv_obj_set_style_bg_color(s_main, C(bg), 0);
   lv_obj_set_style_bg_opa(s_main, LV_OPA_COVER, 0);
   lv_obj_set_style_pad_all(s_main, 8, 0);
   lv_obj_set_style_pad_row(s_main, 6, 0);
@@ -193,59 +254,45 @@ static void mk_main(void) {
   lv_obj_set_flex_flow(s_main, LV_FLEX_FLOW_COLUMN);
 
   /* top bar: title + status + settings pill */
-  lv_obj_t *top = lv_obj_create(s_main);
-  lv_obj_set_size(top, LV_PCT(100), 34);
-  lv_obj_set_style_bg_opa(top, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(top, 0, 0);
-  lv_obj_set_style_pad_all(top, 0, 0);
-  lv_obj_set_flex_flow(top, LV_FLEX_FLOW_ROW);
-  lv_obj_set_flex_align(top, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_t *top = mk_row(s_main, 34);
   lv_obj_set_style_pad_column(top, 8, 0);
-  lv_obj_clear_flag(top, LV_OBJ_FLAG_SCROLLABLE);
 
-  s_title = mk_label(top, "Lantai 1 \xC2\xB7 Living Room", &lv_font_montserrat_20, COL_TEXT);
+  s_title = mk_label(top, "Lantai 1 | Living Room", &lv_font_montserrat_20, C(text));
   lv_obj_t *sp = lv_obj_create(top);
   lv_obj_set_size(sp, 6, 1);
   lv_obj_set_style_bg_opa(sp, LV_OPA_TRANSP, 0);
   lv_obj_set_style_border_width(sp, 0, 0);
 
-  s_status = mk_label(top, "", &lv_font_montserrat_12, COL_MUTED);
+  s_status = mk_label(top, "", &lv_font_montserrat_12, C(muted));
 
   lv_obj_t *set = lv_btn_create(top);
   lv_obj_set_size(set, 96, 30);
   lv_obj_set_style_radius(set, 15, 0);
-  lv_obj_set_style_bg_color(set, lv_color_hex(COL_CARD), 0);
+  lv_obj_set_style_bg_color(set, C(card), 0);
   lv_obj_set_style_border_width(set, 1, 0);
-  lv_obj_set_style_border_color(set, lv_color_hex(COL_BORDER), 0);
+  lv_obj_set_style_border_color(set, C(border), 0);
   lv_obj_add_event_cb(set, settings_click_cb, LV_EVENT_CLICKED, NULL);
-  mk_label(set, "Setelan", &lv_font_montserrat_12, COL_TEXT);
+  mk_label(set, "Setelan", &lv_font_montserrat_12, C(text));
 
   /* 2 rows x 4 buttons */
   for (int r = 0; r < 2; r++) {
-    lv_obj_t *row = lv_obj_create(s_main);
-    lv_obj_set_size(row, LV_PCT(100), 122);
-    lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(row, 0, 0);
-    lv_obj_set_style_pad_all(row, 0, 0);
-    lv_obj_set_style_pad_column(row, 6, 0);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_t *row = mk_row(s_main, 122);
 
     for (int c = 0; c < 4; c++) {
       int i = r * 4 + c;
       lv_obj_t *btn = lv_btn_create(row);
       lv_obj_set_size(btn, 110, 116);
       lv_obj_set_style_radius(btn, 14, 0);
-      lv_obj_set_style_bg_color(btn, lv_color_hex(COL_CARD), 0);
+      lv_obj_set_style_bg_color(btn, C(card), 0);
       lv_obj_set_style_border_width(btn, 1, 0);
-      lv_obj_set_style_border_color(btn, lv_color_hex(COL_BORDER), 0);
+      lv_obj_set_style_border_color(btn, C(border), 0);
       lv_obj_add_event_cb(btn, btn_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
       s_btn[i] = btn;
 
       mk_icon(i);
-      s_name[i] = mk_label(btn, g_settings.slots[i].label, &lv_font_montserrat_14, COL_TEXT);
+      s_name[i] = mk_label(btn, g_settings.slots[i].label, &lv_font_montserrat_14, C(text));
       lv_obj_set_pos(s_name[i], 8, 48);
-      s_state[i] = mk_label(btn, "-", &lv_font_montserrat_14, COL_DIM);
+      s_state[i] = mk_label(btn, "-", &lv_font_montserrat_14, C(dim));
       lv_obj_set_pos(s_state[i], 8, 70);
     }
   }
@@ -270,11 +317,56 @@ static void back_click_cb(lv_event_t *e) {
   lv_scr_load(s_main);
 }
 
-static void rebuild_icon(int i) {
-  if (s_icon_box[i]) lv_obj_del(s_icon_box[i]);
+static void refresh_slot_visual(int i) {
+  if (s_icon_box[i]) {
+    lv_obj_del(s_icon_box[i]);
+    s_icon_box[i] = NULL;
+    for (int k = 0; k < 4; k++) s_icon_fill[i][k] = NULL;
+    for (int k = 0; k < 2; k++) s_icon_line[i][k] = NULL;
+    s_icon_glow[i] = NULL;
+  }
   mk_icon(i);
   lv_obj_set_pos(s_name[i], 8, 48);
   lv_obj_set_pos(s_state[i], 8, 70);
+}
+
+/* ---- brightness ---- */
+static void bright_apply(int v, bool persist) {
+  if (v < 20) v = 20;
+  if (v > 100) v = 100;
+  backlight_set((uint8_t)v);
+  g_settings.brightness = (uint8_t)v;
+  if (s_lbl_bright) {
+    char b[16];
+    snprintf(b, sizeof b, "%d%%", v);
+    lv_label_set_text(s_lbl_bright, b);
+  }
+  if (persist) settings_save(&g_settings);
+}
+
+static void bright_slider_cb(lv_event_t *e) {
+  int v = (int)lv_slider_get_value(lv_event_get_target(e));
+  bright_apply(v, lv_event_get_code(e) == LV_EVENT_RELEASED);
+}
+
+static void bright_step_cb(lv_event_t *e) {
+  int delta = (int)(intptr_t)lv_event_get_user_data(e);
+  int v = (s_slider ? (int)lv_slider_get_value(s_slider) : (int)g_settings.brightness) + delta;
+  if (v < 20) v = 20;
+  if (v > 100) v = 100;
+  if (s_slider) lv_slider_set_value(s_slider, v, LV_ANIM_OFF);
+  bright_apply(v, true);
+}
+
+/* ---- theme ---- */
+static void theme_dd_cb(lv_event_t *e) {
+  uint16_t sel = lv_dropdown_get_selected(lv_event_get_target(e));
+  if (sel >= THEME_COUNT) sel = 0;
+  if (g_settings.theme == (uint8_t)sel) return;
+  g_settings.theme = (uint8_t)sel;
+  settings_save(&g_settings);
+  backlight_set(backlight_get()); /* keep the dimmer untouched */
+  s_rebuild_pending = true;       /* restyled from ui_poll(), outside the event */
 }
 
 static void save_click_cb(lv_event_t *e) {
@@ -304,7 +396,7 @@ static void save_click_cb(lv_event_t *e) {
   refresh_title();
   for (int i = 0; i < GEN_SLOTS; i++) {
     lv_label_set_text(s_name[i], g_settings.slots[i].label);
-    rebuild_icon(i);
+    refresh_slot_visual(i);
   }
   lv_scr_load(s_main);
   ui_refresh_states();
@@ -312,7 +404,7 @@ static void save_click_cb(lv_event_t *e) {
 
 static void mk_settings(void) {
   s_set = lv_obj_create(NULL);
-  lv_obj_set_style_bg_color(s_set, lv_color_hex(COL_BG), 0);
+  lv_obj_set_style_bg_color(s_set, C(bg), 0);
   lv_obj_set_style_bg_opa(s_set, LV_OPA_COVER, 0);
   lv_obj_clear_flag(s_set, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -327,28 +419,21 @@ static void mk_settings(void) {
   lv_obj_set_flex_flow(s_set_content, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_scroll_dir(s_set_content, LV_DIR_VER);
 
-  mk_label(s_set_content, "SETELAN", &lv_font_montserrat_20, COL_TEXT);
+  mk_label(s_set_content, "SETELAN", &lv_font_montserrat_20, C(text));
 
   /* ---- WiFi ---- */
-  mk_label(s_set_content, "WiFi", &lv_font_montserrat_14, COL_ACCENT);
+  mk_label(s_set_content, "WiFi", &lv_font_montserrat_14, C(accent));
   mk_ta(s_set_content, &s_ta_ssid, g_settings.wifi_ssid, false);
   mk_ta(s_set_content, &s_ta_pass, g_settings.wifi_pass, true);
   lv_obj_add_event_cb(s_ta_ssid, ta_event_cb, LV_EVENT_FOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_ssid, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_pass, ta_event_cb, LV_EVENT_FOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_pass, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
-  s_lbl_wifi = mk_label(s_set_content, wifi_state_text(), &lv_font_montserrat_12, COL_MUTED);
+  s_lbl_wifi = mk_label(s_set_content, wifi_state_text(), &lv_font_montserrat_12, C(muted));
 
   /* ---- title fields ---- */
-  mk_label(s_set_content, "Tampilan (judul)", &lv_font_montserrat_14, COL_ACCENT);
-  lv_obj_t *row1 = lv_obj_create(s_set_content);
-  lv_obj_set_size(row1, LV_PCT(100), 34);
-  lv_obj_set_style_bg_opa(row1, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(row1, 0, 0);
-  lv_obj_set_style_pad_all(row1, 0, 0);
-  lv_obj_set_flex_flow(row1, LV_FLEX_FLOW_ROW);
-  lv_obj_set_style_pad_column(row1, 6, 0);
-  lv_obj_clear_flag(row1, LV_OBJ_FLAG_SCROLLABLE);
+  mk_label(s_set_content, "Tampilan (judul)", &lv_font_montserrat_14, C(accent));
+  lv_obj_t *row1 = mk_row(s_set_content, 34);
   mk_ta(row1, &s_ta_floor, g_settings.floor_label, false);
   mk_ta(row1, &s_ta_room, g_settings.room_label, false);
   lv_obj_set_width(s_ta_floor, LV_PCT(45));
@@ -358,38 +443,91 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(s_ta_room, ta_event_cb, LV_EVENT_FOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_room, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
 
+  /* ---- screen: brightness + theme ---- */
+  mk_label(s_set_content, "Layar & tema", &lv_font_montserrat_14, C(accent));
+
+  lv_obj_t *brow = mk_row(s_set_content, 34);
+  mk_label(brow, "Terang", &lv_font_montserrat_12, C(muted));
+
+  lv_obj_t *minus = lv_btn_create(brow);
+  lv_obj_set_size(minus, 40, 30);
+  lv_obj_set_style_radius(minus, 8, 0);
+  lv_obj_set_style_bg_color(minus, C(card), 0);
+  lv_obj_set_style_border_width(minus, 1, 0);
+  lv_obj_set_style_border_color(minus, C(border), 0);
+  lv_obj_add_event_cb(minus, bright_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)-10);
+  mk_label(minus, "-", &lv_font_montserrat_20, C(text));
+
+  lv_obj_t *sl = lv_slider_create(brow);
+  lv_obj_set_width(sl, 190);
+  lv_obj_set_height(sl, 22);
+  lv_slider_set_range(sl, 20, 100);
+  lv_slider_set_value(sl, g_settings.brightness, LV_ANIM_OFF);
+  lv_obj_set_style_bg_color(sl, C(card2), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(sl, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(sl, 0, LV_PART_MAIN);
+  lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(sl, C(accent), LV_PART_INDICATOR);
+  lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(sl, C(text), LV_PART_KNOB);
+  lv_obj_set_style_radius(sl, LV_RADIUS_CIRCLE, LV_PART_KNOB);
+  lv_obj_set_style_pad_all(sl, 3, LV_PART_KNOB);
+  lv_obj_add_event_cb(sl, bright_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(sl, bright_slider_cb, LV_EVENT_RELEASED, NULL);
+  s_slider = sl;
+
+  lv_obj_t *plus = lv_btn_create(brow);
+  lv_obj_set_size(plus, 40, 30);
+  lv_obj_set_style_radius(plus, 8, 0);
+  lv_obj_set_style_bg_color(plus, C(card), 0);
+  lv_obj_set_style_border_width(plus, 1, 0);
+  lv_obj_set_style_border_color(plus, C(border), 0);
+  lv_obj_add_event_cb(plus, bright_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)10);
+  mk_label(plus, "+", &lv_font_montserrat_20, C(text));
+
+  char btxt[16];
+  snprintf(btxt, sizeof btxt, "%u%%", (unsigned)g_settings.brightness);
+  s_lbl_bright = mk_label(brow, btxt, &lv_font_montserrat_12, C(text));
+  lv_obj_set_width(s_lbl_bright, 48);
+
+  lv_obj_t *trow = mk_row(s_set_content, 34);
+  mk_label(trow, "Tema", &lv_font_montserrat_12, C(muted));
+  lv_obj_t *ddt = lv_dropdown_create(trow);
+  lv_obj_set_width(ddt, 190);
+  lv_obj_set_height(ddt, 30);
+  lv_obj_set_style_text_font(ddt, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_bg_color(ddt, C(card2), 0);
+  lv_obj_set_style_text_color(ddt, C(text), 0);
+  lv_dropdown_set_options(ddt, theme_names());
+  lv_dropdown_set_selected(ddt, g_settings.theme);
+  lv_obj_add_event_cb(ddt, theme_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  s_dd_theme = ddt;
+
   /* ---- slot assignment ---- */
-  mk_label(s_set_content, "Tombol lampu (lampu + ikon)", &lv_font_montserrat_14, COL_ACCENT);
+  mk_label(s_set_content, "Tombol lampu (lampu + ikon)", &lv_font_montserrat_14, C(accent));
   for (int i = 0; i < GEN_SLOTS; i++) {
-    lv_obj_t *row = lv_obj_create(s_set_content);
-    lv_obj_set_size(row, LV_PCT(100), 34);
-    lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(row, 0, 0);
-    lv_obj_set_style_pad_all(row, 0, 0);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_column(row, 6, 0);
-    lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_t *row = mk_row(s_set_content, 34);
 
     char num[8];
     snprintf(num, sizeof num, "%d", i + 1);
-    mk_label(row, num, &lv_font_montserrat_14, COL_MUTED);
+    mk_label(row, num, &lv_font_montserrat_14, C(muted));
 
     lv_obj_t *dd1 = lv_dropdown_create(row);
     lv_obj_set_width(dd1, 190);
     lv_obj_set_height(dd1, 30);
     lv_obj_set_style_text_font(dd1, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_bg_color(dd1, lv_color_hex(COL_CARD2), 0);
-    lv_obj_set_style_text_color(dd1, lv_color_hex(COL_TEXT), 0);
+    lv_obj_set_style_bg_color(dd1, C(card2), 0);
+    lv_obj_set_style_text_color(dd1, C(text), 0);
     s_dd_dev[i] = dd1;
 
     lv_obj_t *dd2 = lv_dropdown_create(row);
-    lv_obj_set_width(dd2, 96);
+    lv_obj_set_width(dd2, 110);
     lv_obj_set_height(dd2, 30);
     lv_obj_set_style_text_font(dd2, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_bg_color(dd2, lv_color_hex(COL_CARD2), 0);
-    lv_obj_set_style_text_color(dd2, lv_color_hex(COL_TEXT), 0);
-    lv_dropdown_set_options(dd2, "Spot\nUmum");
-    lv_dropdown_set_selected(dd2, g_settings.slots[i].icon ? 1 : 0);
+    lv_obj_set_style_bg_color(dd2, C(card2), 0);
+    lv_obj_set_style_text_color(dd2, C(text), 0);
+    lv_dropdown_set_options(dd2, ICON_NAMES);
+    lv_dropdown_set_selected(dd2, g_settings.slots[i].icon % ICON_COUNT);
     s_dd_icon[i] = dd2;
   }
 
@@ -397,7 +535,7 @@ static void mk_settings(void) {
   lv_obj_t *bar = lv_obj_create(s_set);
   lv_obj_set_size(bar, LV_PCT(100), 48);
   lv_obj_set_pos(bar, 0, LCD_HEIGHT - 48);
-  lv_obj_set_style_bg_color(bar, lv_color_hex(COL_BG), 0);
+  lv_obj_set_style_bg_color(bar, C(bg), 0);
   lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(bar, 0, 0);
   lv_obj_set_style_pad_all(bar, 4, 0);
@@ -408,15 +546,17 @@ static void mk_settings(void) {
 
   lv_obj_t *back = lv_btn_create(bar);
   lv_obj_set_size(back, 150, 38);
-  lv_obj_set_style_bg_color(back, lv_color_hex(COL_CARD), 0);
+  lv_obj_set_style_bg_color(back, C(card), 0);
+  lv_obj_set_style_border_width(back, 1, 0);
+  lv_obj_set_style_border_color(back, C(border), 0);
   lv_obj_add_event_cb(back, back_click_cb, LV_EVENT_CLICKED, NULL);
-  mk_label(back, "< Kembali", &lv_font_montserrat_14, COL_TEXT);
+  mk_label(back, "< Kembali", &lv_font_montserrat_14, C(text));
 
   lv_obj_t *save = lv_btn_create(bar);
   lv_obj_set_size(save, 150, 38);
-  lv_obj_set_style_bg_color(save, lv_color_hex(COL_ACCENT), 0);
+  lv_obj_set_style_bg_color(save, C(accent), 0);
   lv_obj_add_event_cb(save, save_click_cb, LV_EVENT_CLICKED, NULL);
-  mk_label(save, "Simpan", &lv_font_montserrat_14, COL_TEXT);
+  mk_label(save, "Simpan", &lv_font_montserrat_14, C(text));
 
   /* keyboard (hidden until a textarea is focused) */
   s_kb = lv_keyboard_create(s_set);
@@ -447,27 +587,77 @@ static void rebuild_dropdowns(void) {
   }
 }
 
+/* Forget every widget handle before the screens are rebuilt. */
+static void reset_widgets(void) {
+  s_main = s_set = NULL;
+  s_title = s_status = NULL;
+  s_ta_ssid = s_ta_pass = s_ta_floor = s_ta_room = NULL;
+  s_lbl_wifi = s_kb = s_set_content = NULL;
+  s_slider = s_lbl_bright = s_dd_theme = NULL;
+  for (int i = 0; i < GEN_SLOTS; i++) {
+    s_btn[i] = s_icon_box[i] = s_icon_glow[i] = NULL;
+    s_name[i] = s_state[i] = NULL;
+    s_dd_dev[i] = s_dd_icon[i] = NULL;
+    for (int k = 0; k < 4; k++) s_icon_fill[i][k] = NULL;
+    for (int k = 0; k < 2; k++) s_icon_line[i][k] = NULL;
+  }
+}
+
+/* Rebuild both screens from scratch — used when the theme changes. */
+static void rebuild_all_ui(void) {
+  const bool stay_settings = (lv_scr_act() == s_set);
+  lv_obj_t *old_main = s_main;
+  lv_obj_t *old_set = s_set;
+
+  reset_widgets();
+  lv_theme_default_init(lv_disp_get_default(), C(accent), C(ok), !T()->light,
+                        LV_FONT_DEFAULT);
+  mk_main();
+  mk_settings();
+  refresh_title();
+  lv_scr_load(stay_settings ? s_set : s_main);
+  if (stay_settings) rebuild_dropdowns();
+  if (old_main) lv_obj_del(old_main);
+  if (old_set) lv_obj_del(old_set);
+
+  s_last_refresh = 0;
+  ui_refresh_states();
+}
+
 void ui_registry_changed(void) { rebuild_dropdowns(); }
+
+void ui_theme_changed(void) { s_rebuild_pending = true; }
+
+void ui_poll(void) {
+  if (!s_rebuild_pending) return;
+  s_rebuild_pending = false;
+  rebuild_all_ui();
+}
 
 void ui_open_settings(void) {
   rebuild_dropdowns();
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
+  if (s_slider) lv_slider_set_value(s_slider, g_settings.brightness, LV_ANIM_OFF);
+  if (s_lbl_bright) {
+    char b[16];
+    snprintf(b, sizeof b, "%u%%", (unsigned)g_settings.brightness);
+    lv_label_set_text(s_lbl_bright, b);
+  }
+  if (s_dd_theme) lv_dropdown_set_selected(s_dd_theme, g_settings.theme);
   lv_scr_load(s_set);
 }
 
 /* ------------------------------------------------------------------------- */
 void ui_refresh_states(void) {
-  static uint32_t last = 0;
-  if (millis() - last < 250) return;
-  last = millis();
+  if (millis() - s_last_refresh < 250) return;
+  s_last_refresh = millis();
 
   char st[96];
   snprintf(st, sizeof st, "%s  %s", wifi_state_text(),
            mqtt_connected() ? "MQTT OK" : "MQTT --");
   if (s_status) {
     lv_label_set_text(s_status, st);
-    lv_obj_set_style_text_color(s_status,
-                                lv_color_hex(mqtt_connected() ? COL_GREEN : COL_MUTED), 0);
+    lv_obj_set_style_text_color(s_status, mqtt_connected() ? C(ok) : C(muted), 0);
   }
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
 
@@ -480,21 +670,21 @@ void ui_refresh_states(void) {
     icon_apply_state(i, known, on);
 
     lv_label_set_text(s_name[i], slot->label[0] ? slot->label : "kosong");
-    lv_obj_set_style_text_color(
-        s_name[i], lv_color_hex(ri >= 0 ? COL_TEXT : COL_MUTED), 0);
+    lv_obj_set_style_text_color(s_name[i], ri >= 0 ? C(text) : C(muted), 0);
 
     const char *stt = !known ? "-" : (on ? "ON" : "OFF");
     lv_label_set_text(s_state[i], stt);
     lv_obj_set_style_text_color(s_state[i],
-                                lv_color_hex(on ? COL_AMBER : (!known ? COL_DIM : COL_MUTED)), 0);
-    lv_obj_set_style_bg_color(s_btn[i], lv_color_hex(on ? 0x1E2E16 : COL_CARD), 0);
-    lv_obj_set_style_border_color(s_btn[i], lv_color_hex(on ? COL_AMBER : COL_BORDER), 0);
+                                known ? (on ? C(state_on) : C(muted)) : C(dim), 0);
+    lv_obj_set_style_bg_color(s_btn[i], on ? C(btn_on) : C(card), 0);
+    lv_obj_set_style_border_color(s_btn[i], on ? C(btn_on_border) : C(border), 0);
   }
 }
 
 void ui_init(void) {
-  lv_theme_default_init(lv_disp_get_default(), lv_color_hex(COL_ACCENT),
-                        lv_color_hex(COL_GREEN), true, LV_FONT_DEFAULT);
+  lv_theme_default_init(lv_disp_get_default(), C(accent), C(ok), !T()->light,
+                        LV_FONT_DEFAULT);
+  reset_widgets();
   mk_main();
   mk_settings();
   refresh_title();

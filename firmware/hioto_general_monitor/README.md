@@ -5,18 +5,55 @@ Firmware for the **Sunton ESP32-3248S035** 3.5" CYD (ESP32-D0WD-V3, ST7796
 
 A **simple lamp switch panel**:
 
-- Title bar **`[Floor] · [Room]`** (editable in Settings).
-- **2 × 4 big buttons**, each with a lamp icon (spot / general), the lamp's short
-  id (e.g. `LAMP.14`) and its live ON/OFF state. Tap = toggle the lamp.
+- Title bar **`[Floor] | [Room]`** (editable in Settings).
+- **2 × 4 big buttons**, each with a lamp icon, the lamp's short id
+  (e.g. `LAMP.14`) and its live ON/OFF state. Tap = toggle the lamp.
 - **`Setelan` pill** opens Settings:
   - **WiFi**: SSID + password (on-screen keyboard), applied on save.
   - **Tampilan**: Floor and Room title fields.
+  - **Layar & tema**: backlight dimmer (`−` / `+` / slider, 20–100 %) and the
+    colour theme dropdown (applied live).
   - **Tombol lampu**: per-button **device dropdown** (all `AKTUATOR` lamps from
-    the HIOTO controller) and **icon dropdown** (Spot / Umum).
+    the HIOTO controller) and **icon dropdown** (Spot / Umum / TL / Downlight /
+    Taman).
   - **Simpan** persists everything to NVS and applies it.
 
 Default assignment (8 lamps): `LAMP.14, LAMP.15, LAMP.09, LAMP.10, LAMP.11,
 LAMP.12, LAMP.13, LAMP.17`.
+
+## Colour themes
+
+`src/theme.cpp` holds six complete palettes; a stored index selects one and the
+UI is rebuilt from it (`ui_poll()`), so no widget logic depends on a theme:
+
+| # | name | character |
+|---|---|---|
+| 0 | `Midnight` | deep navy, amber lamps |
+| 1 | `Grafit` | neutral graphite, cyan accent, warm lamps |
+| 2 | `Samudra` | deep teal, cool cyan lamps |
+| 3 | `Senja` | warm plum dusk, orange lamps |
+| 4 | `Terang` | light paper theme for sunlit rooms |
+| 5 | `Neon` | black light, magenta lamps |
+
+A theme carries background, card, border, text/muted/dim, accent/ok/warn/bad,
+the lamp ON card + border + label colour, the icon ON/OFF/unknown fill and
+outline, and the glow colour. Append new themes at the end — the stored index
+is positional.
+
+## Lamp icons
+
+`ICON_NAMES` in `include/config.h` (index = stored value): `Spot` (head +
+expanding beam), `Umum` (classic bulb + base), `TL` (tube + end caps),
+`Downlight` (ceiling plate + dome + rays), `Taman` (post lamp: head + pole +
+foot). Each style paints its body/border from the theme and shows a hot glow
+spot only while the lamp is ON.
+
+## Backlight dimmer
+
+`src/backlight.cpp` drives `PIN_LCD_BL` (GPIO27) with 25 kHz PWM on LEDC channel
+7 and a squared (gamma-ish) curve. Range is clamped to 5–100 % in the module and
+20–100 % in the UI. Changes made with the slider are applied live and saved when
+the knob is released; `−`/`+` save immediately.
 
 ## Lamp control (HIOTO protocol)
 
@@ -41,14 +78,14 @@ Device id: `hioto-genmon-XXXXXX` (derived from the MAC).
 ## Settings persistence (NVS namespace `hioto`)
 
 `ssid`/`pass`, `mhost`/`mport`/`muser`/`mpass`, `devid`, `floor`, `room`,
-`bright`, `tcal` (touch calibration), and per-slot `s{i}g` (guid), `s{i}l`
-(short label), `s{i}i` (icon 0=spot, 1=general).
+`bright` (backlight %), `theme` (palette index), `tcal` (touch calibration), and
+per-slot `s{i}g` (guid), `s{i}l` (short label), `s{i}i` (icon index).
 
 ## Serial console (COM3 @ 115200)
 
 `help` · `status` · `wifi <ssid> <pass>` · `mqtt <host> <port> <user> <pass>` ·
-`floor <label...>` · `room <label...>` · `ldr` · `cal` / `clearcal` / `traw` ·
-`save` · `reboot`
+`floor <label...>` · `room <label...>` · `bright [20-100]` · `theme [0-5]` ·
+`ldr` · `cal` / `clearcal` / `traw` · `save` · `reboot`
 
 ## Flashing (manual download mode)
 
