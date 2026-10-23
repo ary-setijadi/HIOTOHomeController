@@ -40,7 +40,14 @@ static lv_obj_t *s_dd_room = NULL;
 static lv_obj_t *s_lbl_wifi = NULL;
 static lv_obj_t *s_dd_dev[GEN_SLOTS];
 static lv_obj_t *s_dd_icon[GEN_SLOTS];
-static lv_obj_t *s_ta_alias[GEN_SLOTS];
+static lv_obj_t *s_lbl_alias[GEN_SLOTS]; /* friendly name shown in the row */
+
+/* alias editor overlay */
+static lv_obj_t *s_edit = NULL;
+static lv_obj_t *s_edit_lbl = NULL;
+static lv_obj_t *s_edit_ta = NULL;
+static lv_obj_t *s_edit_kb = NULL;
+static int s_edit_slot = -1;
 static lv_obj_t *s_kb = NULL;
 static lv_obj_t *s_set_content = NULL;
 static lv_obj_t *s_slider = NULL;
@@ -548,16 +555,94 @@ static void bright_step_cb(lv_event_t *e) {
   bright_apply(v, true);
 }
 
-/* Picking another device suggests a fresh friendly name for it. */
+/* Picking another device drops the old friendly name so the new device's
+ * automatic name shows up. */
 static void dev_dd_cb(lv_event_t *e) {
   const int i = (int)(intptr_t)lv_event_get_user_data(e);
-  if (i < 0 || i >= GEN_SLOTS || !s_ta_alias[i]) return;
+  if (i < 0 || i >= GEN_SLOTS) return;
   const int sel = (int)lv_dropdown_get_selected(lv_event_get_target(e));
+  g_settings.slots[i].alias[0] = '\0';
+  if (s_lbl_alias[i]) {
+    char nm[24];
+    if (sel > 0 && sel - 1 < s_opt_count)
+      pretty_alias(registry_shortname(s_opt_reg[sel - 1]), nm, sizeof nm);
+    else
+      snprintf(nm, sizeof nm, "kosong");
+    lv_label_set_text(s_lbl_alias[i], nm);
+  }
+}
+
+/* ---- alias editor overlay ---- */
+static void refresh_alias_labels(void) {
+  for (int i = 0; i < GEN_SLOTS; i++) {
+    if (!s_lbl_alias[i]) continue;
+    char nm[24];
+    slot_display_name(i, nm, sizeof nm);
+    lv_label_set_text(s_lbl_alias[i], nm);
+  }
+}
+
+static void close_alias_editor(bool apply, bool clear) {
+  const int i = s_edit_slot;
+  if (i >= 0 && i < GEN_SLOTS && (apply || clear)) {
+    if (clear) {
+      g_settings.slots[i].alias[0] = '\0';
+    } else if (s_edit_ta) {
+      snprintf(g_settings.slots[i].alias, sizeof g_settings.slots[i].alias, "%s",
+               lv_textarea_get_text(s_edit_ta));
+    }
+    settings_save(&g_settings);
+  }
+  s_edit_slot = -1;
+  if (s_edit) lv_obj_add_flag(s_edit, LV_OBJ_FLAG_HIDDEN);
+  refresh_alias_labels();
+}
+
+static void alias_btn_cb(lv_event_t *e) {
+  const int i = (int)(intptr_t)lv_event_get_user_data(e);
+  if (!s_edit || i < 0 || i >= GEN_SLOTS) return;
+  s_edit_slot = i;
+  if (s_edit_lbl) {
+    char t[32];
+    snprintf(t, sizeof t, "Nama tombol %d", i + 1);
+    lv_label_set_text(s_edit_lbl, t);
+  }
   char nm[24];
-  nm[0] = '\0';
-  if (sel > 0 && sel - 1 < s_opt_count)
-    pretty_alias(registry_shortname(s_opt_reg[sel - 1]), nm, sizeof nm);
-  lv_textarea_set_text(s_ta_alias[i], nm);
+  slot_display_name(i, nm, sizeof nm);
+  if (s_edit_ta) {
+    lv_textarea_set_text(s_edit_ta, g_settings.slots[i].alias[0] ? g_settings.slots[i].alias : nm);
+    lv_textarea_set_cursor_pos(s_edit_ta, LV_TEXTAREA_CURSOR_LAST);
+  }
+  if (s_edit_kb && s_edit_ta) lv_keyboard_set_textarea(s_edit_kb, s_edit_ta);
+  if (s_kb) lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+  if (s_set_content) lv_obj_set_height(s_set_content, LCD_HEIGHT - 56);
+  lv_obj_clear_flag(s_edit, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_move_foreground(s_edit);
+}
+
+static void edit_ok_cb(lv_event_t *e) {
+  (void)e;
+  close_alias_editor(true, false);
+}
+static void edit_cancel_cb(lv_event_t *e) {
+  (void)e;
+  close_alias_editor(false, false);
+}
+static void edit_clear_cb(lv_event_t *e) {
+  (void)e;
+  close_alias_editor(false, true);
+}
+
+/* Tapping a text field always shows the keyboard (focus events alone are not
+ * reliable for a resistive panel). */
+static void ta_click_cb(lv_event_t *e) {
+  if (!s_kb) return;
+  lv_keyboard_set_textarea(s_kb, lv_event_get_target(e));
+  lv_obj_clear_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+  if (s_set_content) {
+    lv_obj_set_height(s_set_content, LCD_HEIGHT - 160 - 4);
+    lv_obj_scroll_to_view(lv_event_get_target(e), LV_ANIM_ON);
+  }
 }
 
 /* ---- filter scope ---- */
@@ -602,11 +687,6 @@ static void save_click_cb(lv_event_t *e) {
                registry_shortname(ri));
     }
     if (s_dd_icon[i]) g_settings.slots[i].icon = (uint8_t)lv_dropdown_get_selected(s_dd_icon[i]);
-    if (s_ta_alias[i]) {
-      const char *al = lv_textarea_get_text(s_ta_alias[i]);
-      snprintf(g_settings.slots[i].alias, sizeof g_settings.slots[i].alias, "%s",
-               al ? al : "");
-    }
     if (sel == 0) g_settings.slots[i].alias[0] = '\0'; /* unassigned -> drop alias */
   }
   settings_save(&g_settings);
@@ -648,6 +728,8 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(s_ta_ssid, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_pass, ta_event_cb, LV_EVENT_FOCUSED, NULL);
   lv_obj_add_event_cb(s_ta_pass, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
+  lv_obj_add_event_cb(s_ta_ssid, ta_click_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(s_ta_pass, ta_click_cb, LV_EVENT_CLICKED, NULL);
   s_lbl_wifi = mk_label(s_set_content, wifi_state_text(), &lv_font_montserrat_12, C(muted));
 
   /* ---- title: floor + room dropdowns (also drive the device filter) ---- */
@@ -784,25 +866,22 @@ static void mk_settings(void) {
     lv_dropdown_set_selected(dd2, g_settings.slots[i].icon % ICON_COUNT);
     s_dd_icon[i] = dd2;
 
-    /* friendly name shown on the button */
+    /* friendly name: tap the field to rename it */
     char eff[24];
     slot_display_name(i, eff, sizeof eff);
-    lv_obj_t *ta = lv_textarea_create(row);
-    lv_obj_set_width(ta, 148);
-    lv_obj_set_height(ta, 30);
-    lv_textarea_set_one_line(ta, true);
-    lv_textarea_set_max_length(ta, sizeof g_settings.slots[i].alias - 1);
-    lv_textarea_set_text(ta, g_settings.slots[i].alias[0] ? g_settings.slots[i].alias : eff);
-    lv_obj_set_style_bg_color(ta, C(card2), 0);
-    lv_obj_set_style_text_color(ta, C(text), 0);
-    lv_obj_set_style_text_font(ta, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_border_color(ta, C(border), 0);
-    lv_obj_set_style_pad_left(ta, 8, 0);
-    lv_obj_set_style_pad_right(ta, 8, 0);
-    lv_obj_set_style_radius(ta, 8, 0);
-    lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_FOCUSED, NULL);
-    lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
-    s_ta_alias[i] = ta;
+    lv_obj_t *nb = lv_btn_create(row);
+    lv_obj_set_size(nb, 148, 30);
+    lv_obj_set_style_radius(nb, 8, 0);
+    lv_obj_set_style_bg_color(nb, C(card2), 0);
+    lv_obj_set_style_border_width(nb, 1, 0);
+    lv_obj_set_style_border_color(nb, C(border), 0);
+    lv_obj_set_style_pad_all(nb, 0, 0);
+    lv_obj_add_event_cb(nb, alias_btn_cb, LV_EVENT_CLICKED, (void *)(intptr_t)i);
+    lv_obj_t *nl = mk_label(nb, eff, &lv_font_montserrat_12, C(text));
+    lv_obj_set_width(nl, 128);
+    lv_label_set_long_mode(nl, LV_LABEL_LONG_DOT);
+    lv_obj_align(nl, LV_ALIGN_LEFT_MID, 10, 0);
+    s_lbl_alias[i] = nl;
   }
 
   /* ---- bottom bar (safe interior zone) ---- */
@@ -832,11 +911,68 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(save, save_click_cb, LV_EVENT_CLICKED, NULL);
   mk_label(save, "Simpan", &lv_font_montserrat_14, C(text));
 
-  /* keyboard (hidden until a textarea is focused) */
+  /* keyboard (hidden until a text field is tapped) */
   s_kb = lv_keyboard_create(s_set);
   lv_obj_set_size(s_kb, LV_PCT(100), 160);
   lv_obj_set_pos(s_kb, 0, LCD_HEIGHT - 160);
   lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+
+  /* ---- alias editor overlay (hidden) ---- */
+  s_edit = lv_obj_create(s_set);
+  lv_obj_set_size(s_edit, LCD_WIDTH, LCD_HEIGHT);
+  lv_obj_set_pos(s_edit, 0, 0);
+  lv_obj_set_style_bg_color(s_edit, C(bg), 0);
+  lv_obj_set_style_bg_opa(s_edit, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(s_edit, 0, 0);
+  lv_obj_set_style_pad_all(s_edit, 8, 0);
+  lv_obj_clear_flag(s_edit, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(s_edit, LV_OBJ_FLAG_HIDDEN);
+
+  s_edit_lbl = mk_label(s_edit, "Nama tombol", &lv_font_montserrat_16, C(text));
+  lv_obj_set_pos(s_edit_lbl, 8, 2);
+
+  s_edit_ta = lv_textarea_create(s_edit);
+  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, 42);
+  lv_obj_set_pos(s_edit_ta, 0, 26);
+  lv_textarea_set_one_line(s_edit_ta, true);
+  lv_textarea_set_max_length(s_edit_ta, sizeof g_settings.slots[0].alias - 1);
+  lv_obj_set_style_bg_color(s_edit_ta, C(card2), 0);
+  lv_obj_set_style_text_color(s_edit_ta, C(text), 0);
+  lv_obj_set_style_text_font(s_edit_ta, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_border_color(s_edit_ta, C(accent), 0);
+  lv_obj_set_style_border_width(s_edit_ta, 2, 0);
+  lv_obj_set_style_radius(s_edit_ta, 10, 0);
+  lv_obj_set_style_pad_left(s_edit_ta, 10, 0);
+
+  lv_obj_t *bok = lv_btn_create(s_edit);
+  lv_obj_set_size(bok, 150, 38);
+  lv_obj_set_pos(bok, LCD_WIDTH - 158, 74);
+  lv_obj_set_style_bg_color(bok, C(ok), 0);
+  lv_obj_add_event_cb(bok, edit_ok_cb, LV_EVENT_CLICKED, NULL);
+  mk_label(bok, "Simpan", &lv_font_montserrat_14, C(bg));
+
+  lv_obj_t *bclr = lv_btn_create(s_edit);
+  lv_obj_set_size(bclr, 150, 38);
+  lv_obj_set_pos(bclr, LCD_WIDTH - 316, 74);
+  lv_obj_set_style_bg_color(bclr, C(card), 0);
+  lv_obj_set_style_border_width(bclr, 1, 0);
+  lv_obj_set_style_border_color(bclr, C(border), 0);
+  lv_obj_add_event_cb(bclr, edit_clear_cb, LV_EVENT_CLICKED, NULL);
+  mk_label(bclr, "Hapus", &lv_font_montserrat_14, C(text));
+
+  lv_obj_t *bcan = lv_btn_create(s_edit);
+  lv_obj_set_size(bcan, 150, 38);
+  lv_obj_set_pos(bcan, 8, 74);
+  lv_obj_set_style_bg_color(bcan, C(card), 0);
+  lv_obj_set_style_border_width(bcan, 1, 0);
+  lv_obj_set_style_border_color(bcan, C(border), 0);
+  lv_obj_add_event_cb(bcan, edit_cancel_cb, LV_EVENT_CLICKED, NULL);
+  mk_label(bcan, "Batal", &lv_font_montserrat_14, C(text));
+
+  s_edit_kb = lv_keyboard_create(s_edit);
+  lv_obj_set_size(s_edit_kb, LCD_WIDTH - 16, 194);
+  lv_obj_set_pos(s_edit_kb, 0, 118);
+  lv_keyboard_set_textarea(s_edit_kb, s_edit_ta);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -927,10 +1063,12 @@ static void reset_widgets(void) {
   for (int i = 0; i < GEN_SLOTS; i++) {
     s_btn[i] = s_icon_box[i] = s_icon_glow[i] = NULL;
     s_name[i] = s_state[i] = NULL;
-    s_dd_dev[i] = s_dd_icon[i] = s_ta_alias[i] = NULL;
+    s_dd_dev[i] = s_dd_icon[i] = s_lbl_alias[i] = NULL;
     for (int k = 0; k < 4; k++) s_icon_fill[i][k] = NULL;
     for (int k = 0; k < 2; k++) s_icon_line[i][k] = NULL;
   }
+  s_edit = s_edit_lbl = s_edit_ta = s_edit_kb = NULL;
+  s_edit_slot = -1;
 }
 
 /* Rebuild both screens from scratch — used when the theme changes. */
@@ -997,14 +1135,7 @@ void ui_poll(void) {
 
 void ui_open_settings(void) {
   if (s_dd_scope) lv_dropdown_set_selected(s_dd_scope, g_settings.scope);
-  for (int i = 0; i < GEN_SLOTS; i++) {
-    if (!s_ta_alias[i]) continue;
-    char eff[24];
-    slot_display_name(i, eff, sizeof eff);
-    lv_textarea_set_text(s_ta_alias[i], g_settings.slots[i].alias[0]
-                                            ? g_settings.slots[i].alias
-                                            : eff);
-  }
+  refresh_alias_labels();
   rebuild_location_dd();
   rebuild_dropdowns();
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
