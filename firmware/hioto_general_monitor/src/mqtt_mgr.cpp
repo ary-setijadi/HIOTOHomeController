@@ -27,22 +27,27 @@ static void build_topics(void) {
   snprintf(s_topic_cmd, sizeof s_topic_cmd, "iot/%s/cmd", s_cfg->device_id);
 }
 
+static void on_message(char *topic, byte *payload, unsigned int len);
+
 void mqtt_begin(const Settings *s) {
   s_cfg = s;
   build_topics();
   s_client.setServer(s_cfg->mqtt_host, s_cfg->mqtt_port);
   s_client.setBufferSize(512);
   s_client.setKeepAlive(20);
+  /* without this every incoming message is dropped: lamp states from the
+   * broker and the OTA command channel both depend on it */
+  s_client.setCallback(on_message);
   Serial.printf("[mqtt] target %s:%u dev=%s\n", s_cfg->mqtt_host, s_cfg->mqtt_port,
                 s_cfg->device_id);
 }
 
 static void publish_telemetry(void) {
-  char buf[160];
+  char buf[192];
   snprintf(buf, sizeof buf,
-           "{\"device\":\"%s\",\"role\":\"switch-panel\",\"floor\":\"%s\",\"room\":\"%s\","
-           "\"ip\":\"%s\"}",
-           s_cfg->device_id, g_settings.floor_label, g_settings.room_label,
+           "{\"device\":\"%s\",\"role\":\"switch-panel\",\"fw\":\"%s\",\"floor\":\"%s\","
+           "\"room\":\"%s\",\"ip\":\"%s\"}",
+           s_cfg->device_id, FW_VERSION, g_settings.floor_label, g_settings.room_label,
            WiFi.localIP().toString().c_str());
   s_client.publish(s_topic_telemetry, buf, false);
 }
@@ -66,8 +71,9 @@ static bool connect_mqtt(void) {
   char online[96];
   snprintf(online, sizeof online, "{\"device\":\"%s\",\"status\":\"online\"}", s_cfg->device_id);
   s_client.publish(s_topic_status, online, true);
-  for (size_t i = 0; i < kSubCount; i++) s_client.subscribe(kSubs[i], 0);
-  s_client.subscribe(s_topic_cmd, 0);
+  for (size_t i = 0; i < kSubCount; i++)
+    Serial.printf("[mqtt] sub %s -> %d\n", kSubs[i], s_client.subscribe(kSubs[i], 0));
+  Serial.printf("[mqtt] sub %s -> %d\n", s_topic_cmd, s_client.subscribe(s_topic_cmd, 0));
   Serial.printf("[mqtt] online; watching Aktuator/Sensor + %s\n", s_topic_cmd);
   publish_telemetry();
   publish_heartbeat();

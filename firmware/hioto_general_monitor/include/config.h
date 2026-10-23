@@ -17,7 +17,7 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "1.1.0"
+#define FW_VERSION "1.1.4"
 #define FW_DEVICE_TYPE "hioto-genmon"
 #define OTA_CHECK_MS 900000UL /* 15 min between automatic checks */
 

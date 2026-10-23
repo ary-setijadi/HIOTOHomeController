@@ -747,6 +747,7 @@ void ui_log_geometry(void) {
     Serial.printf("[ui] %s pos=%d,%d size=%dx%d\n", names[k], (int)a.x1, (int)a.y1,
                   (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1));
   }
+  Serial.printf("[ui] screen=%dx%d\n", (int)LCD_WIDTH, (int)LCD_HEIGHT);
 }
 
 static void mk_settings(void) {
@@ -962,7 +963,9 @@ static void mk_settings(void) {
   /* keyboard (hidden until a text field is tapped) */
   s_kb = lv_keyboard_create(s_set);
   lv_obj_set_size(s_kb, LV_PCT(100), KB_MAIN_H);
-  lv_obj_set_pos(s_kb, 0, LCD_HEIGHT - KB_MAIN_H);
+  /* anchor to the bottom edge instead of an absolute y: absolute positions on
+   * this screen came out shifted, which clipped the lower keyboard rows */
+  lv_obj_align(s_kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_bg_opa(s_kb, LV_OPA_TRANSP, 0);
   lv_obj_set_style_pad_all(s_kb, 1, 0);
   lv_obj_set_style_pad_row(s_kb, 2, 0);
@@ -1024,7 +1027,7 @@ static void mk_settings(void) {
 
   s_edit_kb = lv_keyboard_create(s_edit);
   lv_obj_set_size(s_edit_kb, LCD_WIDTH, KB_EDIT_H);
-  lv_obj_set_pos(s_edit_kb, 0, LCD_HEIGHT - KB_EDIT_H);
+  lv_obj_align(s_edit_kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_bg_opa(s_edit_kb, LV_OPA_TRANSP, 0);
   lv_obj_set_style_pad_all(s_edit_kb, 1, 0);
   lv_obj_set_style_pad_row(s_edit_kb, 2, 0);
