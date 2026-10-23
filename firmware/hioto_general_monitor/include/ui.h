@@ -20,6 +20,9 @@ void ui_open_settings(void);
 /* Called after a registry refresh: rebuild the settings device dropdowns. */
 void ui_registry_changed(void);
 
+/* Called after a floor/room catalog refresh: rebuild the title dropdowns. */
+void ui_catalog_changed(void);
+
 /* Wi-Fi helpers, implemented in main.cpp. */
 bool wifi_ok(void);
 const char *wifi_state_text(void);

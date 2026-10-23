@@ -22,6 +22,7 @@
 #include "config.h"
 #include "settings.h"
 #include "registry.h"
+#include "catalog.h"
 #include "mqtt_mgr.h"
 #include "theme.h"
 #include "backlight.h"
@@ -36,6 +37,7 @@ static lv_color_t *s_buf_a = nullptr;
 static lv_color_t *s_buf_b = nullptr;
 
 static bool s_btn_prev = false;
+static bool s_btn_armed = false;
 static uint32_t s_btn_pressed_at = 0;
 static bool s_btn_long_done = false;
 static uint32_t s_last_ui = 0;
@@ -241,6 +243,10 @@ static void serial_help(void) {
   Serial.println("  theme [0-5]                list or set the colour theme");
   Serial.println("  lamps                      list every actuator and its label");
   Serial.println("  scope [0-2]                picker filter: 0 ruang, 1 lantai, 2 semua");
+  Serial.println("  cat                        list floors + rooms from the controller");
+  Serial.println("  devid <name>               MQTT device id (default hioto-genmon-xxxxxx)");
+  Serial.println("  alias <n> <nama...>        friendly name for button n (1-8)");
+  Serial.println("  alias <n> -                reset button n to the automatic name");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -248,8 +254,9 @@ static void serial_help(void) {
 }
 
 static void serial_status(void) {
-  Serial.printf("dev=%s floor=%s room=%s\n", g_settings.device_id,
-                g_settings.floor_label, g_settings.room_label);
+  Serial.printf("dev=%s floor=%s(%u) room=%s(%u)\n", g_settings.device_id,
+                g_settings.floor_label, (unsigned)g_settings.floor_id,
+                g_settings.room_label, (unsigned)g_settings.room_id);
   Serial.printf("wifi='%s' mqtt=%s:%u lampu=%d\n", g_settings.wifi_ssid,
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
   Serial.printf("bright=%u%% theme=%u (%s) scope=%u\n", (unsigned)g_settings.brightness,
@@ -257,11 +264,12 @@ static void serial_status(void) {
                 (unsigned)g_settings.scope);
   for (int i = 0; i < GEN_SLOTS; i++) {
     int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
-    Serial.printf("slot%d: %s%s\n", i + 1, g_settings.slots[i].label,
-                  ri >= 0 ? (registry_state_known(ri)
-                                 ? (registry_state_on(ri) ? " ON" : " OFF")
-                                 : " ?")
-                          : " (tidak ditemukan)");
+    Serial.printf("slot%d: %-16s '%s' %s\n", i + 1, g_settings.slots[i].label,
+                  g_settings.slots[i].alias, ri >= 0
+                                                ? (registry_state_known(ri)
+                                                       ? (registry_state_on(ri) ? "ON" : "OFF")
+                                                       : "?")
+                                                : "(tidak ditemukan)");
   }
 }
 
@@ -297,7 +305,11 @@ static void serial_handle_line(char *line) {
       strncat(label, tok[i], sizeof label - strlen(label) - 1);
     }
     snprintf(g_settings.floor_label, sizeof g_settings.floor_label, "%s", label);
-    Serial.printf("[cfg] floor=%s\n", g_settings.floor_label);
+    int fi = catalog_find_floor(0, g_settings.floor_label);
+    g_settings.floor_id = (fi >= 0) ? catalog_floor_id(fi) : 0;
+    ui_catalog_changed();
+    Serial.printf("[cfg] floor=%s (id=%u)\n", g_settings.floor_label,
+                  (unsigned)g_settings.floor_id);
   } else if (!strcmp(tok[0], "room") && n >= 2) {
     char label[24] = "";
     for (int i = 1; i < n; i++) {
@@ -305,7 +317,11 @@ static void serial_handle_line(char *line) {
       strncat(label, tok[i], sizeof label - strlen(label) - 1);
     }
     snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s", label);
-    Serial.printf("[cfg] room=%s\n", g_settings.room_label);
+    int ri = catalog_find_room(g_settings.floor_id, 0, g_settings.room_label);
+    g_settings.room_id = (ri >= 0) ? catalog_room_id(g_settings.floor_id, ri) : 0;
+    ui_catalog_changed();
+    Serial.printf("[cfg] room=%s (id=%u)\n", g_settings.room_label,
+                  (unsigned)g_settings.room_id);
   } else if (!strcmp(tok[0], "lamps")) {
     Serial.printf("[reg] %d aktuator (filter scope=%u)\n", registry_count(),
                   (unsigned)g_settings.scope);
@@ -314,6 +330,43 @@ static void serial_handle_line(char *line) {
                     registry_floor_at(i), registry_room_at(i),
                     registry_state_known(i) ? (registry_state_on(i) ? " ON" : " OFF")
                                             : "");
+  } else if (!strcmp(tok[0], "alias") && n >= 3) {
+    const int idx = atoi(tok[1]) - 1;
+    if (idx < 0 || idx >= GEN_SLOTS) {
+      Serial.println("[cfg] alias: nomor tombol 1-8");
+    } else if (!strcmp(tok[2], "-")) {
+      g_settings.slots[idx].alias[0] = '\0';
+      settings_save(&g_settings);
+      Serial.printf("[cfg] slot%d alias otomatis\n", idx + 1);
+    } else {
+      char text[24] = "";
+      for (int i = 2; i < n; i++) {
+        if (i > 2) strncat(text, " ", sizeof text - strlen(text) - 1);
+        strncat(text, tok[i], sizeof text - strlen(text) - 1);
+      }
+      snprintf(g_settings.slots[idx].alias, sizeof g_settings.slots[idx].alias, "%s", text);
+      settings_save(&g_settings);
+      Serial.printf("[cfg] slot%d alias='%s'\n", idx + 1, g_settings.slots[idx].alias);
+    }
+  } else if (!strcmp(tok[0], "cat")) {
+    Serial.printf("[cat] %d lantai:\n", catalog_floor_count());
+    for (int i = 0; i < catalog_floor_count(); i++)
+      Serial.printf("  floor id=%u  %s\n", (unsigned)catalog_floor_id(i),
+                    catalog_floor_name(i));
+    Serial.printf("[cat] %d ruang:\n", catalog_room_count(0));
+    if (catalog_floor_count() > 0) {
+      for (int f = 0; f < catalog_floor_count(); f++) {
+        const uint8_t fid = catalog_floor_id(f);
+        const int n = catalog_room_count(fid);
+        for (int r = 0; r < n; r++)
+          Serial.printf("  floor %u  room id=%u  %s\n", (unsigned)fid,
+                        (unsigned)catalog_room_id(fid, r), catalog_room_name(fid, r));
+      }
+    }
+  } else if (!strcmp(tok[0], "devid") && n >= 2) {
+    snprintf(g_settings.device_id, sizeof g_settings.device_id, "%s", tok[1]);
+    settings_save(&g_settings);
+    Serial.printf("[cfg] devid=%s (reboot to apply)\n", g_settings.device_id);
   } else if (!strcmp(tok[0], "scope")) {
     if (n >= 2) {
       int sc = atoi(tok[1]);
@@ -455,6 +508,7 @@ void setup() {
   lv_indev_drv_register(&s_indev_drv);
 
   registry_begin();
+  catalog_begin();
   ui_init();
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   mqtt_begin(&g_settings);
@@ -477,6 +531,7 @@ void loop() {
     ui_registry_changed();
     ui_refresh_states();
   }
+  if (catalog_poll()) ui_catalog_changed();
 
   if (millis() - s_last_ui > 250) {
     s_last_ui = millis();
@@ -484,19 +539,24 @@ void loop() {
   }
   serial_poll();
 
-  /* BOOT: short press opens settings; hold >= 4 s = factory reset */
+  /* BOOT: short press opens settings; hold >= 5 s = factory reset.
+   * The button is ignored until it has been seen released once, so holding
+   * BOOT to enter download mode can never wipe the settings on the next boot. */
   const bool btn = (digitalRead(PIN_BOOT) == LOW);
-  if (btn && !s_btn_prev) {
-    s_btn_pressed_at = millis();
-    s_btn_long_done = false;
-    ui_open_settings();
-    delay(30);
-  } else if (btn && !s_btn_long_done && millis() - s_btn_pressed_at > 4000) {
-    s_btn_long_done = true;
-    Serial.println("[boot] factory reset (hold)");
-    settings_factory_reset();
-    delay(200);
-    ESP.restart();
+  if (!btn) s_btn_armed = true;
+  if (s_btn_armed) {
+    if (btn && !s_btn_prev) {
+      s_btn_pressed_at = millis();
+      s_btn_long_done = false;
+      ui_open_settings();
+      delay(30);
+    } else if (btn && !s_btn_long_done && millis() - s_btn_pressed_at > 5000) {
+      s_btn_long_done = true;
+      Serial.println("[boot] factory reset (hold 5 s)");
+      settings_factory_reset();
+      delay(800);
+      ESP.restart();
+    }
   }
   s_btn_prev = btn;
 

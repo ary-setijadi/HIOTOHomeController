@@ -21,6 +21,8 @@ struct RegDev {
   char floor[REG_FLOOR_LEN]; /* floor text from the name ("1ST.FLOOR") */
   char room[REG_ROOM_LEN];   /* room text from the name ("LIVING ROOM") */
   char status[8];            /* controller's last status ("0"/"1"/"") */
+  uint8_t floor_id;          /* controller floor id, 0 when unset */
+  uint8_t room_id;           /* controller room id, 0 when unset */
   bool known;
   bool on;
 };
@@ -294,6 +296,9 @@ static bool fetch_registry(void) {
       const char *type = f[2];
       const char *name = f[3];
       const char *status = f[4];
+      /* CSV: ...,quantity,room_id,floor_id,x_position,y_position,last_seen */
+      const int room_id = (fc > 10) ? atoi(f[10]) : 0;
+      const int floor_id = (fc > 11) ? atoi(f[11]) : 0;
       if (!strcmp(type, "AKTUATOR") && guid[0]) {
         clean_name(name, namebuf, sizeof namebuf);
         int idx = find_prev_by_guid(guid);
@@ -310,6 +315,8 @@ static bool fetch_registry(void) {
           copy_str(d->name, sizeof d->name, namebuf);
           make_label(namebuf, d->label, sizeof d->label);
           make_location(namebuf, d->floor, sizeof d->floor, d->room, sizeof d->room);
+          d->floor_id = (floor_id > 0 && floor_id <= 255) ? (uint8_t)floor_id : 0;
+          d->room_id = (room_id > 0 && room_id <= 255) ? (uint8_t)room_id : 0;
           copy_str(d->status, sizeof d->status, status);
           /* the export is the fallback truth; live MQTT traffic wins later */
           if (!strcmp(status, "0")) {
@@ -464,11 +471,19 @@ static bool floor_like(const char *dev_floor, const char *want) {
   return text_like(dev_floor, want);
 }
 
-bool registry_matches_scope(int index, uint8_t scope, const char *floor_label,
-                            const char *room_label) {
+bool registry_matches_scope(int index, uint8_t scope, uint8_t floor_id, uint8_t room_id,
+                            const char *floor_label, const char *room_label) {
   if (index < 0 || index >= s_count) return false;
   if (scope >= 2) return true; /* every actuator */
+
   const RegDev *d = &s_devs[index];
+
+  /* Controller ids are authoritative when the device carries them ... */
+  const bool id_floor = floor_id && d->floor_id == floor_id;
+  const bool id_room = room_id && d->room_id == room_id;
+  if (id_floor && (scope == 1 || id_room)) return true;
+
+  /* ... otherwise fall back to the floor/room text inside the name. */
   if (!d->floor[0] && !d->room[0]) return false; /* location unknown */
   if (floor_label && floor_label[0] && !floor_like(d->floor, floor_label)) return false;
   if (scope == 0 && room_label && room_label[0] && !text_like(d->room, room_label))

@@ -16,9 +16,11 @@ const char *registry_fullname(int index);
 const char *registry_floor_at(int index); /* "1ST.FLOOR", "" when unknown */
 const char *registry_room_at(int index);  /* "LIVING ROOM", "" when unknown */
 
-/* Location scope used by the device picker: 0 = room, 1 = floor, 2 = all. */
-bool registry_matches_scope(int index, uint8_t scope, const char *floor_label,
-                            const char *room_label);
+/* Location scope used by the device picker: 0 = room, 1 = floor, 2 = all.
+ * Controller floor/room ids win when the device carries them; otherwise the
+ * floor/room text parsed out of the device name is compared with the labels. */
+bool registry_matches_scope(int index, uint8_t scope, uint8_t floor_id, uint8_t room_id,
+                            const char *floor_label, const char *room_label);
 
 int registry_find_short(const char *shortname);
 int registry_find_guid(const char *guid);

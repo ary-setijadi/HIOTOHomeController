@@ -56,6 +56,8 @@ void settings_load(Settings *s) {
   prefs.getString("devid", s->device_id, sizeof s->device_id);
   prefs.getString("floor", s->floor_label, sizeof s->floor_label);
   prefs.getString("room", s->room_label, sizeof s->room_label);
+  s->floor_id = (uint8_t)prefs.getUChar("fid", s->floor_id);
+  s->room_id = (uint8_t)prefs.getUChar("rid", s->room_id);
   s->brightness = (uint8_t)prefs.getUChar("bright", s->brightness);
   s->theme = (uint8_t)prefs.getUChar("theme", s->theme);
   s->scope = (uint8_t)prefs.getUChar("scope", s->scope);
@@ -67,6 +69,8 @@ void settings_load(Settings *s) {
     prefs.getString(key, s->slots[i].guid, sizeof s->slots[i].guid);
     snprintf(key, sizeof key, "s%dl", i);
     prefs.getString(key, s->slots[i].label, sizeof s->slots[i].label);
+    snprintf(key, sizeof key, "s%da", i);
+    prefs.getString(key, s->slots[i].alias, sizeof s->slots[i].alias);
     snprintf(key, sizeof key, "s%di", i);
     s->slots[i].icon = prefs.getUChar(key, s->slots[i].icon);
   }
@@ -91,6 +95,8 @@ void settings_save(const Settings *s) {
   prefs.putString("devid", s->device_id);
   prefs.putString("floor", s->floor_label);
   prefs.putString("room", s->room_label);
+  prefs.putUChar("fid", s->floor_id);
+  prefs.putUChar("rid", s->room_id);
   prefs.putUChar("bright", s->brightness);
   prefs.putUChar("theme", s->theme);
   prefs.putUChar("scope", s->scope);
@@ -101,6 +107,8 @@ void settings_save(const Settings *s) {
     prefs.putString(key, s->slots[i].guid);
     snprintf(key, sizeof key, "s%dl", i);
     prefs.putString(key, s->slots[i].label);
+    snprintf(key, sizeof key, "s%da", i);
+    prefs.putString(key, s->slots[i].alias);
     snprintf(key, sizeof key, "s%di", i);
     prefs.putUChar(key, s->slots[i].icon);
   }

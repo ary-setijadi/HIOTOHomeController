@@ -5,6 +5,7 @@
 #include "config.h"
 #include "settings.h"
 #include "registry.h"
+#include "catalog.h"
 #include "mqtt_mgr.h"
 #include "theme.h"
 #include "backlight.h"
@@ -34,11 +35,12 @@ static lv_obj_t *s_state[GEN_SLOTS];
 /* settings screen */
 static lv_obj_t *s_ta_ssid = NULL;
 static lv_obj_t *s_ta_pass = NULL;
-static lv_obj_t *s_ta_floor = NULL;
-static lv_obj_t *s_ta_room = NULL;
+static lv_obj_t *s_dd_floor = NULL;
+static lv_obj_t *s_dd_room = NULL;
 static lv_obj_t *s_lbl_wifi = NULL;
 static lv_obj_t *s_dd_dev[GEN_SLOTS];
 static lv_obj_t *s_dd_icon[GEN_SLOTS];
+static lv_obj_t *s_ta_alias[GEN_SLOTS];
 static lv_obj_t *s_kb = NULL;
 static lv_obj_t *s_set_content = NULL;
 static lv_obj_t *s_slider = NULL;
@@ -63,6 +65,97 @@ static void rebuild_dropdowns(void);
 /* ------------------------------------------------------------------------- */
 /*  Small helpers                                                            */
 /* ------------------------------------------------------------------------- */
+static bool ci_eq(const char *a, const char *b) {
+  while (*a && *b) {
+    if (toupper((unsigned char)*a) != toupper((unsigned char)*b)) return false;
+    a++;
+    b++;
+  }
+  return *a == '\0' && *b == '\0';
+}
+
+/* Friendly word for a registry token. */
+static const char *word_alias(const char *tok) {
+  static const char *const kKeys[] = {"LAMP",      "SMARTSTEKER", "SMARTPLUG",
+                                      "PANICBUTTON", "TOMBOLDARURAT", "AKTUATOR",
+                                      "SAKLAR",    "SIRINE",      "DOORLOCK"};
+  static const char *const kVals[] = {"Lampu",      "Steker",    "Steker",
+                                      "Panic Button", "Tombol Darurat", "Aktuator",
+                                      "Saklar",    "Sirine",     "Door Lock"};
+  for (size_t i = 0; i < sizeof kKeys / sizeof kKeys[0]; i++)
+    if (ci_eq(tok, kKeys[i])) return kVals[i];
+  return NULL;
+}
+
+/* "LAMP.14" -> "Lampu 14", "SMARTSTEKER-16" -> "Steker 16",
+ * "DO-270-01" -> "DO 270 01", "IWK-SAKLAR-79" -> "IWK Saklar 79". */
+static void pretty_alias(const char *label, char *out, size_t n) {
+  out[0] = '\0';
+  if (!label || !label[0]) return;
+
+  char buf[64];
+  strncpy(buf, label, sizeof buf - 1);
+  buf[sizeof buf - 1] = '\0';
+
+  bool after_lamp = false;
+  char *p = buf;
+  while (*p) {
+    char tok[24];
+    size_t t = 0;
+    while (*p && *p != '.' && *p != '-' && t + 1 < sizeof tok) tok[t++] = *p++;
+    tok[t] = '\0';
+    if (*p) p++; /* skip the separator */
+    if (!tok[0]) continue;
+
+    bool numeric = true;
+    for (size_t k = 0; tok[k]; k++)
+      if (!isdigit((unsigned char)tok[k])) {
+        numeric = false;
+        break;
+      }
+
+    char piece[28];
+    const char *map = word_alias(tok);
+    if (map) {
+      snprintf(piece, sizeof piece, "%s", map);
+      after_lamp = ci_eq(tok, "LAMP");
+    } else if (numeric) {
+      if (after_lamp)
+        snprintf(piece, sizeof piece, "%ld", strtol(tok, NULL, 10)); /* 09 -> 9 */
+      else
+        snprintf(piece, sizeof piece, "%s", tok);
+      after_lamp = false;
+    } else {
+      bool allcaps = true;
+      for (size_t k = 0; tok[k]; k++)
+        if (isalpha((unsigned char)tok[k]) && !isupper((unsigned char)tok[k])) allcaps = false;
+      snprintf(piece, sizeof piece, "%s", tok);
+      if (!(allcaps && strlen(tok) <= 3)) { /* keep DO / DI / IWK as-is */
+        piece[0] = (char)toupper((unsigned char)piece[0]);
+        for (size_t k = 1; piece[k]; k++) piece[k] = (char)tolower((unsigned char)piece[k]);
+      }
+      after_lamp = false;
+    }
+
+    if (out[0] && strlen(out) + strlen(piece) + 2 < n) strcat(out, " ");
+    strncat(out, piece, n - strlen(out) - 1);
+  }
+}
+
+/* Name shown on the panel button: the alias, else a friendly form of the id. */
+static void slot_display_name(int i, char *out, size_t n) {
+  const LampSlot *s = &g_settings.slots[i];
+  if (s->alias[0]) {
+    snprintf(out, n, "%s", s->alias);
+    return;
+  }
+  if (s->label[0]) {
+    pretty_alias(s->label, out, n);
+    return;
+  }
+  snprintf(out, n, "kosong");
+}
+
 static lv_obj_t *mk_label(lv_obj_t *parent, const char *txt, const lv_font_t *font,
                           lv_color_t color) {
   lv_obj_t *l = lv_label_create(parent);
@@ -292,7 +385,9 @@ static void mk_main(void) {
       s_btn[i] = btn;
 
       mk_icon(i);
-      s_name[i] = mk_label(btn, g_settings.slots[i].label, &lv_font_montserrat_14, C(text));
+      char nm[24];
+      slot_display_name(i, nm, sizeof nm);
+      s_name[i] = mk_label(btn, nm, &lv_font_montserrat_14, C(text));
       lv_obj_set_pos(s_name[i], 8, 48);
       lv_obj_set_width(s_name[i], 94);
       lv_label_set_long_mode(s_name[i], LV_LABEL_LONG_DOT);
@@ -311,14 +406,105 @@ static void ta_event_cb(lv_event_t *e) {
   if (code == LV_EVENT_FOCUSED) {
     lv_keyboard_set_textarea(s_kb, lv_event_get_target(e));
     lv_obj_clear_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+    /* shrink the scroll area to the space above the keyboard and bring the
+     * field into view, otherwise the keyboard covers what is being edited */
+    if (s_set_content) {
+      lv_obj_set_height(s_set_content, LCD_HEIGHT - 160 - 4);
+      lv_obj_scroll_to_view(lv_event_get_target(e), LV_ANIM_ON);
+    }
   } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY || code == LV_EVENT_CANCEL) {
     lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+    if (s_set_content) lv_obj_set_height(s_set_content, LCD_HEIGHT - 56);
   }
 }
 
 static void back_click_cb(lv_event_t *e) {
   (void)e;
   lv_scr_load(s_main);
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Title dropdowns: floor + room from the controller catalog                */
+/* ------------------------------------------------------------------------- */
+static void rebuild_location_dd(void) {
+  if (s_dd_floor) {
+    char buf[320];
+    const int n = catalog_floor_count();
+    if (n > 0) {
+      buf[0] = '\0';
+      for (int i = 0; i < n; i++) {
+        if (i) strncat(buf, "\n", sizeof buf - strlen(buf) - 1);
+        strncat(buf, catalog_floor_name(i), sizeof buf - strlen(buf) - 1);
+      }
+      lv_dropdown_set_options(s_dd_floor, buf);
+      const int sel = catalog_find_floor(g_settings.floor_id, g_settings.floor_label);
+      lv_dropdown_set_selected(s_dd_floor, sel >= 0 ? sel : 0);
+    } else {
+      lv_dropdown_set_options(s_dd_floor,
+                              g_settings.floor_label[0] ? g_settings.floor_label : "-");
+      lv_dropdown_set_selected(s_dd_floor, 0);
+    }
+  }
+
+  if (s_dd_room) {
+    char buf[1024];
+    strcpy(buf, "(semua ruang)");
+    const int n = catalog_room_count(g_settings.floor_id);
+    for (int i = 0; i < n; i++) {
+      const char *nm = catalog_room_name(g_settings.floor_id, i);
+      if (strlen(buf) + strlen(nm) + 2 >= sizeof buf) break;
+      strcat(buf, "\n");
+      strcat(buf, nm);
+    }
+    if (n == 0 && g_settings.room_label[0]) { /* catalog down: keep the saved name */
+      strcat(buf, "\n");
+      strncat(buf, g_settings.room_label, sizeof buf - strlen(buf) - 1);
+    }
+    lv_dropdown_set_options(s_dd_room, buf);
+    int sel = catalog_find_room(g_settings.floor_id, g_settings.room_id, g_settings.room_label);
+    if (sel < 0 && n == 0 && g_settings.room_label[0]) sel = 0;
+    lv_dropdown_set_selected(s_dd_room, sel >= 0 ? sel + 1 : 0);
+  }
+}
+
+static void floor_dd_cb(lv_event_t *e) {
+  const int idx = (int)lv_dropdown_get_selected(lv_event_get_target(e));
+  if (idx >= 0 && idx < catalog_floor_count()) {
+    g_settings.floor_id = catalog_floor_id(idx);
+    snprintf(g_settings.floor_label, sizeof g_settings.floor_label, "%s",
+             catalog_floor_name(idx));
+  }
+  /* keep the room when it belongs to the new floor, otherwise take the first */
+  int ri = catalog_find_room(g_settings.floor_id, g_settings.room_id, g_settings.room_label);
+  if (ri < 0) {
+    if (catalog_room_count(g_settings.floor_id) > 0) {
+      g_settings.room_id = catalog_room_id(g_settings.floor_id, 0);
+      snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s",
+               catalog_room_name(g_settings.floor_id, 0));
+    } else {
+      g_settings.room_id = 0;
+      g_settings.room_label[0] = '\0';
+    }
+  }
+  settings_save(&g_settings);
+  rebuild_location_dd(); /* room list follows the new floor (other widget) */
+  refresh_title();
+  s_dd_dirty = true; /* re-filter the device pickers outside this event */
+}
+
+static void room_dd_cb(lv_event_t *e) {
+  const int idx = (int)lv_dropdown_get_selected(lv_event_get_target(e));
+  if (idx == 0) { /* "(semua ruang)" */
+    g_settings.room_id = 0;
+    g_settings.room_label[0] = '\0';
+  } else if (idx - 1 < catalog_room_count(g_settings.floor_id)) {
+    g_settings.room_id = catalog_room_id(g_settings.floor_id, idx - 1);
+    snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s",
+             catalog_room_name(g_settings.floor_id, idx - 1));
+  }
+  settings_save(&g_settings);
+  refresh_title();
+  s_dd_dirty = true;
 }
 
 static void refresh_slot_visual(int i) {
@@ -362,6 +548,18 @@ static void bright_step_cb(lv_event_t *e) {
   bright_apply(v, true);
 }
 
+/* Picking another device suggests a fresh friendly name for it. */
+static void dev_dd_cb(lv_event_t *e) {
+  const int i = (int)(intptr_t)lv_event_get_user_data(e);
+  if (i < 0 || i >= GEN_SLOTS || !s_ta_alias[i]) return;
+  const int sel = (int)lv_dropdown_get_selected(lv_event_get_target(e));
+  char nm[24];
+  nm[0] = '\0';
+  if (sel > 0 && sel - 1 < s_opt_count)
+    pretty_alias(registry_shortname(s_opt_reg[sel - 1]), nm, sizeof nm);
+  lv_textarea_set_text(s_ta_alias[i], nm);
+}
+
 /* ---- filter scope ---- */
 static void scope_dd_cb(lv_event_t *e) {
   uint16_t sel = lv_dropdown_get_selected(lv_event_get_target(e));
@@ -388,10 +586,7 @@ static void save_click_cb(lv_event_t *e) {
                           lv_textarea_get_text(s_ta_ssid));
   if (s_ta_pass) snprintf(g_settings.wifi_pass, sizeof g_settings.wifi_pass, "%s",
                           lv_textarea_get_text(s_ta_pass));
-  if (s_ta_floor) snprintf(g_settings.floor_label, sizeof g_settings.floor_label, "%s",
-                           lv_textarea_get_text(s_ta_floor));
-  if (s_ta_room) snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s",
-                          lv_textarea_get_text(s_ta_room));
+  /* floor / room come straight from the dropdowns and are already applied */
   for (int i = 0; i < GEN_SLOTS; i++) {
     if (!s_dd_dev[i]) continue;
     const uint16_t sel = lv_dropdown_get_selected(s_dd_dev[i]);
@@ -407,6 +602,12 @@ static void save_click_cb(lv_event_t *e) {
                registry_shortname(ri));
     }
     if (s_dd_icon[i]) g_settings.slots[i].icon = (uint8_t)lv_dropdown_get_selected(s_dd_icon[i]);
+    if (s_ta_alias[i]) {
+      const char *al = lv_textarea_get_text(s_ta_alias[i]);
+      snprintf(g_settings.slots[i].alias, sizeof g_settings.slots[i].alias, "%s",
+               al ? al : "");
+    }
+    if (sel == 0) g_settings.slots[i].alias[0] = '\0'; /* unassigned -> drop alias */
   }
   settings_save(&g_settings);
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
@@ -449,17 +650,27 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(s_ta_pass, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
   s_lbl_wifi = mk_label(s_set_content, wifi_state_text(), &lv_font_montserrat_12, C(muted));
 
-  /* ---- title fields ---- */
+  /* ---- title: floor + room dropdowns (also drive the device filter) ---- */
   mk_label(s_set_content, "Tampilan (judul)", &lv_font_montserrat_14, C(accent));
   lv_obj_t *row1 = mk_row(s_set_content, 34);
-  mk_ta(row1, &s_ta_floor, g_settings.floor_label, false);
-  mk_ta(row1, &s_ta_room, g_settings.room_label, false);
-  lv_obj_set_width(s_ta_floor, LV_PCT(45));
-  lv_obj_set_width(s_ta_room, LV_PCT(45));
-  lv_obj_add_event_cb(s_ta_floor, ta_event_cb, LV_EVENT_FOCUSED, NULL);
-  lv_obj_add_event_cb(s_ta_floor, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
-  lv_obj_add_event_cb(s_ta_room, ta_event_cb, LV_EVENT_FOCUSED, NULL);
-  lv_obj_add_event_cb(s_ta_room, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
+
+  lv_obj_t *ddf = lv_dropdown_create(row1);
+  lv_obj_set_width(ddf, 216);
+  lv_obj_set_height(ddf, 30);
+  lv_obj_set_style_text_font(ddf, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_bg_color(ddf, C(card2), 0);
+  lv_obj_set_style_text_color(ddf, C(text), 0);
+  lv_obj_add_event_cb(ddf, floor_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  s_dd_floor = ddf;
+
+  lv_obj_t *ddr = lv_dropdown_create(row1);
+  lv_obj_set_width(ddr, 216);
+  lv_obj_set_height(ddr, 30);
+  lv_obj_set_style_text_font(ddr, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_bg_color(ddr, C(card2), 0);
+  lv_obj_set_style_text_color(ddr, C(text), 0);
+  lv_obj_add_event_cb(ddr, room_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  s_dd_room = ddr;
 
   /* ---- screen: brightness + theme ---- */
   mk_label(s_set_content, "Layar & tema", &lv_font_montserrat_14, C(accent));
@@ -522,7 +733,8 @@ static void mk_settings(void) {
   s_dd_theme = ddt;
 
   /* ---- slot assignment ---- */
-  mk_label(s_set_content, "Tombol lampu (lampu + ikon)", &lv_font_montserrat_14, C(accent));
+  mk_label(s_set_content, "Tombol lampu (id - ikon - nama)", &lv_font_montserrat_14,
+           C(accent));
 
   /* filter row: which devices the dropdowns offer */
   lv_obj_t *srow = mk_row(s_set_content, 34);
@@ -540,6 +752,10 @@ static void mk_settings(void) {
   s_lbl_scope = mk_label(srow, "", &lv_font_montserrat_12, C(muted));
   lv_obj_set_width(s_lbl_scope, 110);
 
+  lv_obj_t *s_lbl_hint = mk_label(s_set_content, "Nama (alias) kosong = otomatis dari id",
+                                  &lv_font_montserrat_12, C(muted));
+  (void)s_lbl_hint;
+
   for (int i = 0; i < GEN_SLOTS; i++) {
     lv_obj_t *row = mk_row(s_set_content, 34);
 
@@ -548,17 +764,18 @@ static void mk_settings(void) {
     mk_label(row, num, &lv_font_montserrat_14, C(muted));
 
     lv_obj_t *dd1 = lv_dropdown_create(row);
-    lv_obj_set_width(dd1, 244);
+    lv_obj_set_width(dd1, 158);
     lv_obj_set_height(dd1, 30);
     lv_obj_set_style_text_font(dd1, &lv_font_montserrat_12, 0);
     lv_obj_set_style_pad_left(dd1, 8, 0);
-    lv_obj_set_style_pad_right(dd1, 20, 0);
+    lv_obj_set_style_pad_right(dd1, 18, 0);
     lv_obj_set_style_bg_color(dd1, C(card2), 0);
     lv_obj_set_style_text_color(dd1, C(text), 0);
+    lv_obj_add_event_cb(dd1, dev_dd_cb, LV_EVENT_VALUE_CHANGED, (void *)(intptr_t)i);
     s_dd_dev[i] = dd1;
 
     lv_obj_t *dd2 = lv_dropdown_create(row);
-    lv_obj_set_width(dd2, 110);
+    lv_obj_set_width(dd2, 100);
     lv_obj_set_height(dd2, 30);
     lv_obj_set_style_text_font(dd2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_bg_color(dd2, C(card2), 0);
@@ -566,6 +783,26 @@ static void mk_settings(void) {
     lv_dropdown_set_options(dd2, ICON_NAMES);
     lv_dropdown_set_selected(dd2, g_settings.slots[i].icon % ICON_COUNT);
     s_dd_icon[i] = dd2;
+
+    /* friendly name shown on the button */
+    char eff[24];
+    slot_display_name(i, eff, sizeof eff);
+    lv_obj_t *ta = lv_textarea_create(row);
+    lv_obj_set_width(ta, 148);
+    lv_obj_set_height(ta, 30);
+    lv_textarea_set_one_line(ta, true);
+    lv_textarea_set_max_length(ta, sizeof g_settings.slots[i].alias - 1);
+    lv_textarea_set_text(ta, g_settings.slots[i].alias[0] ? g_settings.slots[i].alias : eff);
+    lv_obj_set_style_bg_color(ta, C(card2), 0);
+    lv_obj_set_style_text_color(ta, C(text), 0);
+    lv_obj_set_style_text_font(ta, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_border_color(ta, C(border), 0);
+    lv_obj_set_style_pad_left(ta, 8, 0);
+    lv_obj_set_style_pad_right(ta, 8, 0);
+    lv_obj_set_style_radius(ta, 8, 0);
+    lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_FOCUSED, NULL);
+    lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_DEFOCUSED, NULL);
+    s_ta_alias[i] = ta;
   }
 
   /* ---- bottom bar (safe interior zone) ---- */
@@ -624,8 +861,8 @@ static void build_option_map(void) {
   s_opt_count = 0;
 
   for (int k = 0; k < n; k++)
-    if (registry_matches_scope(k, g_settings.scope, g_settings.floor_label,
-                               g_settings.room_label))
+    if (registry_matches_scope(k, g_settings.scope, g_settings.floor_id, g_settings.room_id,
+                               g_settings.floor_label, g_settings.room_label))
       opt_add(k);
 
   if (s_opt_count == 0) /* nothing matches -> show everything instead of nothing */
@@ -682,14 +919,15 @@ static void rebuild_dropdowns(void) {
 static void reset_widgets(void) {
   s_main = s_set = NULL;
   s_title = s_status = NULL;
-  s_ta_ssid = s_ta_pass = s_ta_floor = s_ta_room = NULL;
+  s_ta_ssid = s_ta_pass = NULL;
+  s_dd_floor = s_dd_room = NULL;
   s_lbl_wifi = s_kb = s_set_content = NULL;
   s_slider = s_lbl_bright = s_dd_theme = NULL;
   s_dd_scope = s_lbl_scope = NULL;
   for (int i = 0; i < GEN_SLOTS; i++) {
     s_btn[i] = s_icon_box[i] = s_icon_glow[i] = NULL;
     s_name[i] = s_state[i] = NULL;
-    s_dd_dev[i] = s_dd_icon[i] = NULL;
+    s_dd_dev[i] = s_dd_icon[i] = s_ta_alias[i] = NULL;
     for (int k = 0; k < 4; k++) s_icon_fill[i][k] = NULL;
     for (int k = 0; k < 2; k++) s_icon_line[i][k] = NULL;
   }
@@ -707,6 +945,7 @@ static void rebuild_all_ui(void) {
   mk_main();
   mk_settings();
   refresh_title();
+  rebuild_location_dd();
   lv_scr_load(stay_settings ? s_set : s_main);
   if (stay_settings) rebuild_dropdowns();
   if (old_main) lv_obj_del(old_main);
@@ -717,6 +956,30 @@ static void rebuild_all_ui(void) {
 }
 
 void ui_registry_changed(void) { rebuild_dropdowns(); }
+
+void ui_catalog_changed(void) {
+  /* Older NVS blobs have no floor/room ids: derive them from the labels once
+   * the catalog is available, then refresh both title dropdowns. */
+  bool fixed = false;
+  if (!g_settings.floor_id && g_settings.floor_label[0]) {
+    const int fi = catalog_find_floor(0, g_settings.floor_label);
+    if (fi >= 0) {
+      g_settings.floor_id = catalog_floor_id(fi);
+      fixed = true;
+    }
+  }
+  if (!g_settings.room_id && g_settings.room_label[0]) {
+    const int ri = catalog_find_room(g_settings.floor_id, 0, g_settings.room_label);
+    if (ri >= 0) {
+      g_settings.room_id = catalog_room_id(g_settings.floor_id, ri);
+      fixed = true;
+    }
+  }
+  if (fixed) settings_save(&g_settings);
+  rebuild_location_dd();
+  if (s_title) refresh_title();
+  s_dd_dirty = true;
+}
 
 void ui_theme_changed(void) { s_rebuild_pending = true; }
 
@@ -734,6 +997,15 @@ void ui_poll(void) {
 
 void ui_open_settings(void) {
   if (s_dd_scope) lv_dropdown_set_selected(s_dd_scope, g_settings.scope);
+  for (int i = 0; i < GEN_SLOTS; i++) {
+    if (!s_ta_alias[i]) continue;
+    char eff[24];
+    slot_display_name(i, eff, sizeof eff);
+    lv_textarea_set_text(s_ta_alias[i], g_settings.slots[i].alias[0]
+                                            ? g_settings.slots[i].alias
+                                            : eff);
+  }
+  rebuild_location_dd();
   rebuild_dropdowns();
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
   if (s_slider) lv_slider_set_value(s_slider, g_settings.brightness, LV_ANIM_OFF);
@@ -770,7 +1042,9 @@ void ui_refresh_states(void) {
     bool on = known && registry_state_on(ri);
     icon_apply_state(i, known, on);
 
-    lv_label_set_text(s_name[i], slot->label[0] ? slot->label : "kosong");
+    char nm[24];
+    slot_display_name(i, nm, sizeof nm);
+    lv_label_set_text(s_name[i], nm);
     lv_obj_set_style_text_color(s_name[i], ri >= 0 ? C(text) : C(muted), 0);
 
     const char *stt = !known ? "-" : (on ? "ON" : "OFF");
@@ -789,6 +1063,7 @@ void ui_init(void) {
   mk_main();
   mk_settings();
   refresh_title();
+  rebuild_location_dd();
   lv_scr_load(s_main);
   ui_refresh_states();
 }
