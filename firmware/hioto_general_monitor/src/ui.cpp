@@ -44,9 +44,21 @@ static lv_obj_t *s_set_content = NULL;
 static lv_obj_t *s_slider = NULL;
 static lv_obj_t *s_lbl_bright = NULL;
 static lv_obj_t *s_dd_theme = NULL;
+static lv_obj_t *s_dd_scope = NULL;
+static lv_obj_t *s_lbl_scope = NULL;
+
+/* Device dropdown options: index k of the dropdown shows registry entry
+ * s_opt_reg[k]. Filtering shortens this list, so every dropdown needs the
+ * map back to the registry. */
+#define REG_OPT_MAX 160
+static int s_opt_reg[REG_OPT_MAX];
+static int s_opt_count = 0;
 
 static uint32_t s_last_refresh = 0;
 static bool s_rebuild_pending = false;
+static bool s_dd_dirty = false;
+
+static void rebuild_dropdowns(void);
 
 /* ------------------------------------------------------------------------- */
 /*  Small helpers                                                            */
@@ -350,6 +362,15 @@ static void bright_step_cb(lv_event_t *e) {
   bright_apply(v, true);
 }
 
+/* ---- filter scope ---- */
+static void scope_dd_cb(lv_event_t *e) {
+  uint16_t sel = lv_dropdown_get_selected(lv_event_get_target(e));
+  if (sel > 2) sel = 0;
+  g_settings.scope = (uint8_t)sel;
+  settings_save(&g_settings);
+  s_dd_dirty = true; /* rebuild the option lists outside the dropdown event */
+}
+
 /* ---- theme ---- */
 static void theme_dd_cb(lv_event_t *e) {
   uint16_t sel = lv_dropdown_get_selected(lv_event_get_target(e));
@@ -373,9 +394,13 @@ static void save_click_cb(lv_event_t *e) {
                           lv_textarea_get_text(s_ta_room));
   for (int i = 0; i < GEN_SLOTS; i++) {
     if (!s_dd_dev[i]) continue;
-    uint16_t sel = lv_dropdown_get_selected(s_dd_dev[i]);
-    int ri = (int)sel - 1; /* option 0 is "(kosong)" */
-    if (ri >= 0 && ri < registry_count()) {
+    const uint16_t sel = lv_dropdown_get_selected(s_dd_dev[i]);
+    if (sel == 0) {
+      /* "(kosong)" -> unassign the button */
+      g_settings.slots[i].guid[0] = '\0';
+      g_settings.slots[i].label[0] = '\0';
+    } else if (sel - 1 < (uint16_t)s_opt_count) {
+      const int ri = s_opt_reg[sel - 1];
       snprintf(g_settings.slots[i].guid, sizeof g_settings.slots[i].guid, "%s",
                registry_guid_at(ri));
       snprintf(g_settings.slots[i].label, sizeof g_settings.slots[i].label, "%s",
@@ -386,6 +411,7 @@ static void save_click_cb(lv_event_t *e) {
   settings_save(&g_settings);
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   refresh_title();
+  rebuild_dropdowns(); /* floor/room may have changed, so re-filter */
   for (int i = 0; i < GEN_SLOTS; i++) {
     lv_label_set_text(s_name[i], g_settings.slots[i].label);
     refresh_slot_visual(i);
@@ -497,6 +523,23 @@ static void mk_settings(void) {
 
   /* ---- slot assignment ---- */
   mk_label(s_set_content, "Tombol lampu (lampu + ikon)", &lv_font_montserrat_14, C(accent));
+
+  /* filter row: which devices the dropdowns offer */
+  lv_obj_t *srow = mk_row(s_set_content, 34);
+  mk_label(srow, "Filter", &lv_font_montserrat_12, C(muted));
+  lv_obj_t *dds = lv_dropdown_create(srow);
+  lv_obj_set_width(dds, 190);
+  lv_obj_set_height(dds, 30);
+  lv_obj_set_style_text_font(dds, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_bg_color(dds, C(card2), 0);
+  lv_obj_set_style_text_color(dds, C(text), 0);
+  lv_dropdown_set_options(dds, SCOPE_NAMES);
+  lv_dropdown_set_selected(dds, g_settings.scope);
+  lv_obj_add_event_cb(dds, scope_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
+  s_dd_scope = dds;
+  s_lbl_scope = mk_label(srow, "", &lv_font_montserrat_12, C(muted));
+  lv_obj_set_width(s_lbl_scope, 110);
+
   for (int i = 0; i < GEN_SLOTS; i++) {
     lv_obj_t *row = mk_row(s_set_content, 34);
 
@@ -560,18 +603,56 @@ static void mk_settings(void) {
 }
 
 /* ------------------------------------------------------------------------- */
-static void rebuild_dropdowns(void) {
-  const int n = registry_count();
+/*  Device dropdowns: filter by floor / room, show the short id only.        */
+/* ------------------------------------------------------------------------- */
+static bool opt_has(int reg_idx) {
+  for (int k = 0; k < s_opt_count; k++)
+    if (s_opt_reg[k] == reg_idx) return true;
+  return false;
+}
 
-  /* Build the option list on the heap so no entry can ever be truncated. */
+static void opt_add(int reg_idx) {
+  if (reg_idx < 0 || reg_idx >= registry_count()) return;
+  if (s_opt_count >= REG_OPT_MAX || opt_has(reg_idx)) return;
+  s_opt_reg[s_opt_count++] = reg_idx;
+}
+
+/* Build the visible device list for the current scope. Devices already used by
+ * a button are always kept in the list, so a filter can never hide a slot. */
+static void build_option_map(void) {
+  const int n = registry_count();
+  s_opt_count = 0;
+
+  for (int k = 0; k < n; k++)
+    if (registry_matches_scope(k, g_settings.scope, g_settings.floor_label,
+                               g_settings.room_label))
+      opt_add(k);
+
+  if (s_opt_count == 0) /* nothing matches -> show everything instead of nothing */
+    for (int k = 0; k < n; k++) opt_add(k);
+
+  for (int i = 0; i < GEN_SLOTS; i++)
+    opt_add(registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label));
+}
+
+static void rebuild_dropdowns(void) {
+  build_option_map();
+
+  if (s_lbl_scope) {
+    char b[40];
+    snprintf(b, sizeof b, "%d dari %d", s_opt_count, registry_count());
+    lv_label_set_text(s_lbl_scope, b);
+  }
+
+  /* Option text = short id, built on the heap so nothing is truncated. */
   size_t cap = 32;
-  for (int k = 0; k < n; k++) cap += strlen(registry_fullname(k)) + 1;
+  for (int k = 0; k < s_opt_count; k++) cap += strlen(registry_shortname(s_opt_reg[k])) + 1;
   char *opts = (char *)malloc(cap);
   if (!opts) return;
   strcpy(opts, "(kosong)");
   size_t len = strlen(opts);
-  for (int k = 0; k < n; k++) {
-    const char *nm = registry_fullname(k);
+  for (int k = 0; k < s_opt_count; k++) {
+    const char *nm = registry_shortname(s_opt_reg[k]);
     const size_t l = strlen(nm);
     if (len + 1 + l + 1 > cap) break;
     opts[len++] = '\n';
@@ -583,14 +664,10 @@ static void rebuild_dropdowns(void) {
     if (s_dd_dev[i]) {
       lv_dropdown_set_options(s_dd_dev[i], opts);
       int sel = 0;
-      if (g_settings.slots[i].guid[0]) {
-        int ri = registry_find_guid(g_settings.slots[i].guid);
-        if (ri >= 0) sel = ri + 1;
-      }
-      if (sel == 0 && g_settings.slots[i].label[0]) {
-        int ri = registry_find_short(g_settings.slots[i].label);
-        if (ri >= 0) sel = ri + 1;
-      }
+      const int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
+      if (ri >= 0)
+        for (int k = 0; k < s_opt_count; k++)
+          if (s_opt_reg[k] == ri) { sel = k + 1; break; }
       lv_dropdown_set_selected(s_dd_dev[i], sel);
     }
     if (s_dd_icon[i]) {
@@ -608,6 +685,7 @@ static void reset_widgets(void) {
   s_ta_ssid = s_ta_pass = s_ta_floor = s_ta_room = NULL;
   s_lbl_wifi = s_kb = s_set_content = NULL;
   s_slider = s_lbl_bright = s_dd_theme = NULL;
+  s_dd_scope = s_lbl_scope = NULL;
   for (int i = 0; i < GEN_SLOTS; i++) {
     s_btn[i] = s_icon_box[i] = s_icon_glow[i] = NULL;
     s_name[i] = s_state[i] = NULL;
@@ -643,12 +721,19 @@ void ui_registry_changed(void) { rebuild_dropdowns(); }
 void ui_theme_changed(void) { s_rebuild_pending = true; }
 
 void ui_poll(void) {
-  if (!s_rebuild_pending) return;
-  s_rebuild_pending = false;
-  rebuild_all_ui();
+  if (s_rebuild_pending) {
+    s_rebuild_pending = false;
+    rebuild_all_ui();
+    return;
+  }
+  if (s_dd_dirty) {
+    s_dd_dirty = false;
+    rebuild_dropdowns();
+  }
 }
 
 void ui_open_settings(void) {
+  if (s_dd_scope) lv_dropdown_set_selected(s_dd_scope, g_settings.scope);
   rebuild_dropdowns();
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
   if (s_slider) lv_slider_set_value(s_slider, g_settings.brightness, LV_ANIM_OFF);

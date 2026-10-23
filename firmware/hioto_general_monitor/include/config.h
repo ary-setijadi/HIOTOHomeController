@@ -37,6 +37,10 @@
 #define DEFAULT_THEME 0
 #define DEFAULT_BRIGHTNESS 90
 
+/* Device picker filter: 0 = same room, 1 = same floor, 2 = every actuator. */
+#define DEFAULT_SCOPE 0
+#define SCOPE_NAMES "Ruang ini\nLantai ini\nSemua device"
+
 /* MQTT topics */
 #define TOPIC_STATUS    "iot/%s/status"
 #define TOPIC_TELEMETRY "iot/%s/telemetry"

@@ -33,6 +33,7 @@ void settings_load(Settings *s) {
   copy_str(s->room_label, sizeof s->room_label, DEFAULT_ROOM);
   s->brightness = DEFAULT_BRIGHTNESS;
   s->theme = DEFAULT_THEME;
+  s->scope = DEFAULT_SCOPE;
   {
     const char *labels[GEN_SLOTS] = {DEFAULT_SLOT_LABELS};
     for (int i = 0; i < GEN_SLOTS; i++) {
@@ -57,6 +58,7 @@ void settings_load(Settings *s) {
   prefs.getString("room", s->room_label, sizeof s->room_label);
   s->brightness = (uint8_t)prefs.getUChar("bright", s->brightness);
   s->theme = (uint8_t)prefs.getUChar("theme", s->theme);
+  s->scope = (uint8_t)prefs.getUChar("scope", s->scope);
   s->touch_cal_valid = prefs.getBytes("tcal", s->touch_cal, sizeof s->touch_cal) ==
                        sizeof s->touch_cal;
   for (int i = 0; i < GEN_SLOTS; i++) {
@@ -73,6 +75,7 @@ void settings_load(Settings *s) {
   if (s->brightness < 20) s->brightness = 20;
   if (s->brightness > 100) s->brightness = 100;
   if (s->theme >= THEME_COUNT) s->theme = DEFAULT_THEME;
+  if (s->scope > 2) s->scope = DEFAULT_SCOPE;
   derive_device_id(s);
 }
 
@@ -90,6 +93,7 @@ void settings_save(const Settings *s) {
   prefs.putString("room", s->room_label);
   prefs.putUChar("bright", s->brightness);
   prefs.putUChar("theme", s->theme);
+  prefs.putUChar("scope", s->scope);
   if (s->touch_cal_valid) prefs.putBytes("tcal", s->touch_cal, sizeof s->touch_cal);
   for (int i = 0; i < GEN_SLOTS; i++) {
     char key[8];

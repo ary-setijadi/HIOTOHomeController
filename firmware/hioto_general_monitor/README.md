@@ -13,13 +13,24 @@ A **simple lamp switch panel**:
   - **Tampilan**: Floor and Room title fields.
   - **Layar & tema**: backlight dimmer (`−` / `+` / slider, 20–100 %) and the
     colour theme dropdown (applied live).
-  - **Tombol lampu**: per-button **device dropdown** (all `AKTUATOR` lamps from
-    the HIOTO controller) and **icon dropdown** (Spot / Umum / TL / Downlight /
+  - **Tombol lampu**: a **filter** (`Ruang ini` / `Lantai ini` / `Semua device`,
+    with a `n dari m` counter), then per-button **device dropdown** (short ids
+    such as `LAMP.14`) and **icon dropdown** (Spot / Umum / TL / Downlight /
     Taman).
   - **Simpan** persists everything to NVS and applies it.
 
 Default assignment (8 lamps): `LAMP.14, LAMP.15, LAMP.09, LAMP.10, LAMP.11,
 LAMP.12, LAMP.13, LAMP.17`.
+
+The filter derives floor and room from each registry name (`LAMP.09-1ST.FLOOR-
+LIVING ROOM-250-01` → floor `1ST.FLOOR`, room `LIVING ROOM`). The panel's Floor
+and Room labels drive it: the first number of the floor label is compared
+(`Lantai 1` → `1`), and the room labels are compared case/punctuation-blind
+with a 5-character prefix tolerance so `CONNECTION SPACE` still matches
+`CONNECTING SPACE`. Devices already used by a button are always appended, so a
+filter can never hide an assigned lamp; if nothing matches, everything is
+listed instead of an empty picker. With the defaults `Lantai 1` / `Living Room`
+the room scope shows 6 lamps, the floor scope 38, and `Semua device` all 81.
 
 ## Colour themes
 
@@ -109,7 +120,7 @@ per-slot `s{i}g` (guid), `s{i}l` (short label), `s{i}i` (icon index).
 
 `help` · `status` · `wifi <ssid> <pass>` · `mqtt <host> <port> <user> <pass>` ·
 `floor <label...>` · `room <label...>` · `bright [20-100]` · `theme [0-5]` ·
-`ldr` · `cal` / `clearcal` / `traw` · `save` · `reboot`
+`lamps` · `scope [0-2]` · `ldr` · `cal` / `clearcal` / `traw` · `save` · `reboot`
 
 ## Flashing (manual download mode)
 

@@ -11,11 +11,15 @@
 #define REG_MAX_DEVS 128
 #define REG_LABEL_LEN 24
 #define REG_NAME_LEN 52
+#define REG_FLOOR_LEN 20
+#define REG_ROOM_LEN 28
 
 struct RegDev {
   char guid[40];
   char label[REG_LABEL_LEN]; /* compact id: panel button + matching ("LAMP.14") */
-  char name[REG_NAME_LEN];   /* full registry name (dropdown text) */
+  char name[REG_NAME_LEN];   /* full registry name */
+  char floor[REG_FLOOR_LEN]; /* floor text from the name ("1ST.FLOOR") */
+  char room[REG_ROOM_LEN];   /* room text from the name ("LIVING ROOM") */
   char status[8];            /* controller's last status ("0"/"1"/"") */
   bool known;
   bool on;
@@ -23,7 +27,8 @@ struct RegDev {
 
 static RegDev s_devs[REG_MAX_DEVS];
 static uint8_t s_used[REG_MAX_DEVS];
-static int s_count = 0;
+static int s_count = 0;      /* live devices */
+static int s_prev_count = 0; /* devices known before the current refresh */
 static bool s_ready = false;
 static uint32_t s_last_try = 0;
 static char s_status[40] = "menunggu...";
@@ -85,7 +90,7 @@ static int split_parts(const char *name, char parts[][28], int max) {
 }
 
 /* ---------------------------------------------------------------------------
- *  Compact label used on the panel button (must stay short and distinct).
+ *  Compact label used on the panel button (short and distinct).
  *
  *   LAMP.12-1ST.FLOOR-LIVING ROOM-251-02  -> LAMP.12
  *   HIOTO-SMARTSTEKER-16                  -> SMARTSTEKER-16
@@ -127,6 +132,21 @@ static void make_label(const char *name, char *out, size_t n) {
     snprintf(buf, sizeof buf, "%s-%s", parts[s], parts[np - 1]);
   }
   copy_str(out, n, buf);
+}
+
+/* Floor / room text from the registry name.
+ * LAMP.14-1ST.CONNECTING SPACE-252-02 -> floor "1ST", room "CONNECTING SPACE".
+ * Other families carry no location in their name. */
+static void make_location(const char *name, char *floor_out, size_t fn, char *room_out,
+                          size_t rn) {
+  floor_out[0] = '\0';
+  room_out[0] = '\0';
+  char parts[8][28];
+  int np = split_parts(name, parts, 8);
+  if (np < 3) return;
+  if (strncasecmp(parts[0], "LAMP.", 5)) return;
+  copy_str(floor_out, fn, parts[1]);
+  copy_str(room_out, rn, parts[2]);
 }
 
 /* Append #2, #3, ... to labels that collide (same name on several relays).
@@ -221,10 +241,12 @@ static int split_csv(char *line, char *fields[], int max_fields, size_t field_sz
   return n + 1;
 }
 
-/* Find an already-known device by guid (keeps learned ON/OFF across refreshes). */
-static int find_by_guid(const char *guid) {
-  for (int i = 0; i < s_count; i++)
-    if (s_used[i] && !strcmp(s_devs[i].guid, guid)) return i;
+/* Find a device already known from the previous refresh (by guid), so the
+ * ON/OFF state learned over MQTT survives. Searches every previous entry,
+ * not just the ones already re-seen in this pass. */
+static int find_prev_by_guid(const char *guid) {
+  for (int i = 0; i < s_prev_count; i++)
+    if (!strcmp(s_devs[i].guid, guid)) return i;
   return -1;
 }
 
@@ -252,8 +274,9 @@ static bool fetch_registry(void) {
     return false;
   }
 
+  s_prev_count = s_count;
   memset(s_used, 0, sizeof s_used);
-  int added = 0; /* devices not seen before */
+  int added = 0;
 
   char line[256];
   char namebuf[REG_NAME_LEN];
@@ -273,7 +296,7 @@ static bool fetch_registry(void) {
       const char *status = f[4];
       if (!strcmp(type, "AKTUATOR") && guid[0]) {
         clean_name(name, namebuf, sizeof namebuf);
-        int idx = find_by_guid(guid);
+        int idx = find_prev_by_guid(guid);
         if (idx < 0 && s_count < REG_MAX_DEVS) {
           idx = s_count++;
           memset(&s_devs[idx], 0, sizeof s_devs[idx]);
@@ -286,6 +309,7 @@ static bool fetch_registry(void) {
           copy_str(d->guid, sizeof d->guid, guid);
           copy_str(d->name, sizeof d->name, namebuf);
           make_label(namebuf, d->label, sizeof d->label);
+          make_location(namebuf, d->floor, sizeof d->floor, d->room, sizeof d->room);
           copy_str(d->status, sizeof d->status, status);
           /* the export is the fallback truth; live MQTT traffic wins later */
           if (!strcmp(status, "0")) {
@@ -310,6 +334,7 @@ static bool fetch_registry(void) {
     keep++;
   }
   s_count = keep;
+  s_prev_count = 0;
 
   if (s_count == 0) {
     copy_str(s_status, sizeof s_status, "CSV kosong");
@@ -328,6 +353,7 @@ static bool fetch_registry(void) {
 void registry_begin(void) {
   s_ready = false;
   s_count = 0;
+  s_prev_count = 0;
   s_last_try = 0;
   memset(s_used, 0, sizeof s_used);
   copy_str(s_status, sizeof s_status, "menunggu...");
@@ -357,6 +383,14 @@ const char *registry_fullname(int index) {
   if (index < 0 || index >= s_count) return NULL;
   return s_devs[index].name;
 }
+const char *registry_floor_at(int index) {
+  if (index < 0 || index >= s_count) return NULL;
+  return s_devs[index].floor;
+}
+const char *registry_room_at(int index) {
+  if (index < 0 || index >= s_count) return NULL;
+  return s_devs[index].room;
+}
 
 int registry_find_short(const char *shortname) {
   if (!shortname || !shortname[0]) return -1;
@@ -379,6 +413,67 @@ int registry_resolve(const char *guid, const char *label) {
   int ri = registry_find_guid(guid);
   if (ri >= 0) return ri;
   return registry_find_short(label);
+}
+
+/* ------------------------------------------------------------------------- */
+/*  Floor / room matching                                                    */
+/* ------------------------------------------------------------------------- */
+/* Uppercase alphanumeric only: "Living Room" -> "LIVINGROOM". */
+static void norm_text(const char *src, char *out, size_t n) {
+  size_t o = 0;
+  for (size_t i = 0; src[i] && o + 1 < n; i++) {
+    unsigned char c = (unsigned char)src[i];
+    if (isalnum(c)) out[o++] = (char)toupper(c);
+  }
+  out[o] = '\0';
+}
+
+/* First run of digits: "Lantai 1" -> "1", "1ST.FLOOR" -> "1". */
+static void first_number(const char *src, char *out, size_t n) {
+  size_t o = 0;
+  bool started = false;
+  for (size_t i = 0; src[i] && o + 1 < n; i++) {
+    if (isdigit((unsigned char)src[i])) {
+      out[o++] = src[i];
+      started = true;
+    } else if (started) {
+      break;
+    }
+  }
+  out[o] = '\0';
+}
+
+/* Same place name, tolerating typos like CONNECTION vs CONNECTING SPACE. */
+static bool text_like(const char *a, const char *b) {
+  char na[80], nb[80];
+  norm_text(a, na, sizeof na);
+  norm_text(b, nb, sizeof nb);
+  if (!na[0] || !nb[0]) return false;
+  if (!strcmp(na, nb)) return true;
+  size_t i = 0;
+  while (na[i] && nb[i] && na[i] == nb[i]) i++;
+  return i >= 5;
+}
+
+static bool floor_like(const char *dev_floor, const char *want) {
+  char dn[24], wn[24];
+  first_number(dev_floor, dn, sizeof dn);
+  first_number(want, wn, sizeof wn);
+  if (dn[0] && wn[0]) return !strcmp(dn, wn);
+  if (!dn[0]) return false;
+  return text_like(dev_floor, want);
+}
+
+bool registry_matches_scope(int index, uint8_t scope, const char *floor_label,
+                            const char *room_label) {
+  if (index < 0 || index >= s_count) return false;
+  if (scope >= 2) return true; /* every actuator */
+  const RegDev *d = &s_devs[index];
+  if (!d->floor[0] && !d->room[0]) return false; /* location unknown */
+  if (floor_label && floor_label[0] && !floor_like(d->floor, floor_label)) return false;
+  if (scope == 0 && room_label && room_label[0] && !text_like(d->room, room_label))
+    return false;
+  return true;
 }
 
 bool registry_state_known(int index) {

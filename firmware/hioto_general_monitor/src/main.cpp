@@ -240,6 +240,7 @@ static void serial_help(void) {
   Serial.println("  bright <20-100>            LCD backlight percent (saved)");
   Serial.println("  theme [0-5]                list or set the colour theme");
   Serial.println("  lamps                      list every actuator and its label");
+  Serial.println("  scope [0-2]                picker filter: 0 ruang, 1 lantai, 2 semua");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -251,8 +252,9 @@ static void serial_status(void) {
                 g_settings.floor_label, g_settings.room_label);
   Serial.printf("wifi='%s' mqtt=%s:%u lampu=%d\n", g_settings.wifi_ssid,
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
-  Serial.printf("bright=%u%% theme=%u (%s)\n", (unsigned)g_settings.brightness,
-                (unsigned)g_settings.theme, theme_get(g_settings.theme)->name);
+  Serial.printf("bright=%u%% theme=%u (%s) scope=%u\n", (unsigned)g_settings.brightness,
+                (unsigned)g_settings.theme, theme_get(g_settings.theme)->name,
+                (unsigned)g_settings.scope);
   for (int i = 0; i < GEN_SLOTS; i++) {
     int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
     Serial.printf("slot%d: %s%s\n", i + 1, g_settings.slots[i].label,
@@ -305,12 +307,25 @@ static void serial_handle_line(char *line) {
     snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s", label);
     Serial.printf("[cfg] room=%s\n", g_settings.room_label);
   } else if (!strcmp(tok[0], "lamps")) {
-    Serial.printf("[reg] %d aktuator\n", registry_count());
+    Serial.printf("[reg] %d aktuator (filter scope=%u)\n", registry_count(),
+                  (unsigned)g_settings.scope);
     for (int i = 0; i < registry_count(); i++)
-      Serial.printf("  %3d  %-16s %s%s\n", i + 1, registry_shortname(i),
-                    registry_fullname(i),
-                    registry_state_known(i) ? (registry_state_on(i) ? "  ON" : "  OFF")
+      Serial.printf("  %3d  %-16s %-20s %-26s%s\n", i + 1, registry_shortname(i),
+                    registry_floor_at(i), registry_room_at(i),
+                    registry_state_known(i) ? (registry_state_on(i) ? " ON" : " OFF")
                                             : "");
+  } else if (!strcmp(tok[0], "scope")) {
+    if (n >= 2) {
+      int sc = atoi(tok[1]);
+      if (sc < 0 || sc > 2) sc = 0;
+      g_settings.scope = (uint8_t)sc;
+      settings_save(&g_settings);
+      ui_registry_changed();
+      Serial.printf("[cfg] scope=%d\n", sc);
+    } else {
+      Serial.printf("[cfg] scope=%u (0=ruang 1=lantai 2=semua)\n",
+                    (unsigned)g_settings.scope);
+    }
   } else if (!strcmp(tok[0], "bright")) {
     if (n >= 2) {
       int pct = atoi(tok[1]);
