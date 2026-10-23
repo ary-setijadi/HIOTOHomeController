@@ -110,17 +110,51 @@ Inspect the whole list at runtime with `lamps` on the serial console.
 
 Device id: `hioto-genmon-XXXXXX` (derived from the MAC).
 
+## OTA over Wi-Fi (Orange Pi OTA server)
+
+The firmware pulls updates from the `ota-firmware` service on the Orange Pi PC
+(`http://192.168.1.99:8080`), so no cable or BOOT button is needed after the
+first flash:
+
+1. `GET /api/latest?device=hioto-genmon&guid=<device id>` → manifest
+2. if `latest_version` differs from `FW_VERSION`, stream the `url` into the OTA
+   partition, then reboot
+3. `POST /api/report` with `status`, `from_version`, `to_version`
+
+Automatic checks run every 15 minutes (`OTA_CHECK_MS`) and can be disabled with
+`otaauto 0`. Triggers:
+
+- serial `ota` — check now
+- serial `otaurl <url>` — flash an explicit blob
+- serial `ver` — show version + last OTA status
+- MQTT `iot/<device id>/cmd` with `{"ota":1}` — check now, no cable at all
+
+Publishing a new build from the workstation:
+
+```powershell
+python -m platformio run -e hioto_genmon -d firmware/hioto_general_monitor
+python ota_publish.py firmware/hioto_general_monitor/.pio/build/hioto_genmon/firmware.bin `
+    1.2.0 --device hioto-genmon --note "what changed"
+python ota_trigger.py hioto-genmon-ec0940     # or wait for the 15 min check
+```
+
+`FW_VERSION`, `FW_DEVICE_TYPE` and `OTA_BASE` live in `include/config.h`.
+
 ## Settings persistence (NVS namespace `hioto`)
 
 `ssid`/`pass`, `mhost`/`mport`/`muser`/`mpass`, `devid`, `floor`, `room`,
-`bright` (backlight %), `theme` (palette index), `tcal` (touch calibration), and
-per-slot `s{i}g` (guid), `s{i}l` (short label), `s{i}i` (icon index).
+`fid`/`rid` (controller floor/room ids), `bright` (backlight %), `theme`
+(palette index), `scope` (picker filter), `oauto` (automatic OTA), `tcal` (touch
+calibration), and per-slot `s{i}g` (guid), `s{i}l` (short label), `s{i}a`
+(friendly alias), `s{i}i` (icon index).
 
 ## Serial console (COM3 @ 115200)
 
 `help` · `status` · `wifi <ssid> <pass>` · `mqtt <host> <port> <user> <pass>` ·
 `floor <label...>` · `room <label...>` · `bright [20-100]` · `theme [0-5]` ·
-`lamps` · `scope [0-2]` · `ldr` · `cal` / `clearcal` / `traw` · `save` · `reboot`
+`lamps` · `scope [0-2]` · `cat` · `devid <name>` · `alias <n> <text>|` ·
+`ver` · `ota` · `otaurl <url>` · `otaauto <0|1>` · `uigeom` ·
+`ldr` · `cal` / `clearcal` / `traw` · `save` · `reboot`
 
 ## Flashing (manual download mode)
 

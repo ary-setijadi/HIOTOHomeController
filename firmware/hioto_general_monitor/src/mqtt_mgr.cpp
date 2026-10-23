@@ -2,6 +2,7 @@
 #include "config.h"
 #include "registry.h"
 #include "ui.h"
+#include "ota.h"
 
 #include <WiFi.h>
 #include <PubSubClient.h>
@@ -15,6 +16,7 @@ static uint32_t s_last_heartbeat = 0;
 
 static char s_topic_status[48];
 static char s_topic_telemetry[48];
+static char s_topic_cmd[48];
 
 static const char *kSubs[] = {"Aktuator", "Sensor"};
 static const size_t kSubCount = sizeof(kSubs) / sizeof(kSubs[0]);
@@ -22,6 +24,7 @@ static const size_t kSubCount = sizeof(kSubs) / sizeof(kSubs[0]);
 static void build_topics(void) {
   snprintf(s_topic_status, sizeof s_topic_status, TOPIC_STATUS, s_cfg->device_id);
   snprintf(s_topic_telemetry, sizeof s_topic_telemetry, TOPIC_TELEMETRY, s_cfg->device_id);
+  snprintf(s_topic_cmd, sizeof s_topic_cmd, "iot/%s/cmd", s_cfg->device_id);
 }
 
 void mqtt_begin(const Settings *s) {
@@ -64,7 +67,8 @@ static bool connect_mqtt(void) {
   snprintf(online, sizeof online, "{\"device\":\"%s\",\"status\":\"online\"}", s_cfg->device_id);
   s_client.publish(s_topic_status, online, true);
   for (size_t i = 0; i < kSubCount; i++) s_client.subscribe(kSubs[i], 0);
-  Serial.println("[mqtt] online; watching Aktuator/Sensor");
+  s_client.subscribe(s_topic_cmd, 0);
+  Serial.printf("[mqtt] online; watching Aktuator/Sensor + %s\n", s_topic_cmd);
   publish_telemetry();
   publish_heartbeat();
   return true;
@@ -76,6 +80,14 @@ static void on_message(char *topic, byte *payload, unsigned int len) {
   if (len >= sizeof buf) len = sizeof buf - 1;
   memcpy(buf, payload, len);
   buf[len] = '\0';
+
+  /* command channel: {"ota":1} triggers a firmware check */
+  if (topic && !strcmp(topic, s_topic_cmd)) {
+    Serial.printf("[mqtt] cmd %s\n", buf);
+    if (strstr(buf, "\"ota\"") || !strncmp(buf, "ota", 3)) ota_request_check();
+    return;
+  }
+
   char *hash = strchr(buf, '#');
   if (!hash) return;
   *hash = '\0';

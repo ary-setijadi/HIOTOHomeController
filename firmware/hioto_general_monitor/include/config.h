@@ -15,6 +15,12 @@
 #define DEFAULT_CTRL_HOST "192.168.1.22"
 #define DEFAULT_CTRL_PORT 8081
 
+/* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
+#define OTA_BASE "http://192.168.1.99:8080"
+#define FW_VERSION "1.1.0"
+#define FW_DEVICE_TYPE "hioto-genmon"
+#define OTA_CHECK_MS 900000UL /* 15 min between automatic checks */
+
 /* Empty -> device id derived from the MAC ("hioto-genmon-xxxxxx"). */
 #define DEFAULT_DEVICE_ID ""
 

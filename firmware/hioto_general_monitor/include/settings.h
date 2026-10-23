@@ -26,6 +26,7 @@ struct Settings {
   uint8_t brightness; /* LCD backlight, 5..100 % */
   uint8_t theme;      /* colour theme index (theme.h) */
   uint8_t scope;      /* device picker filter: 0 = room, 1 = floor, 2 = all */
+  uint8_t ota_auto;   /* 1 = check the OTA server automatically */
   uint16_t touch_cal[8];
   bool touch_cal_valid;
 };

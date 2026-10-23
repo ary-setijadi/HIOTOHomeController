@@ -61,8 +61,8 @@ static lv_obj_t *s_lbl_scope = NULL;
  * map back to the registry. */
 /* On-screen keyboard heights. The LVGL default map needs 4 rows; these sizes
  * leave every row visible on the 320 px tall panel. */
-#define KB_MAIN_H 176
-#define KB_EDIT_H 212
+#define KB_MAIN_H 200
+#define KB_EDIT_H 228
 
 #define REG_OPT_MAX 160
 static int s_opt_reg[REG_OPT_MAX];
@@ -706,6 +706,49 @@ static void save_click_cb(lv_event_t *e) {
   ui_refresh_states();
 }
 
+/* ------------------------------------------------------------------------- */
+/*  Diagnostics                                                              */
+/* ------------------------------------------------------------------------- */
+static int kb_rows(lv_obj_t *kb) {
+  const char **map = lv_btnmatrix_get_map(kb);
+  if (!map) return 0;
+  int rows = 0;
+  bool have = false;
+  for (int i = 0; map[i]; i++) {
+    if (map[i][0] == '\0') break; /* end of the map array, not a real button */
+    if (!strcmp(map[i], "\n")) {
+      rows++;
+      have = false;
+    } else {
+      have = true;
+    }
+  }
+  if (have) rows++;
+  return rows;
+}
+
+void ui_log_geometry(void) {
+  lv_obj_t *kbs[2] = {s_kb, s_edit_kb};
+  for (int k = 0; k < 2; k++) {
+    lv_obj_t *kb = kbs[k];
+    if (!kb) continue;
+    lv_area_t a;
+    lv_obj_get_coords(kb, &a);
+    Serial.printf("[ui] kb%d pos=%d,%d size=%dx%d content_h=%d rows=%d\n", k, (int)a.x1,
+                  (int)a.y1, (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1),
+                  (int)lv_obj_get_content_height(kb), kb_rows(kb));
+  }
+  lv_obj_t *objs[3] = {s_edit, s_edit_ta, s_edit_lbl};
+  const char *names[3] = {"overlay", "field", "title"};
+  for (int k = 0; k < 3; k++) {
+    if (!objs[k]) continue;
+    lv_area_t a;
+    lv_obj_get_coords(objs[k], &a);
+    Serial.printf("[ui] %s pos=%d,%d size=%dx%d\n", names[k], (int)a.x1, (int)a.y1,
+                  (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1));
+  }
+}
+
 static void mk_settings(void) {
   s_set = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(s_set, C(bg), 0);
@@ -920,9 +963,11 @@ static void mk_settings(void) {
   s_kb = lv_keyboard_create(s_set);
   lv_obj_set_size(s_kb, LV_PCT(100), KB_MAIN_H);
   lv_obj_set_pos(s_kb, 0, LCD_HEIGHT - KB_MAIN_H);
-  lv_obj_set_style_pad_all(s_kb, 2, 0);
-  lv_obj_set_style_pad_row(s_kb, 3, 0);
-  lv_obj_set_style_pad_column(s_kb, 3, 0);
+  lv_obj_set_style_bg_opa(s_kb, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_pad_all(s_kb, 1, 0);
+  lv_obj_set_style_pad_row(s_kb, 2, 0);
+  lv_obj_set_style_pad_column(s_kb, 2, 0);
+  lv_obj_set_style_text_font(s_kb, &lv_font_montserrat_14, 0);
   lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
 
   /* ---- alias editor overlay (hidden) ---- */
@@ -936,12 +981,12 @@ static void mk_settings(void) {
   lv_obj_clear_flag(s_edit, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_add_flag(s_edit, LV_OBJ_FLAG_HIDDEN);
 
-  s_edit_lbl = mk_label(s_edit, "Nama tombol", &lv_font_montserrat_16, C(text));
-  lv_obj_set_pos(s_edit_lbl, 10, 2);
+  s_edit_lbl = mk_label(s_edit, "Nama tombol", &lv_font_montserrat_14, C(text));
+  lv_obj_set_pos(s_edit_lbl, 10, 0);
 
   s_edit_ta = lv_textarea_create(s_edit);
-  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, 40);
-  lv_obj_set_pos(s_edit_ta, 8, 26);
+  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, 34);
+  lv_obj_set_pos(s_edit_ta, 8, 18);
   lv_textarea_set_one_line(s_edit_ta, true);
   lv_textarea_set_max_length(s_edit_ta, sizeof g_settings.slots[0].alias - 1);
   lv_obj_set_style_bg_color(s_edit_ta, C(card2), 0);
@@ -953,8 +998,8 @@ static void mk_settings(void) {
   lv_obj_set_style_pad_left(s_edit_ta, 10, 0);
 
   lv_obj_t *bcan = lv_btn_create(s_edit);
-  lv_obj_set_size(bcan, 150, 36);
-  lv_obj_set_pos(bcan, 8, 70);
+  lv_obj_set_size(bcan, 150, 32);
+  lv_obj_set_pos(bcan, 8, 56);
   lv_obj_set_style_bg_color(bcan, C(card), 0);
   lv_obj_set_style_border_width(bcan, 1, 0);
   lv_obj_set_style_border_color(bcan, C(border), 0);
@@ -962,8 +1007,8 @@ static void mk_settings(void) {
   mk_label(bcan, "Batal", &lv_font_montserrat_14, C(text));
 
   lv_obj_t *bclr = lv_btn_create(s_edit);
-  lv_obj_set_size(bclr, 150, 36);
-  lv_obj_set_pos(bclr, 165, 70);
+  lv_obj_set_size(bclr, 150, 32);
+  lv_obj_set_pos(bclr, 165, 56);
   lv_obj_set_style_bg_color(bclr, C(card), 0);
   lv_obj_set_style_border_width(bclr, 1, 0);
   lv_obj_set_style_border_color(bclr, C(border), 0);
@@ -971,8 +1016,8 @@ static void mk_settings(void) {
   mk_label(bclr, "Hapus", &lv_font_montserrat_14, C(text));
 
   lv_obj_t *bok = lv_btn_create(s_edit);
-  lv_obj_set_size(bok, 150, 36);
-  lv_obj_set_pos(bok, LCD_WIDTH - 158, 70);
+  lv_obj_set_size(bok, 150, 32);
+  lv_obj_set_pos(bok, LCD_WIDTH - 158, 56);
   lv_obj_set_style_bg_color(bok, C(ok), 0);
   lv_obj_add_event_cb(bok, edit_ok_cb, LV_EVENT_CLICKED, NULL);
   mk_label(bok, "Simpan", &lv_font_montserrat_14, C(bg));
@@ -980,9 +1025,11 @@ static void mk_settings(void) {
   s_edit_kb = lv_keyboard_create(s_edit);
   lv_obj_set_size(s_edit_kb, LCD_WIDTH, KB_EDIT_H);
   lv_obj_set_pos(s_edit_kb, 0, LCD_HEIGHT - KB_EDIT_H);
-  lv_obj_set_style_pad_all(s_edit_kb, 2, 0);
-  lv_obj_set_style_pad_row(s_edit_kb, 3, 0);
-  lv_obj_set_style_pad_column(s_edit_kb, 3, 0);
+  lv_obj_set_style_bg_opa(s_edit_kb, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_pad_all(s_edit_kb, 1, 0);
+  lv_obj_set_style_pad_row(s_edit_kb, 2, 0);
+  lv_obj_set_style_pad_column(s_edit_kb, 2, 0);
+  lv_obj_set_style_text_font(s_edit_kb, &lv_font_montserrat_14, 0);
   lv_keyboard_set_textarea(s_edit_kb, s_edit_ta);
 }
 

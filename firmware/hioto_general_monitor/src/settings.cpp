@@ -34,6 +34,7 @@ void settings_load(Settings *s) {
   s->brightness = DEFAULT_BRIGHTNESS;
   s->theme = DEFAULT_THEME;
   s->scope = DEFAULT_SCOPE;
+  s->ota_auto = 1;
   {
     const char *labels[GEN_SLOTS] = {DEFAULT_SLOT_LABELS};
     for (int i = 0; i < GEN_SLOTS; i++) {
@@ -61,6 +62,7 @@ void settings_load(Settings *s) {
   s->brightness = (uint8_t)prefs.getUChar("bright", s->brightness);
   s->theme = (uint8_t)prefs.getUChar("theme", s->theme);
   s->scope = (uint8_t)prefs.getUChar("scope", s->scope);
+  s->ota_auto = (uint8_t)prefs.getUChar("oauto", s->ota_auto);
   s->touch_cal_valid = prefs.getBytes("tcal", s->touch_cal, sizeof s->touch_cal) ==
                        sizeof s->touch_cal;
   for (int i = 0; i < GEN_SLOTS; i++) {
@@ -100,6 +102,7 @@ void settings_save(const Settings *s) {
   prefs.putUChar("bright", s->brightness);
   prefs.putUChar("theme", s->theme);
   prefs.putUChar("scope", s->scope);
+  prefs.putUChar("oauto", s->ota_auto);
   if (s->touch_cal_valid) prefs.putBytes("tcal", s->touch_cal, sizeof s->touch_cal);
   for (int i = 0; i < GEN_SLOTS; i++) {
     char key[8];

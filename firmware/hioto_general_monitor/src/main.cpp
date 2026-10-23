@@ -27,6 +27,7 @@
 #include "mqtt_mgr.h"
 #include "theme.h"
 #include "backlight.h"
+#include "ota.h"
 #include "ui.h"
 
 static TFT_eSPI s_tft;
@@ -93,7 +94,7 @@ bool wifi_ok(void) { return WiFi.status() == WL_CONNECTED; }
 /* ------------------------------------------------------------------------- */
 static bool s_ota_started = false;
 
-static void ota_begin(void) {
+static void ard_ota_begin(void) {
   ArduinoOTA.setHostname(g_settings.device_id);
   ArduinoOTA.setMdnsEnabled(false);
   ArduinoOTA.setPort(3232);
@@ -276,6 +277,11 @@ static void serial_help(void) {
   Serial.println("  devid <name>               MQTT device id (default hioto-genmon-xxxxxx)");
   Serial.println("  alias <n> <nama...>        friendly name for button n (1-8)");
   Serial.println("  alias <n> -                reset button n to the automatic name");
+  Serial.println("  uigeom                     print keyboard / overlay geometry");
+  Serial.println("  ver                        firmware version + OTA status");
+  Serial.println("  ota                        check the OTA server now (may reboot)");
+  Serial.println("  otaurl <url>               flash a firmware URL directly");
+  Serial.println("  otaauto <0|1>              automatic OTA checks on/off");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -353,8 +359,28 @@ static void serial_handle_line(char *line) {
     ui_catalog_changed();
     Serial.printf("[cfg] room=%s (id=%u)\n", g_settings.room_label,
                   (unsigned)g_settings.room_id);
-  } else if (!strcmp(tok[0], "lamps")) {
-    Serial.printf("[reg] %d aktuator (filter scope=%u)\n", registry_count(),
+  } else if (!strcmp(tok[0], "uigeom")) {
+    ui_log_geometry();
+  } else if (!strcmp(tok[0], "ver")) {
+    Serial.printf("fw=%s type=%s ota=%s auto=%u server=%s\n", ota_version(), FW_DEVICE_TYPE,
+                  ota_status_text(), (unsigned)g_settings.ota_auto, OTA_BASE);
+  } else if (!strcmp(tok[0], "ota")) {
+    Serial.println("[ota] memeriksa server...");
+    ota_check_now();
+  } else if (!strcmp(tok[0], "otaurl") && n >= 2) {
+    Serial.printf("[ota] flash %s\n", tok[1]);
+    if (ota_flash_url(tok[1])) {
+      Serial.println("[ota] selesai, reboot");
+      delay(400);
+      ESP.restart();
+    }
+  } else if (!strcmp(tok[0], "otaauto")) {
+    if (n >= 2) {
+      g_settings.ota_auto = (uint8_t)(atoi(tok[1]) ? 1 : 0);
+      settings_save(&g_settings);
+    }
+    Serial.printf("[cfg] otaauto=%u\n", (unsigned)g_settings.ota_auto);
+  } else if (!strcmp(tok[0], "lamps")) {    Serial.printf("[reg] %d aktuator (filter scope=%u)\n", registry_count(),
                   (unsigned)g_settings.scope);
     for (int i = 0; i < registry_count(); i++)
       Serial.printf("  %3d  %-16s %-20s %-26s%s\n", i + 1, registry_shortname(i),
@@ -540,6 +566,7 @@ void setup() {
 
   registry_begin();
   catalog_begin();
+  ota_begin();
   ui_init();
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   mqtt_begin(&g_settings);
@@ -559,7 +586,7 @@ void loop() {
   mqtt_poll();
 
   if (wifi_ok()) {
-    if (!s_ota_started) ota_begin();
+    if (!s_ota_started) ard_ota_begin();
     ArduinoOTA.handle();
   }
 
@@ -568,6 +595,7 @@ void loop() {
     ui_refresh_states();
   }
   if (catalog_poll()) ui_catalog_changed();
+  ota_poll();
 
   if (millis() - s_last_ui > 250) {
     s_last_ui = millis();

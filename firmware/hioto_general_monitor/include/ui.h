@@ -14,6 +14,9 @@ void ui_poll(void);
 /* Request a full re-style (used after a theme change from the console). */
 void ui_theme_changed(void);
 
+/* Print keyboard / overlay geometry to the serial console (diagnostics). */
+void ui_log_geometry(void);
+
 /* Open the settings screen (also used on first boot without Wi-Fi). */
 void ui_open_settings(void);
 
