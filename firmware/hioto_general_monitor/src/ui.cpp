@@ -11,6 +11,15 @@
 #include "backlight.h"
 #include "ui.h"
 
+/* Real panel size after rotation; set before ui_init(). */
+static lv_coord_t UI_W = 480;
+static lv_coord_t UI_H = 320;
+
+void ui_set_screen(int w, int h) {
+  if (w > 0) UI_W = (lv_coord_t)w;
+  if (h > 0) UI_H = (lv_coord_t)h;
+}
+
 /* Active palette. C(field) expands to the colour of the current theme. */
 static inline const UiTheme *T(void) { return theme_get(g_settings.theme); }
 #define C(field) lv_color_hex(T()->field)
@@ -62,7 +71,7 @@ static lv_obj_t *s_lbl_scope = NULL;
 /* ------------------------------------------------------------------------- */
 /*  Layout: one code base, two panels (480x320 3.5" and 320x240 2.8")         */
 /* ------------------------------------------------------------------------- */
-#define UI_BIG (LCD_WIDTH >= 400)
+#define UI_BIG (UI_W >= 400)
 
 #define F_TITLE (UI_BIG ? &lv_font_montserrat_20 : &lv_font_montserrat_14)
 #define F_ROW (UI_BIG ? &lv_font_montserrat_14 : &lv_font_montserrat_12)
@@ -73,14 +82,14 @@ static lv_obj_t *s_lbl_scope = NULL;
 #define PILL_H (UI_BIG ? 30 : 22)
 
 #define SLOT_ROW_H (UI_BIG ? 122 : 100)
-#define BTN_W (UI_BIG ? 110 : ((LCD_WIDTH - 16 - 12) / 4))
+#define BTN_W (UI_BIG ? 110 : ((UI_W - 16 - 12) / 4))
 #define BTN_H (UI_BIG ? 116 : 96)
 #define ICON_X ((BTN_W - 48) / 2)
 #define NAME_Y (UI_BIG ? 48 : 46)
 #define NAME_W (BTN_W - 12)
 #define STATE_Y (UI_BIG ? 70 : 64)
 
-#define SET_H (LCD_HEIGHT - (UI_BIG ? 56 : 52))
+#define SET_H (UI_H - (UI_BIG ? 56 : 52))
 #define BAR_H (UI_BIG ? 48 : 40)
 #define SET_ROW_H (UI_BIG ? 34 : 30)
 #define DD_DEV_W (UI_BIG ? 158 : 104)
@@ -107,8 +116,16 @@ static int s_opt_count = 0;
 static uint32_t s_last_refresh = 0;
 static bool s_rebuild_pending = false;
 static bool s_dd_dirty = false;
+static bool s_cal_request = false;
 
 static void rebuild_dropdowns(void);
+
+/* Touch calibration: request it here, run it from ui_poll() (outside the
+ * LVGL event) so the blocking routine cannot corrupt widget state. */
+static void cal_btn_cb(lv_event_t *e) {
+  (void)e;
+  s_cal_request = true;
+}
 
 /* ------------------------------------------------------------------------- */
 /*  Small helpers                                                            */
@@ -457,7 +474,7 @@ static void ta_event_cb(lv_event_t *e) {
     /* shrink the scroll area to the space above the keyboard and bring the
      * field into view, otherwise the keyboard covers what is being edited */
     if (s_set_content) {
-      lv_obj_set_height(s_set_content, LCD_HEIGHT - KB_MAIN_H);
+      lv_obj_set_height(s_set_content, UI_H - KB_MAIN_H);
       lv_obj_scroll_to_view(lv_event_get_target(e), LV_ANIM_ON);
     }
   } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY || code == LV_EVENT_CANCEL) {
@@ -681,7 +698,7 @@ static void ta_click_cb(lv_event_t *e) {
   lv_keyboard_set_textarea(s_kb, lv_event_get_target(e));
   lv_obj_clear_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
   if (s_set_content) {
-    lv_obj_set_height(s_set_content, LCD_HEIGHT - KB_MAIN_H);
+    lv_obj_set_height(s_set_content, UI_H - KB_MAIN_H);
     lv_obj_scroll_to_view(lv_event_get_target(e), LV_ANIM_ON);
   }
 }
@@ -783,7 +800,7 @@ void ui_log_geometry(void) {
     Serial.printf("[ui] %s pos=%d,%d size=%dx%d\n", names[k], (int)a.x1, (int)a.y1,
                   (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1));
   }
-  Serial.printf("[ui] screen=%dx%d\n", (int)LCD_WIDTH, (int)LCD_HEIGHT);
+  Serial.printf("[ui] screen=%dx%d\n", (int)UI_W, (int)UI_H);
 }
 
 static void mk_settings(void) {
@@ -794,7 +811,7 @@ static void mk_settings(void) {
 
   /* scrollable content */
   s_set_content = lv_obj_create(s_set);
-  lv_obj_set_size(s_set_content, LCD_WIDTH, SET_H);
+  lv_obj_set_size(s_set_content, UI_W, SET_H);
   lv_obj_set_pos(s_set_content, 0, 0);
   lv_obj_set_style_bg_opa(s_set_content, LV_OPA_TRANSP, 0);
   lv_obj_set_style_border_width(s_set_content, 0, 0);
@@ -899,6 +916,17 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(ddt, theme_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
   s_dd_theme = ddt;
 
+  /* touch calibration from the panel itself */
+  lv_obj_t *crow = mk_row(s_set_content, SET_ROW_H);
+  lv_obj_t *bcal = lv_btn_create(crow);
+  lv_obj_set_size(bcal, DD_W, SET_ROW_H);
+  lv_obj_set_style_bg_color(bcal, C(card), 0);
+  lv_obj_set_style_border_width(bcal, 1, 0);
+  lv_obj_set_style_border_color(bcal, C(border), 0);
+  lv_obj_add_event_cb(bcal, cal_btn_cb, LV_EVENT_CLICKED, NULL);
+  mk_label(bcal, "Kalibrasi sentuh", &lv_font_montserrat_12, C(text));
+  mk_label(crow, "ketuk 4 kotak + tengah", &lv_font_montserrat_12, C(muted));
+
   /* ---- slot assignment ---- */
   mk_label(s_set_content, "Tombol lampu (id - ikon - nama)", &lv_font_montserrat_14,
            C(accent));
@@ -972,7 +1000,7 @@ static void mk_settings(void) {
   /* ---- bottom bar (safe interior zone) ---- */
   lv_obj_t *bar = lv_obj_create(s_set);
   lv_obj_set_size(bar, LV_PCT(100), BAR_H);
-  lv_obj_set_pos(bar, 0, LCD_HEIGHT - BAR_H);
+  lv_obj_set_pos(bar, 0, UI_H - BAR_H);
   lv_obj_set_style_bg_color(bar, C(bg), 0);
   lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(bar, 0, 0);
@@ -1011,7 +1039,7 @@ static void mk_settings(void) {
 
   /* ---- alias editor overlay (hidden) ---- */
   s_edit = lv_obj_create(s_set);
-  lv_obj_set_size(s_edit, LCD_WIDTH, LCD_HEIGHT);
+  lv_obj_set_size(s_edit, UI_W, UI_H);
   lv_obj_set_pos(s_edit, 0, 0);
   lv_obj_set_style_bg_color(s_edit, C(bg), 0);
   lv_obj_set_style_bg_opa(s_edit, LV_OPA_COVER, 0);
@@ -1024,7 +1052,7 @@ static void mk_settings(void) {
   lv_obj_set_pos(s_edit_lbl, 10, 0);
 
   s_edit_ta = lv_textarea_create(s_edit);
-  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, EDIT_FIELD_H);
+  lv_obj_set_size(s_edit_ta, UI_W - 16, EDIT_FIELD_H);
   lv_obj_set_pos(s_edit_ta, 8, EDIT_FIELD_Y);
   lv_textarea_set_one_line(s_edit_ta, true);
   lv_textarea_set_max_length(s_edit_ta, sizeof g_settings.slots[0].alias - 1);
@@ -1056,13 +1084,13 @@ static void mk_settings(void) {
 
   lv_obj_t *bok = lv_btn_create(s_edit);
   lv_obj_set_size(bok, UI_BIG ? 150 : 96, EDIT_BTN_H);
-  lv_obj_set_pos(bok, LCD_WIDTH - (UI_BIG ? 158 : 104), EDIT_BTN_Y);
+  lv_obj_set_pos(bok, UI_W - (UI_BIG ? 158 : 104), EDIT_BTN_Y);
   lv_obj_set_style_bg_color(bok, C(ok), 0);
   lv_obj_add_event_cb(bok, edit_ok_cb, LV_EVENT_CLICKED, NULL);
   mk_label(bok, "Simpan", &lv_font_montserrat_14, C(bg));
 
   s_edit_kb = lv_keyboard_create(s_edit);
-  lv_obj_set_size(s_edit_kb, LCD_WIDTH, KB_EDIT_H);
+  lv_obj_set_size(s_edit_kb, UI_W, KB_EDIT_H);
   lv_obj_align(s_edit_kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_bg_opa(s_edit_kb, LV_OPA_TRANSP, 0);
   lv_obj_set_style_pad_all(s_edit_kb, 1, 0);
@@ -1219,6 +1247,16 @@ void ui_catalog_changed(void) {
 void ui_theme_changed(void) { s_rebuild_pending = true; }
 
 void ui_poll(void) {
+  if (s_cal_request) {
+    s_cal_request = false;
+    touch_calibrate();
+    /* the routine drew straight on the panel: repaint everything */
+    if (s_main) lv_obj_invalidate(s_main);
+    if (s_set) lv_obj_invalidate(s_set);
+    s_last_refresh = 0;
+    ui_refresh_states();
+    return;
+  }
   if (s_rebuild_pending) {
     s_rebuild_pending = false;
     rebuild_all_ui();

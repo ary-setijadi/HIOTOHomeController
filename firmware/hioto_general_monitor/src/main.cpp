@@ -165,7 +165,7 @@ static void cal_draw_square(int i, uint16_t fill) {
   s_tft.drawString(num, x - 8, y - 16, 4);
 }
 
-static void run_touch_calibration(void) {
+void touch_calibrate(void) {
   for (int attempt = 0; attempt < 3; attempt++) {
     s_tft.fillScreen(TFT_BLACK);
     s_tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -279,6 +279,8 @@ static void serial_help(void) {
   Serial.println("  alias <n> <nama...>        friendly name for button n (1-8)");
   Serial.println("  alias <n> -                reset button n to the automatic name");
   Serial.println("  uigeom                     print keyboard / overlay geometry");
+  Serial.println("  disp [0-3]                 TFT rotation (saved, reboots)");
+  Serial.println("  cal                        touch calibration");
   Serial.println("  ver                        firmware version + OTA status");
   Serial.println("  ota                        check the OTA server now (may reboot)");
   Serial.println("  otaurl <url>               flash a firmware URL directly");
@@ -363,6 +365,19 @@ static void serial_handle_line(char *line) {
     ui_catalog_changed();
     Serial.printf("[cfg] room=%s (id=%u)\n", g_settings.room_label,
                   (unsigned)g_settings.room_id);
+  } else if (!strcmp(tok[0], "disp")) {
+    if (n >= 2) {
+      int r = atoi(tok[1]);
+      if (r < 0 || r > 3) r = 0;
+      g_settings.rot = (uint8_t)r;
+      settings_save(&g_settings);
+      Serial.printf("[cfg] rot=%d; rebooting\n", r);
+      delay(300);
+      ESP.restart();
+    } else {
+      Serial.printf("[cfg] rot=%u panel=%dx%d (0/2 = portrait, 1/3 = landscape)\n",
+                    (unsigned)g_settings.rot, (int)s_tft.width(), (int)s_tft.height());
+    }
   } else if (!strcmp(tok[0], "uigeom")) {
     ui_log_geometry();
   } else if (!strcmp(tok[0], "id")) {
@@ -480,7 +495,7 @@ static void serial_handle_line(char *line) {
     if (pct > 100) pct = 100;
     Serial.printf("[ldr] adc=%d pct=%d%%\n", adc, pct);
   } else if (!strcmp(tok[0], "cal")) {
-    run_touch_calibration();
+    touch_calibrate();
   } else if (!strcmp(tok[0], "clearcal")) {
     Preferences prefs;
     if (prefs.begin("hioto", false)) {
@@ -541,10 +556,17 @@ void setup() {
 
   lv_init();
   s_tft.init();
-  s_tft.setRotation(1);
+  settings_load(&g_settings);
+  s_tft.setRotation(g_settings.rot);
   s_tft.fillScreen(TFT_BLACK);
 
-  settings_load(&g_settings);
+  /* Ask the panel for its real size after rotation: a CYD whose glass is
+   * mounted the other way reports a portrait area, and the UI must follow. */
+  const lv_coord_t scr_w = (lv_coord_t)s_tft.width();
+  const lv_coord_t scr_h = (lv_coord_t)s_tft.height();
+  Serial.printf("[boot] rot=%u panel=%dx%d\n", (unsigned)g_settings.rot, (int)scr_w,
+                (int)scr_h);
+
   backlight_begin(g_settings.brightness);
   Serial.printf("[cfg] dev=%s floor=%s room=%s mqtt=%s:%u\n", g_settings.device_id,
                 g_settings.floor_label, g_settings.room_label, g_settings.mqtt_host,
@@ -552,7 +574,7 @@ void setup() {
   Serial.printf("[cfg] bright=%u%% theme=%s\n", (unsigned)g_settings.brightness,
                 theme_get(g_settings.theme)->name);
 
-  const uint32_t px = LCD_WIDTH * kDrawLines;
+  const uint32_t px = (uint32_t)scr_w * kDrawLines;
   s_buf_a = (lv_color_t *)heap_caps_malloc(px * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   s_buf_b = (lv_color_t *)heap_caps_malloc(px * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (!s_buf_a || !s_buf_b) {
@@ -562,8 +584,8 @@ void setup() {
 
   lv_disp_draw_buf_init(&s_draw_buf, s_buf_a, s_buf_b, px);
   lv_disp_drv_init(&s_disp_drv);
-  s_disp_drv.hor_res = LCD_WIDTH;
-  s_disp_drv.ver_res = LCD_HEIGHT;
+  s_disp_drv.hor_res = scr_w;
+  s_disp_drv.ver_res = scr_h;
   s_disp_drv.flush_cb = lv_flush_cb;
   s_disp_drv.draw_buf = &s_draw_buf;
   lv_disp_drv_register(&s_disp_drv);
@@ -581,6 +603,7 @@ void setup() {
   registry_begin();
   catalog_begin();
   ota_begin();
+  ui_set_screen(scr_w, scr_h);
   ui_init();
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   identity_begin();

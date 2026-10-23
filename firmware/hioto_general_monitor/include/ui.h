@@ -5,6 +5,9 @@
 /* Build the main + settings UI. */
 void ui_init(void);
 
+/* Tell the UI the real panel size (after TFT rotation) before ui_init(). */
+void ui_set_screen(int w, int h);
+
 /* Refresh lamp button visuals + Wi-Fi/MQTT status line (call ~4x/s). */
 void ui_refresh_states(void);
 
@@ -30,3 +33,7 @@ void ui_catalog_changed(void);
 bool wifi_ok(void);
 const char *wifi_state_text(void);
 void wifi_apply(const char *ssid, const char *pass);
+
+/* Touch calibration routine, implemented in main.cpp (blocks, draws on the
+ * panel directly, then returns with the new calibration applied). */
+void touch_calibrate(void);

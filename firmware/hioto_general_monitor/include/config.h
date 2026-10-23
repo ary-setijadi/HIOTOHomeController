@@ -17,8 +17,12 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "1.2.0"
+#define FW_VERSION "1.2.1"
+/* One device type per panel size so each board only ever pulls its own image
+ * (set by the PlatformIO env; the fallback is the legacy shared name). */
+#ifndef FW_DEVICE_TYPE
 #define FW_DEVICE_TYPE "hioto-genmon"
+#endif
 #define OTA_CHECK_MS 900000UL /* 15 min between automatic checks */
 
 /* Device registration with the controller (POST /api/register). */
@@ -49,6 +53,11 @@
 /* Device picker filter: 0 = same room, 1 = same floor, 2 = every actuator. */
 #define DEFAULT_SCOPE 0
 #define SCOPE_NAMES "Ruang ini\nLantai ini\nSemua device"
+
+/* Default TFT_eSPI rotation. Both CYD panels store their image in portrait
+ * (240x320 / 320x480), so rotation 1 gives landscape; a board whose panel is
+ * mounted the other way can be fixed at runtime with the "disp" command. */
+#define DEFAULT_ROT 1
 
 /* MQTT topics */
 #define TOPIC_STATUS    "iot/%s/status"
