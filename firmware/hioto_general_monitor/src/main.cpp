@@ -17,6 +17,7 @@
 #include <lvgl.h>
 #include <Preferences.h>
 #include <WiFi.h>
+#include <ArduinoOTA.h>
 
 #include "board_pins.h"
 #include "config.h"
@@ -86,6 +87,34 @@ void wifi_apply(const char *ssid, const char *pass) {
 }
 
 bool wifi_ok(void) { return WiFi.status() == WL_CONNECTED; }
+
+/* ------------------------------------------------------------------------- */
+/*  OTA (flash over Wi-Fi) — avoids the manual BOOT + replug dance           */
+/* ------------------------------------------------------------------------- */
+static bool s_ota_started = false;
+
+static void ota_begin(void) {
+  ArduinoOTA.setHostname(g_settings.device_id);
+  ArduinoOTA.setMdnsEnabled(false);
+  ArduinoOTA.setPort(3232);
+  ArduinoOTA.onStart([]() {
+    Serial.println("[ota] update starting");
+    backlight_set(60);
+  });
+  ArduinoOTA.onEnd([]() { Serial.println("\n[ota] done, rebooting"); });
+  ArduinoOTA.onProgress([](unsigned int done, unsigned int total) {
+    static int last = -1;
+    const int pct = total ? (int)(done * 100 / total) : 0;
+    if (pct / 10 != last / 10) {
+      last = pct;
+      Serial.printf("[ota] %d%%\n", pct);
+    }
+  });
+  ArduinoOTA.onError([](ota_error_t err) { Serial.printf("[ota] error %u\n", err); });
+  ArduinoOTA.begin();
+  s_ota_started = true;
+  Serial.printf("[ota] ready on %s:3232\n", WiFi.localIP().toString().c_str());
+}
 
 const char *wifi_state_text(void) {
   if (WiFi.status() == WL_CONNECTED) return "WiFi OK";
@@ -259,6 +288,8 @@ static void serial_status(void) {
                 g_settings.room_label, (unsigned)g_settings.room_id);
   Serial.printf("wifi='%s' mqtt=%s:%u lampu=%d\n", g_settings.wifi_ssid,
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
+  Serial.printf("ip=%s ota=%s:3232\n", WiFi.localIP().toString().c_str(),
+                s_ota_started ? "ready" : "off");
   Serial.printf("bright=%u%% theme=%u (%s) scope=%u\n", (unsigned)g_settings.brightness,
                 (unsigned)g_settings.theme, theme_get(g_settings.theme)->name,
                 (unsigned)g_settings.scope);
@@ -526,6 +557,11 @@ void loop() {
   lv_timer_handler();
   ui_poll();
   mqtt_poll();
+
+  if (wifi_ok()) {
+    if (!s_ota_started) ota_begin();
+    ArduinoOTA.handle();
+  }
 
   if (registry_poll()) {
     ui_registry_changed();
