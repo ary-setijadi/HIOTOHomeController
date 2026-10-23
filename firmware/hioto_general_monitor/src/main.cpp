@@ -24,6 +24,7 @@
 #include "settings.h"
 #include "registry.h"
 #include "catalog.h"
+#include "identity.h"
 #include "mqtt_mgr.h"
 #include "theme.h"
 #include "backlight.h"
@@ -282,6 +283,8 @@ static void serial_help(void) {
   Serial.println("  ota                        check the OTA server now (may reboot)");
   Serial.println("  otaurl <url>               flash a firmware URL directly");
   Serial.println("  otaauto <0|1>              automatic OTA checks on/off");
+  Serial.println("  id                         device GUID / MAC / registration state");
+  Serial.println("  reg                        register with the controller now");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -292,6 +295,7 @@ static void serial_status(void) {
   Serial.printf("dev=%s floor=%s(%u) room=%s(%u)\n", g_settings.device_id,
                 g_settings.floor_label, (unsigned)g_settings.floor_id,
                 g_settings.room_label, (unsigned)g_settings.room_id);
+  Serial.printf("guid=%s registration=%s\n", identity_guid(), identity_state());
   Serial.printf("wifi='%s' mqtt=%s:%u lampu=%d\n", g_settings.wifi_ssid,
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
   Serial.printf("ip=%s ota=%s:3232\n", WiFi.localIP().toString().c_str(),
@@ -361,6 +365,16 @@ static void serial_handle_line(char *line) {
                   (unsigned)g_settings.room_id);
   } else if (!strcmp(tok[0], "uigeom")) {
     ui_log_geometry();
+  } else if (!strcmp(tok[0], "id")) {
+    uint8_t mac[6] = {0};
+    WiFi.macAddress(mac);
+    Serial.printf("guid=%s\nmac=%02x:%02x:%02x:%02x:%02x:%02x\ndevid=%s\nregistration=%s\n",
+                  identity_guid(), mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
+                  g_settings.device_id, identity_state());
+  } else if (!strcmp(tok[0], "reg")) {
+    Serial.println("[id] mendaftar ke controller...");
+    identity_register_now();
+    Serial.printf("[id] %s\n", identity_state());
   } else if (!strcmp(tok[0], "ver")) {
     Serial.printf("fw=%s type=%s ota=%s auto=%u server=%s\n", ota_version(), FW_DEVICE_TYPE,
                   ota_status_text(), (unsigned)g_settings.ota_auto, OTA_BASE);
@@ -569,6 +583,7 @@ void setup() {
   ota_begin();
   ui_init();
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
+  identity_begin();
   mqtt_begin(&g_settings);
 
   pinMode(PIN_BOOT, INPUT_PULLUP);
@@ -595,6 +610,7 @@ void loop() {
     ui_refresh_states();
   }
   if (catalog_poll()) ui_catalog_changed();
+  identity_poll();
   ota_poll();
 
   if (millis() - s_last_ui > 250) {

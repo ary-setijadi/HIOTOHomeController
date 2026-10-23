@@ -59,11 +59,47 @@ static lv_obj_t *s_lbl_scope = NULL;
 /* Device dropdown options: index k of the dropdown shows registry entry
  * s_opt_reg[k]. Filtering shortens this list, so every dropdown needs the
  * map back to the registry. */
-/* On-screen keyboard heights. The LVGL default map needs 4 rows; these sizes
- * leave every row visible on the 320 px tall panel. */
-#define KB_MAIN_H 200
-#define KB_EDIT_H 228
+/* ------------------------------------------------------------------------- */
+/*  Layout: one code base, two panels (480x320 3.5" and 320x240 2.8")         */
+/* ------------------------------------------------------------------------- */
+#define UI_BIG (LCD_WIDTH >= 400)
 
+#define F_TITLE (UI_BIG ? &lv_font_montserrat_20 : &lv_font_montserrat_14)
+#define F_ROW (UI_BIG ? &lv_font_montserrat_14 : &lv_font_montserrat_12)
+#define F_SMALL (&lv_font_montserrat_12)
+
+#define TOP_H (UI_BIG ? 34 : 26)
+#define PILL_W (UI_BIG ? 96 : 74)
+#define PILL_H (UI_BIG ? 30 : 22)
+
+#define SLOT_ROW_H (UI_BIG ? 122 : 100)
+#define BTN_W (UI_BIG ? 110 : ((LCD_WIDTH - 16 - 12) / 4))
+#define BTN_H (UI_BIG ? 116 : 96)
+#define ICON_X ((BTN_W - 48) / 2)
+#define NAME_Y (UI_BIG ? 48 : 46)
+#define NAME_W (BTN_W - 12)
+#define STATE_Y (UI_BIG ? 70 : 64)
+
+#define SET_H (LCD_HEIGHT - (UI_BIG ? 56 : 52))
+#define BAR_H (UI_BIG ? 48 : 40)
+#define SET_ROW_H (UI_BIG ? 34 : 30)
+#define DD_DEV_W (UI_BIG ? 158 : 104)
+#define DD_ICON_W (UI_BIG ? 100 : 64)
+#define ALIAS_W (UI_BIG ? 148 : 96)
+
+/* On-screen keyboard heights. The LVGL default map needs 4 rows; these sizes
+ * leave every row visible on each panel. */
+#define KB_MAIN_H (UI_BIG ? 200 : 150)
+#define KB_EDIT_H (UI_BIG ? 228 : 160)
+
+#define EDIT_FIELD_Y (UI_BIG ? 18 : 16)
+#define EDIT_FIELD_H (UI_BIG ? 34 : 30)
+#define EDIT_BTN_Y (UI_BIG ? 56 : 50)
+#define EDIT_BTN_H (UI_BIG ? 32 : 28)
+#define DD_W (UI_BIG ? 190 : 150)
+#define SLIDER_W (UI_BIG ? 190 : 110)
+#define BSTEP_W (UI_BIG ? 40 : 32)
+#define VAL_W (UI_BIG ? 48 : 44)
 #define REG_OPT_MAX 160
 static int s_opt_reg[REG_OPT_MAX];
 static int s_opt_count = 0;
@@ -249,7 +285,7 @@ static void mk_line(lv_obj_t *box, int i, int slot, const lv_point_t *pts, uint1
 static void mk_icon(int i) {
   lv_obj_t *box = lv_obj_create(s_btn[i]);
   lv_obj_set_size(box, 48, 44);
-  lv_obj_set_pos(box, 31, 3);
+  lv_obj_set_pos(box, ICON_X, UI_BIG ? 3 : 2);
   lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, 0);
   lv_obj_set_style_border_width(box, 0, 0);
   lv_obj_set_style_pad_all(box, 0, 0);
@@ -361,34 +397,34 @@ static void mk_main(void) {
   lv_obj_set_flex_flow(s_main, LV_FLEX_FLOW_COLUMN);
 
   /* top bar: title + status + settings pill */
-  lv_obj_t *top = mk_row(s_main, 34);
+  lv_obj_t *top = mk_row(s_main, TOP_H);
   lv_obj_set_style_pad_column(top, 8, 0);
 
-  s_title = mk_label(top, "Lantai 1 | Living Room", &lv_font_montserrat_20, C(text));
+  s_title = mk_label(top, "Lantai 1 | Living Room", F_TITLE, C(text));
   lv_obj_t *sp = lv_obj_create(top);
   lv_obj_set_size(sp, 6, 1);
   lv_obj_set_style_bg_opa(sp, LV_OPA_TRANSP, 0);
   lv_obj_set_style_border_width(sp, 0, 0);
 
-  s_status = mk_label(top, "", &lv_font_montserrat_12, C(muted));
+  s_status = mk_label(top, "", F_SMALL, C(muted));
 
   lv_obj_t *set = lv_btn_create(top);
-  lv_obj_set_size(set, 96, 30);
-  lv_obj_set_style_radius(set, 15, 0);
+  lv_obj_set_size(set, PILL_W, PILL_H);
+  lv_obj_set_style_radius(set, PILL_H / 2, 0);
   lv_obj_set_style_bg_color(set, C(card), 0);
   lv_obj_set_style_border_width(set, 1, 0);
   lv_obj_set_style_border_color(set, C(border), 0);
   lv_obj_add_event_cb(set, settings_click_cb, LV_EVENT_CLICKED, NULL);
-  mk_label(set, "Setelan", &lv_font_montserrat_12, C(text));
+  mk_label(set, "Setelan", F_SMALL, C(text));
 
   /* 2 rows x 4 buttons */
   for (int r = 0; r < 2; r++) {
-    lv_obj_t *row = mk_row(s_main, 122);
+    lv_obj_t *row = mk_row(s_main, SLOT_ROW_H);
 
     for (int c = 0; c < 4; c++) {
       int i = r * 4 + c;
       lv_obj_t *btn = lv_btn_create(row);
-      lv_obj_set_size(btn, 110, 116);
+      lv_obj_set_size(btn, BTN_W, BTN_H);
       lv_obj_set_style_radius(btn, 14, 0);
       lv_obj_set_style_bg_color(btn, C(card), 0);
       lv_obj_set_style_border_width(btn, 1, 0);
@@ -399,12 +435,12 @@ static void mk_main(void) {
       mk_icon(i);
       char nm[24];
       slot_display_name(i, nm, sizeof nm);
-      s_name[i] = mk_label(btn, nm, &lv_font_montserrat_14, C(text));
-      lv_obj_set_pos(s_name[i], 8, 48);
-      lv_obj_set_width(s_name[i], 94);
+      s_name[i] = mk_label(btn, nm, F_ROW, C(text));
+      lv_obj_set_pos(s_name[i], 6, NAME_Y);
+      lv_obj_set_width(s_name[i], NAME_W);
       lv_label_set_long_mode(s_name[i], LV_LABEL_LONG_DOT);
-      s_state[i] = mk_label(btn, "-", &lv_font_montserrat_14, C(dim));
-      lv_obj_set_pos(s_state[i], 8, 70);
+      s_state[i] = mk_label(btn, "-", F_ROW, C(dim));
+      lv_obj_set_pos(s_state[i], 6, STATE_Y + (UI_BIG ? 0 : 2));
     }
   }
 }
@@ -426,7 +462,7 @@ static void ta_event_cb(lv_event_t *e) {
     }
   } else if (code == LV_EVENT_DEFOCUSED || code == LV_EVENT_READY || code == LV_EVENT_CANCEL) {
     lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
-    if (s_set_content) lv_obj_set_height(s_set_content, LCD_HEIGHT - 56);
+    if (s_set_content) lv_obj_set_height(s_set_content, SET_H);
   }
 }
 
@@ -620,7 +656,7 @@ static void alias_btn_cb(lv_event_t *e) {
   }
   if (s_edit_kb && s_edit_ta) lv_keyboard_set_textarea(s_edit_kb, s_edit_ta);
   if (s_kb) lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
-  if (s_set_content) lv_obj_set_height(s_set_content, LCD_HEIGHT - 56);
+  if (s_set_content) lv_obj_set_height(s_set_content, SET_H);
   lv_obj_clear_flag(s_edit, LV_OBJ_FLAG_HIDDEN);
   lv_obj_move_foreground(s_edit);
 }
@@ -758,7 +794,7 @@ static void mk_settings(void) {
 
   /* scrollable content */
   s_set_content = lv_obj_create(s_set);
-  lv_obj_set_size(s_set_content, LCD_WIDTH, LCD_HEIGHT - 56);
+  lv_obj_set_size(s_set_content, LCD_WIDTH, SET_H);
   lv_obj_set_pos(s_set_content, 0, 0);
   lv_obj_set_style_bg_opa(s_set_content, LV_OPA_TRANSP, 0);
   lv_obj_set_style_border_width(s_set_content, 0, 0);
@@ -767,7 +803,7 @@ static void mk_settings(void) {
   lv_obj_set_flex_flow(s_set_content, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_scroll_dir(s_set_content, LV_DIR_VER);
 
-  mk_label(s_set_content, "SETELAN", &lv_font_montserrat_20, C(text));
+  mk_label(s_set_content, "SETELAN", F_TITLE, C(text));
 
   /* ---- WiFi ---- */
   mk_label(s_set_content, "WiFi", &lv_font_montserrat_14, C(accent));
@@ -783,11 +819,11 @@ static void mk_settings(void) {
 
   /* ---- title: floor + room dropdowns (also drive the device filter) ---- */
   mk_label(s_set_content, "Tampilan (judul)", &lv_font_montserrat_14, C(accent));
-  lv_obj_t *row1 = mk_row(s_set_content, 34);
+  lv_obj_t *row1 = mk_row(s_set_content, SET_ROW_H);
 
   lv_obj_t *ddf = lv_dropdown_create(row1);
-  lv_obj_set_width(ddf, 216);
-  lv_obj_set_height(ddf, 30);
+  lv_obj_set_width(ddf, UI_BIG ? 216 : 148);
+  lv_obj_set_height(ddf, SET_ROW_H);
   lv_obj_set_style_text_font(ddf, &lv_font_montserrat_12, 0);
   lv_obj_set_style_bg_color(ddf, C(card2), 0);
   lv_obj_set_style_text_color(ddf, C(text), 0);
@@ -795,8 +831,8 @@ static void mk_settings(void) {
   s_dd_floor = ddf;
 
   lv_obj_t *ddr = lv_dropdown_create(row1);
-  lv_obj_set_width(ddr, 216);
-  lv_obj_set_height(ddr, 30);
+  lv_obj_set_width(ddr, UI_BIG ? 216 : 148);
+  lv_obj_set_height(ddr, SET_ROW_H);
   lv_obj_set_style_text_font(ddr, &lv_font_montserrat_12, 0);
   lv_obj_set_style_bg_color(ddr, C(card2), 0);
   lv_obj_set_style_text_color(ddr, C(text), 0);
@@ -806,11 +842,11 @@ static void mk_settings(void) {
   /* ---- screen: brightness + theme ---- */
   mk_label(s_set_content, "Layar & tema", &lv_font_montserrat_14, C(accent));
 
-  lv_obj_t *brow = mk_row(s_set_content, 34);
+  lv_obj_t *brow = mk_row(s_set_content, SET_ROW_H);
   mk_label(brow, "Terang", &lv_font_montserrat_12, C(muted));
 
   lv_obj_t *minus = lv_btn_create(brow);
-  lv_obj_set_size(minus, 40, 30);
+  lv_obj_set_size(minus, BSTEP_W, SET_ROW_H);
   lv_obj_set_style_radius(minus, 8, 0);
   lv_obj_set_style_bg_color(minus, C(card), 0);
   lv_obj_set_style_border_width(minus, 1, 0);
@@ -819,8 +855,8 @@ static void mk_settings(void) {
   mk_label(minus, "-", &lv_font_montserrat_20, C(text));
 
   lv_obj_t *sl = lv_slider_create(brow);
-  lv_obj_set_width(sl, 190);
-  lv_obj_set_height(sl, 22);
+  lv_obj_set_width(sl, SLIDER_W);
+  lv_obj_set_height(sl, UI_BIG ? 22 : 18);
   lv_slider_set_range(sl, 20, 100);
   lv_slider_set_value(sl, g_settings.brightness, LV_ANIM_OFF);
   lv_obj_set_style_bg_color(sl, C(card2), LV_PART_MAIN);
@@ -837,7 +873,7 @@ static void mk_settings(void) {
   s_slider = sl;
 
   lv_obj_t *plus = lv_btn_create(brow);
-  lv_obj_set_size(plus, 40, 30);
+  lv_obj_set_size(plus, BSTEP_W, SET_ROW_H);
   lv_obj_set_style_radius(plus, 8, 0);
   lv_obj_set_style_bg_color(plus, C(card), 0);
   lv_obj_set_style_border_width(plus, 1, 0);
@@ -848,13 +884,13 @@ static void mk_settings(void) {
   char btxt[16];
   snprintf(btxt, sizeof btxt, "%u%%", (unsigned)g_settings.brightness);
   s_lbl_bright = mk_label(brow, btxt, &lv_font_montserrat_12, C(text));
-  lv_obj_set_width(s_lbl_bright, 48);
+  lv_obj_set_width(s_lbl_bright, VAL_W);
 
-  lv_obj_t *trow = mk_row(s_set_content, 34);
+  lv_obj_t *trow = mk_row(s_set_content, SET_ROW_H);
   mk_label(trow, "Tema", &lv_font_montserrat_12, C(muted));
   lv_obj_t *ddt = lv_dropdown_create(trow);
-  lv_obj_set_width(ddt, 190);
-  lv_obj_set_height(ddt, 30);
+  lv_obj_set_width(ddt, DD_W);
+  lv_obj_set_height(ddt, SET_ROW_H);
   lv_obj_set_style_text_font(ddt, &lv_font_montserrat_12, 0);
   lv_obj_set_style_bg_color(ddt, C(card2), 0);
   lv_obj_set_style_text_color(ddt, C(text), 0);
@@ -868,11 +904,11 @@ static void mk_settings(void) {
            C(accent));
 
   /* filter row: which devices the dropdowns offer */
-  lv_obj_t *srow = mk_row(s_set_content, 34);
+  lv_obj_t *srow = mk_row(s_set_content, SET_ROW_H);
   mk_label(srow, "Filter", &lv_font_montserrat_12, C(muted));
   lv_obj_t *dds = lv_dropdown_create(srow);
-  lv_obj_set_width(dds, 190);
-  lv_obj_set_height(dds, 30);
+  lv_obj_set_width(dds, DD_W);
+  lv_obj_set_height(dds, SET_ROW_H);
   lv_obj_set_style_text_font(dds, &lv_font_montserrat_12, 0);
   lv_obj_set_style_bg_color(dds, C(card2), 0);
   lv_obj_set_style_text_color(dds, C(text), 0);
@@ -881,22 +917,22 @@ static void mk_settings(void) {
   lv_obj_add_event_cb(dds, scope_dd_cb, LV_EVENT_VALUE_CHANGED, NULL);
   s_dd_scope = dds;
   s_lbl_scope = mk_label(srow, "", &lv_font_montserrat_12, C(muted));
-  lv_obj_set_width(s_lbl_scope, 110);
+  lv_obj_set_width(s_lbl_scope, UI_BIG ? 110 : 96);
 
   lv_obj_t *s_lbl_hint = mk_label(s_set_content, "Nama (alias) kosong = otomatis dari id",
                                   &lv_font_montserrat_12, C(muted));
   (void)s_lbl_hint;
 
   for (int i = 0; i < GEN_SLOTS; i++) {
-    lv_obj_t *row = mk_row(s_set_content, 34);
+    lv_obj_t *row = mk_row(s_set_content, SET_ROW_H);
 
     char num[8];
     snprintf(num, sizeof num, "%d", i + 1);
     mk_label(row, num, &lv_font_montserrat_14, C(muted));
 
     lv_obj_t *dd1 = lv_dropdown_create(row);
-    lv_obj_set_width(dd1, 158);
-    lv_obj_set_height(dd1, 30);
+    lv_obj_set_width(dd1, DD_DEV_W);
+    lv_obj_set_height(dd1, SET_ROW_H);
     lv_obj_set_style_text_font(dd1, &lv_font_montserrat_12, 0);
     lv_obj_set_style_pad_left(dd1, 8, 0);
     lv_obj_set_style_pad_right(dd1, 18, 0);
@@ -906,8 +942,8 @@ static void mk_settings(void) {
     s_dd_dev[i] = dd1;
 
     lv_obj_t *dd2 = lv_dropdown_create(row);
-    lv_obj_set_width(dd2, 100);
-    lv_obj_set_height(dd2, 30);
+    lv_obj_set_width(dd2, DD_ICON_W);
+    lv_obj_set_height(dd2, SET_ROW_H);
     lv_obj_set_style_text_font(dd2, &lv_font_montserrat_12, 0);
     lv_obj_set_style_bg_color(dd2, C(card2), 0);
     lv_obj_set_style_text_color(dd2, C(text), 0);
@@ -919,7 +955,7 @@ static void mk_settings(void) {
     char eff[24];
     slot_display_name(i, eff, sizeof eff);
     lv_obj_t *nb = lv_btn_create(row);
-    lv_obj_set_size(nb, 148, 30);
+    lv_obj_set_size(nb, ALIAS_W, SET_ROW_H);
     lv_obj_set_style_radius(nb, 8, 0);
     lv_obj_set_style_bg_color(nb, C(card2), 0);
     lv_obj_set_style_border_width(nb, 1, 0);
@@ -935,8 +971,8 @@ static void mk_settings(void) {
 
   /* ---- bottom bar (safe interior zone) ---- */
   lv_obj_t *bar = lv_obj_create(s_set);
-  lv_obj_set_size(bar, LV_PCT(100), 48);
-  lv_obj_set_pos(bar, 0, LCD_HEIGHT - 48);
+  lv_obj_set_size(bar, LV_PCT(100), BAR_H);
+  lv_obj_set_pos(bar, 0, LCD_HEIGHT - BAR_H);
   lv_obj_set_style_bg_color(bar, C(bg), 0);
   lv_obj_set_style_bg_opa(bar, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(bar, 0, 0);
@@ -988,8 +1024,8 @@ static void mk_settings(void) {
   lv_obj_set_pos(s_edit_lbl, 10, 0);
 
   s_edit_ta = lv_textarea_create(s_edit);
-  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, 34);
-  lv_obj_set_pos(s_edit_ta, 8, 18);
+  lv_obj_set_size(s_edit_ta, LCD_WIDTH - 16, EDIT_FIELD_H);
+  lv_obj_set_pos(s_edit_ta, 8, EDIT_FIELD_Y);
   lv_textarea_set_one_line(s_edit_ta, true);
   lv_textarea_set_max_length(s_edit_ta, sizeof g_settings.slots[0].alias - 1);
   lv_obj_set_style_bg_color(s_edit_ta, C(card2), 0);
@@ -1001,8 +1037,8 @@ static void mk_settings(void) {
   lv_obj_set_style_pad_left(s_edit_ta, 10, 0);
 
   lv_obj_t *bcan = lv_btn_create(s_edit);
-  lv_obj_set_size(bcan, 150, 32);
-  lv_obj_set_pos(bcan, 8, 56);
+  lv_obj_set_size(bcan, UI_BIG ? 150 : 96, EDIT_BTN_H);
+  lv_obj_set_pos(bcan, 8, EDIT_BTN_Y);
   lv_obj_set_style_bg_color(bcan, C(card), 0);
   lv_obj_set_style_border_width(bcan, 1, 0);
   lv_obj_set_style_border_color(bcan, C(border), 0);
@@ -1010,8 +1046,8 @@ static void mk_settings(void) {
   mk_label(bcan, "Batal", &lv_font_montserrat_14, C(text));
 
   lv_obj_t *bclr = lv_btn_create(s_edit);
-  lv_obj_set_size(bclr, 150, 32);
-  lv_obj_set_pos(bclr, 165, 56);
+  lv_obj_set_size(bclr, UI_BIG ? 150 : 96, EDIT_BTN_H);
+  lv_obj_set_pos(bclr, UI_BIG ? 165 : 112, EDIT_BTN_Y);
   lv_obj_set_style_bg_color(bclr, C(card), 0);
   lv_obj_set_style_border_width(bclr, 1, 0);
   lv_obj_set_style_border_color(bclr, C(border), 0);
@@ -1019,8 +1055,8 @@ static void mk_settings(void) {
   mk_label(bclr, "Hapus", &lv_font_montserrat_14, C(text));
 
   lv_obj_t *bok = lv_btn_create(s_edit);
-  lv_obj_set_size(bok, 150, 32);
-  lv_obj_set_pos(bok, LCD_WIDTH - 158, 56);
+  lv_obj_set_size(bok, UI_BIG ? 150 : 96, EDIT_BTN_H);
+  lv_obj_set_pos(bok, LCD_WIDTH - (UI_BIG ? 158 : 104), EDIT_BTN_Y);
   lv_obj_set_style_bg_color(bok, C(ok), 0);
   lv_obj_add_event_cb(bok, edit_ok_cb, LV_EVENT_CLICKED, NULL);
   mk_label(bok, "Simpan", &lv_font_montserrat_14, C(bg));

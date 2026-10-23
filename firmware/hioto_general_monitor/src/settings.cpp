@@ -55,6 +55,7 @@ void settings_load(Settings *s) {
   prefs.getString("muser", s->mqtt_user, sizeof s->mqtt_user);
   prefs.getString("mpass", s->mqtt_pass, sizeof s->mqtt_pass);
   prefs.getString("devid", s->device_id, sizeof s->device_id);
+  prefs.getString("dguid", s->guid, sizeof s->guid);
   prefs.getString("floor", s->floor_label, sizeof s->floor_label);
   prefs.getString("room", s->room_label, sizeof s->room_label);
   s->floor_id = (uint8_t)prefs.getUChar("fid", s->floor_id);
@@ -95,6 +96,7 @@ void settings_save(const Settings *s) {
   prefs.putString("muser", s->mqtt_user);
   prefs.putString("mpass", s->mqtt_pass);
   prefs.putString("devid", s->device_id);
+  prefs.putString("dguid", s->guid);
   prefs.putString("floor", s->floor_label);
   prefs.putString("room", s->room_label);
   prefs.putUChar("fid", s->floor_id);

@@ -18,6 +18,7 @@ struct Settings {
   char mqtt_user[33];
   char mqtt_pass[65];
   char device_id[33];
+  char guid[40]; /* persistent controller GUID (UUID v4), unique per board */
   char floor_label[24];
   char room_label[24];
   uint8_t floor_id; /* controller floor id (0 = unset) */
