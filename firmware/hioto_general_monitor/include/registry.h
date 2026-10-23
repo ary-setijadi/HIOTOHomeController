@@ -17,6 +17,10 @@ const char *registry_fullname(int index);
 int registry_find_short(const char *shortname);
 int registry_find_guid(const char *guid);
 
+/* Resolve a stored slot: guid first, then the compact label as a fallback
+ * (a saved guid can go stale when the controller re-registers a device). */
+int registry_resolve(const char *guid, const char *label);
+
 bool registry_state_known(int index);
 bool registry_state_on(int index);
 void registry_set_state(int index, bool on); /* marks known */

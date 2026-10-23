@@ -51,15 +51,6 @@ static bool s_rebuild_pending = false;
 /* ------------------------------------------------------------------------- */
 /*  Small helpers                                                            */
 /* ------------------------------------------------------------------------- */
-static bool str_eq_ci(const char *a, const char *b) {
-  while (*a && *b) {
-    if (toupper((unsigned char)*a) != toupper((unsigned char)*b)) return false;
-    a++;
-    b++;
-  }
-  return *a == '\0' && *b == '\0';
-}
-
 static lv_obj_t *mk_label(lv_obj_t *parent, const char *txt, const lv_font_t *font,
                           lv_color_t color) {
   lv_obj_t *l = lv_label_create(parent);
@@ -225,8 +216,7 @@ static void btn_click_cb(lv_event_t *e) {
   int idx = (int)(intptr_t)lv_event_get_user_data(e);
   if (idx < 0 || idx >= GEN_SLOTS) return;
   LampSlot *slot = &g_settings.slots[idx];
-  int ri = slot->guid[0] ? registry_find_guid(slot->guid) : -1;
-  if (ri < 0 && slot->label[0]) ri = registry_find_short(slot->label);
+  int ri = registry_resolve(slot->guid, slot->label);
   if (ri >= 0) snprintf(slot->guid, sizeof slot->guid, "%s", registry_guid_at(ri));
   if (ri < 0) {
     ui_open_settings(); /* unassigned -> settings */
@@ -292,6 +282,8 @@ static void mk_main(void) {
       mk_icon(i);
       s_name[i] = mk_label(btn, g_settings.slots[i].label, &lv_font_montserrat_14, C(text));
       lv_obj_set_pos(s_name[i], 8, 48);
+      lv_obj_set_width(s_name[i], 94);
+      lv_label_set_long_mode(s_name[i], LV_LABEL_LONG_DOT);
       s_state[i] = mk_label(btn, "-", &lv_font_montserrat_14, C(dim));
       lv_obj_set_pos(s_state[i], 8, 70);
     }
@@ -513,9 +505,11 @@ static void mk_settings(void) {
     mk_label(row, num, &lv_font_montserrat_14, C(muted));
 
     lv_obj_t *dd1 = lv_dropdown_create(row);
-    lv_obj_set_width(dd1, 190);
+    lv_obj_set_width(dd1, 244);
     lv_obj_set_height(dd1, 30);
     lv_obj_set_style_text_font(dd1, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_pad_left(dd1, 8, 0);
+    lv_obj_set_style_pad_right(dd1, 20, 0);
     lv_obj_set_style_bg_color(dd1, C(card2), 0);
     lv_obj_set_style_text_color(dd1, C(text), 0);
     s_dd_dev[i] = dd1;
@@ -567,24 +561,44 @@ static void mk_settings(void) {
 
 /* ------------------------------------------------------------------------- */
 static void rebuild_dropdowns(void) {
-  for (int i = 0; i < GEN_SLOTS; i++) {
-    if (!s_dd_dev[i]) continue;
-    char opts[700];
-    strcpy(opts, "(kosong)");
-    int sel = 0;
-    const char *want = g_settings.slots[i].guid;
-    const char *want_label = g_settings.slots[i].label;
-    for (int k = 0; k < registry_count(); k++) {
-      const char *sn = registry_shortname(k);
-      if (strlen(opts) + strlen(sn) + 2 >= sizeof opts) break;
-      strcat(opts, "\n");
-      strcat(opts, sn);
-      if (want[0] && !strcmp(registry_guid_at(k), want)) sel = k + 1;
-      else if (!want[0] && want_label[0] && str_eq_ci(sn, want_label)) sel = k + 1;
-    }
-    lv_dropdown_set_options(s_dd_dev[i], opts);
-    lv_dropdown_set_selected(s_dd_dev[i], sel);
+  const int n = registry_count();
+
+  /* Build the option list on the heap so no entry can ever be truncated. */
+  size_t cap = 32;
+  for (int k = 0; k < n; k++) cap += strlen(registry_fullname(k)) + 1;
+  char *opts = (char *)malloc(cap);
+  if (!opts) return;
+  strcpy(opts, "(kosong)");
+  size_t len = strlen(opts);
+  for (int k = 0; k < n; k++) {
+    const char *nm = registry_fullname(k);
+    const size_t l = strlen(nm);
+    if (len + 1 + l + 1 > cap) break;
+    opts[len++] = '\n';
+    memcpy(opts + len, nm, l + 1);
+    len += l;
   }
+
+  for (int i = 0; i < GEN_SLOTS; i++) {
+    if (s_dd_dev[i]) {
+      lv_dropdown_set_options(s_dd_dev[i], opts);
+      int sel = 0;
+      if (g_settings.slots[i].guid[0]) {
+        int ri = registry_find_guid(g_settings.slots[i].guid);
+        if (ri >= 0) sel = ri + 1;
+      }
+      if (sel == 0 && g_settings.slots[i].label[0]) {
+        int ri = registry_find_short(g_settings.slots[i].label);
+        if (ri >= 0) sel = ri + 1;
+      }
+      lv_dropdown_set_selected(s_dd_dev[i], sel);
+    }
+    if (s_dd_icon[i]) {
+      uint8_t ic = g_settings.slots[i].icon;
+      lv_dropdown_set_selected(s_dd_icon[i], ic < ICON_COUNT ? ic : 0);
+    }
+  }
+  free(opts);
 }
 
 /* Forget every widget handle before the screens are rebuilt. */
@@ -664,7 +678,9 @@ void ui_refresh_states(void) {
   for (int i = 0; i < GEN_SLOTS; i++) {
     if (!s_btn[i]) continue;
     LampSlot *slot = &g_settings.slots[i];
-    int ri = slot->guid[0] ? registry_find_guid(slot->guid) : registry_find_short(slot->label);
+    int ri = registry_resolve(slot->guid, slot->label);
+    if (ri >= 0 && strcmp(slot->guid, registry_guid_at(ri)) != 0)
+      snprintf(slot->guid, sizeof slot->guid, "%s", registry_guid_at(ri));
     bool known = ri >= 0 && registry_state_known(ri);
     bool on = known && registry_state_on(ri);
     icon_apply_state(i, known, on);

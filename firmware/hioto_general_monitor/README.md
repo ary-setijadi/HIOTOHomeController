@@ -55,6 +55,30 @@ spot only while the lamp is ON.
 20–100 % in the UI. Changes made with the slider are applied live and saved when
 the knob is released; `−`/`+` save immediately.
 
+## Lamp registry (controller CSV)
+
+`src/registry.cpp` pulls `http://<controller>:8081/api/devices/export.csv` and
+keeps every `AKTUATOR` row (currently **81**: 46 `LAMP.*` lamps, 21 smart plugs,
+12 `LSKK` relays, 2 test relays). Capacity is `REG_MAX_DEVS 128`.
+
+Each device carries two names:
+
+- **compact label** for the panel button — `LAMP.12`, `SMARTSTEKER-16`,
+  `DO-270-01`, `IWK-SAKLAR-79` (vendor prefixes `HIOTO`/`LSKK`/`lamp` are
+  dropped, over-long joins fall back to first+last part, collisions get
+  `#2`, `#3`).
+- **full registry name** for the settings dropdown — shown verbatim so every
+  entry is distinguishable (`LAMP.14-1ST.CONNECTING SPACE-252-02`).
+
+The list is sorted by compact label, and the dropdown options are built in a
+heap buffer sized from the real name lengths, so no entry can be truncated.
+ON/OFF state learned over MQTT survives the 60 s refresh (devices are matched
+by guid; the CSV `status` column is only a fallback). A saved slot resolves by
+guid first, falls back to the compact label (`registry_resolve()`) and then
+repairs the stored guid.
+
+Inspect the whole list at runtime with `lamps` on the serial console.
+
 ## Lamp control (HIOTO protocol)
 
 - Tap a button → publishes `Aktuator` `<guid>#0|1` — **active-low: 0 = ON, 1 = OFF**.

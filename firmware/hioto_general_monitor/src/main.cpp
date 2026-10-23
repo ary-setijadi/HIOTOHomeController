@@ -239,6 +239,7 @@ static void serial_help(void) {
   Serial.println("  room <label...>            title right part");
   Serial.println("  bright <20-100>            LCD backlight percent (saved)");
   Serial.println("  theme [0-5]                list or set the colour theme");
+  Serial.println("  lamps                      list every actuator and its label");
   Serial.println("  ldr                        raw LDR ADC");
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
@@ -253,15 +254,12 @@ static void serial_status(void) {
   Serial.printf("bright=%u%% theme=%u (%s)\n", (unsigned)g_settings.brightness,
                 (unsigned)g_settings.theme, theme_get(g_settings.theme)->name);
   for (int i = 0; i < GEN_SLOTS; i++) {
-    int ri = g_settings.slots[i].guid[0]
-                 ? registry_find_guid(g_settings.slots[i].guid)
-                 : registry_find_short(g_settings.slots[i].label);
-    Serial.printf("slot%d: %s%s%s\n", i + 1, g_settings.slots[i].label,
+    int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
+    Serial.printf("slot%d: %s%s\n", i + 1, g_settings.slots[i].label,
                   ri >= 0 ? (registry_state_known(ri)
                                  ? (registry_state_on(ri) ? " ON" : " OFF")
                                  : " ?")
-                          : " (tidak ditemukan)",
-                  "");
+                          : " (tidak ditemukan)");
   }
 }
 
@@ -306,6 +304,13 @@ static void serial_handle_line(char *line) {
     }
     snprintf(g_settings.room_label, sizeof g_settings.room_label, "%s", label);
     Serial.printf("[cfg] room=%s\n", g_settings.room_label);
+  } else if (!strcmp(tok[0], "lamps")) {
+    Serial.printf("[reg] %d aktuator\n", registry_count());
+    for (int i = 0; i < registry_count(); i++)
+      Serial.printf("  %3d  %-16s %s%s\n", i + 1, registry_shortname(i),
+                    registry_fullname(i),
+                    registry_state_known(i) ? (registry_state_on(i) ? "  ON" : "  OFF")
+                                            : "");
   } else if (!strcmp(tok[0], "bright")) {
     if (n >= 2) {
       int pct = atoi(tok[1]);

@@ -7,16 +7,22 @@
 #include <WiFi.h>
 #include <ctype.h>
 
+/* The HIOTO controller export currently holds ~81 AKTUATOR rows; keep headroom. */
+#define REG_MAX_DEVS 128
+#define REG_LABEL_LEN 24
+#define REG_NAME_LEN 52
+
 struct RegDev {
   char guid[40];
-  char shortname[20];
-  char fullname[48];
-  char status[8]; /* controller's last status ("0"/"1"/"") */
+  char label[REG_LABEL_LEN]; /* compact id: panel button + matching ("LAMP.14") */
+  char name[REG_NAME_LEN];   /* full registry name (dropdown text) */
+  char status[8];            /* controller's last status ("0"/"1"/"") */
   bool known;
   bool on;
 };
 
-static RegDev s_devs[64];
+static RegDev s_devs[REG_MAX_DEVS];
+static uint8_t s_used[REG_MAX_DEVS];
 static int s_count = 0;
 static bool s_ready = false;
 static uint32_t s_last_try = 0;
@@ -28,15 +34,131 @@ static void copy_str(char *dst, size_t dst_sz, const char *src) {
   dst[dst_sz - 1] = '\0';
 }
 
-static void make_shortname(const char *name, char *out, size_t n) {
+static bool ci_eq(const char *a, const char *b) {
+  while (*a && *b) {
+    if (toupper((unsigned char)*a) != toupper((unsigned char)*b)) return false;
+    a++;
+    b++;
+  }
+  return *a == '\0' && *b == '\0';
+}
+
+static int cmp_ci(const char *a, const char *b) {
+  while (*a && *b) {
+    int ca = toupper((unsigned char)*a);
+    int cb = toupper((unsigned char)*b);
+    if (ca != cb) return ca - cb;
+    a++;
+    b++;
+  }
+  return (unsigned char)*a - (unsigned char)*b;
+}
+
+/* Drop the trailing '}' some registry names carry, trim spaces. */
+static void clean_name(const char *src, char *out, size_t n) {
   size_t i = 0;
-  while (name[i] && name[i] != '-' && i + 1 < n) {
-    out[i] = name[i];
+  while (src[i] && i + 1 < n) {
+    out[i] = src[i];
     i++;
   }
+  while (i > 0 && (out[i - 1] == ' ' || out[i - 1] == '}')) i--;
   out[i] = '\0';
-  /* trim trailing spaces */
-  while (i > 0 && out[i - 1] == ' ') out[--i] = '\0';
+}
+
+static int split_parts(const char *name, char parts[][28], int max) {
+  int n = 0;
+  size_t fi = 0;
+  for (size_t p = 0;; p++) {
+    char c = name[p];
+    if (c == '-' || c == '\0') {
+      if (n < max) {
+        parts[n][fi] = '\0';
+        n++;
+      }
+      fi = 0;
+      if (c == '\0') break;
+    } else if (fi + 1 < 28 && n < max) {
+      parts[n][fi++] = c;
+    }
+  }
+  return n;
+}
+
+/* ---------------------------------------------------------------------------
+ *  Compact label used on the panel button (must stay short and distinct).
+ *
+ *   LAMP.12-1ST.FLOOR-LIVING ROOM-251-02  -> LAMP.12
+ *   HIOTO-SMARTSTEKER-16                  -> SMARTSTEKER-16
+ *   LSKK-HIOTO-DO-270-01                  -> DO-270-01
+ *   LSKK-IWK-SAKLAR-79                    -> IWK-SAKLAR-79
+ *   lamp-LSKK-HIOTO-DO-01-TEST            -> DO-01-TEST
+ * ------------------------------------------------------------------------- */
+static void make_label(const char *name, char *out, size_t n) {
+  char parts[8][28];
+  int np = split_parts(name, parts, 8);
+  out[0] = '\0';
+  if (np == 0) {
+    copy_str(out, n, name);
+    return;
+  }
+
+  /* Lamp family already starts with a usable id. */
+  if (!strncasecmp(parts[0], "LAMP.", 5)) {
+    copy_str(out, n, parts[0]);
+    return;
+  }
+
+  /* Skip vendor / type prefixes that are identical on many devices. */
+  int s = 0;
+  while (s < np && (ci_eq(parts[s], "HIOTO") || ci_eq(parts[s], "LSKK") ||
+                    ci_eq(parts[s], "lamp") || ci_eq(parts[s], "LAMP")))
+    s++;
+  if (s >= np) s = 0;
+
+  char buf[64];
+  buf[0] = '\0';
+  for (int i = s; i < np; i++) {
+    if (i > s && strlen(buf) + 1 < sizeof buf) strcat(buf, "-");
+    strncat(buf, parts[i], sizeof buf - strlen(buf) - 1);
+  }
+
+  /* Keep it inside the panel label budget; fall back to first + last part. */
+  if (strlen(buf) > 15 && np - s >= 2) {
+    snprintf(buf, sizeof buf, "%s-%s", parts[s], parts[np - 1]);
+  }
+  copy_str(out, n, buf);
+}
+
+/* Append #2, #3, ... to labels that collide (same name on several relays).
+ * Run after sort_devs() so equal labels are adjacent. */
+static void uniquify_labels(void) {
+  char prev[REG_LABEL_LEN] = "";
+  int run = 0;
+  for (int i = 0; i < s_count; i++) {
+    if (i > 0 && cmp_ci(prev, s_devs[i].label) == 0) run++;
+    else run = 0;
+    copy_str(prev, sizeof prev, s_devs[i].label);
+    if (run > 0) {
+      char base[REG_LABEL_LEN];
+      copy_str(base, sizeof base, s_devs[i].label);
+      snprintf(s_devs[i].label, sizeof s_devs[i].label, "%.18s#%d", base, run + 1);
+    }
+  }
+}
+
+static void sort_devs(void) {
+  for (int i = 1; i < s_count; i++) {
+    RegDev tmp = s_devs[i];
+    int j = i - 1;
+    while (j >= 0) {
+      int c = cmp_ci(s_devs[j].label, tmp.label);
+      if (c == 0) c = cmp_ci(s_devs[j].name, tmp.name);
+      if (c <= 0) break;
+      s_devs[j + 1] = s_devs[j];
+      j--;
+    }
+    s_devs[j + 1] = tmp;
+  }
 }
 
 /* Read one \n-terminated line from the stream; false on timeout/EOF. */
@@ -99,6 +221,13 @@ static int split_csv(char *line, char *fields[], int max_fields, size_t field_sz
   return n + 1;
 }
 
+/* Find an already-known device by guid (keeps learned ON/OFF across refreshes). */
+static int find_by_guid(const char *guid) {
+  for (int i = 0; i < s_count; i++)
+    if (s_used[i] && !strcmp(s_devs[i].guid, guid)) return i;
+  return -1;
+}
+
 static bool fetch_registry(void) {
   if (WiFi.status() != WL_CONNECTED) return false;
 
@@ -123,10 +252,12 @@ static bool fetch_registry(void) {
     return false;
   }
 
+  memset(s_used, 0, sizeof s_used);
+  int added = 0; /* devices not seen before */
+
   char line[256];
+  char namebuf[REG_NAME_LEN];
   bool header = true;
-  int n = 0;
-  const int max = (int)(sizeof s_devs / sizeof s_devs[0]);
   while (read_line(http.getStream(), line, sizeof line, 2500)) {
     if (header) {
       header = false;
@@ -134,41 +265,63 @@ static bool fetch_registry(void) {
     }
     if (!line[0]) continue;
     char *f[16];
-    int fc = split_csv(line, f, 16, 48);
+    int fc = split_csv(line, f, 16, 64);
     if (fc >= 5) {
       const char *guid = f[0];
       const char *type = f[2];
       const char *name = f[3];
       const char *status = f[4];
-      if (!strcmp(type, "AKTUATOR") && guid[0] && n < max) {
-        copy_str(s_devs[n].guid, sizeof s_devs[n].guid, guid);
-        make_shortname(name, s_devs[n].shortname, sizeof s_devs[n].shortname);
-        copy_str(s_devs[n].fullname, sizeof s_devs[n].fullname, name);
-        copy_str(s_devs[n].status, sizeof s_devs[n].status, status);
-        /* snapshot fills the state when we haven't heard alive messages */
-        if (!strcmp(status, "0")) {
-          s_devs[n].known = true;
-          s_devs[n].on = true;
-        } else if (!strcmp(status, "1")) {
-          s_devs[n].known = true;
-          s_devs[n].on = false;
+      if (!strcmp(type, "AKTUATOR") && guid[0]) {
+        clean_name(name, namebuf, sizeof namebuf);
+        int idx = find_by_guid(guid);
+        if (idx < 0 && s_count < REG_MAX_DEVS) {
+          idx = s_count++;
+          memset(&s_devs[idx], 0, sizeof s_devs[idx]);
+          copy_str(s_devs[idx].guid, sizeof s_devs[idx].guid, guid);
+          added++;
         }
-        n++;
+        if (idx >= 0) {
+          RegDev *d = &s_devs[idx];
+          s_used[idx] = 1;
+          copy_str(d->guid, sizeof d->guid, guid);
+          copy_str(d->name, sizeof d->name, namebuf);
+          make_label(namebuf, d->label, sizeof d->label);
+          copy_str(d->status, sizeof d->status, status);
+          /* the export is the fallback truth; live MQTT traffic wins later */
+          if (!strcmp(status, "0")) {
+            d->known = true;
+            d->on = true;
+          } else if (!strcmp(status, "1")) {
+            d->known = true;
+            d->on = false;
+          }
+        }
       }
     }
     for (int i = 0; i < fc; i++) free(f[i]);
-    if (n >= max) break;
   }
   http.end();
 
-  if (n == 0 && s_count == 0) {
+  /* Drop devices that vanished from the export. */
+  int keep = 0;
+  for (int i = 0; i < s_count; i++) {
+    if (!s_used[i]) continue;
+    if (keep != i) s_devs[keep] = s_devs[i];
+    keep++;
+  }
+  s_count = keep;
+
+  if (s_count == 0) {
     copy_str(s_status, sizeof s_status, "CSV kosong");
     return false;
   }
-  s_count = n;
+
+  sort_devs();      /* group duplicates so the numbering pass sees them */
+  uniquify_labels();
+  sort_devs();      /* final order with the #n suffixes applied */
   s_ready = true;
   snprintf(s_status, sizeof s_status, "%d lampu", s_count);
-  Serial.printf("[reg] loaded %d actuators\n", s_count);
+  Serial.printf("[reg] loaded %d actuators (%d baru)\n", s_count, added);
   return true;
 }
 
@@ -176,6 +329,7 @@ void registry_begin(void) {
   s_ready = false;
   s_count = 0;
   s_last_try = 0;
+  memset(s_used, 0, sizeof s_used);
   copy_str(s_status, sizeof s_status, "menunggu...");
 }
 
@@ -193,7 +347,7 @@ int registry_count(void) { return s_count; }
 
 const char *registry_shortname(int index) {
   if (index < 0 || index >= s_count) return NULL;
-  return s_devs[index].shortname;
+  return s_devs[index].label;
 }
 const char *registry_guid_at(int index) {
   if (index < 0 || index >= s_count) return NULL;
@@ -201,30 +355,30 @@ const char *registry_guid_at(int index) {
 }
 const char *registry_fullname(int index) {
   if (index < 0 || index >= s_count) return NULL;
-  return s_devs[index].fullname;
-}
-
-static int cmp_ci(const char *a, const char *b) {
-  while (*a && *b) {
-    int ca = toupper((unsigned char)*a);
-    int cb = toupper((unsigned char)*b);
-    if (ca != cb) return ca - cb;
-    a++;
-    b++;
-  }
-  return (unsigned char)*a - (unsigned char)*b;
+  return s_devs[index].name;
 }
 
 int registry_find_short(const char *shortname) {
+  if (!shortname || !shortname[0]) return -1;
   for (int i = 0; i < s_count; i++)
-    if (!cmp_ci(s_devs[i].shortname, shortname)) return i;
+    if (!cmp_ci(s_devs[i].label, shortname)) return i;
+  /* tolerate a spaced form such as "LAMP.14 " or "lamp 14" */
+  for (int i = 0; i < s_count; i++)
+    if (!strncmp(s_devs[i].name, shortname, strlen(shortname))) return i;
   return -1;
 }
 
 int registry_find_guid(const char *guid) {
+  if (!guid || !guid[0]) return -1;
   for (int i = 0; i < s_count; i++)
     if (!strcmp(s_devs[i].guid, guid)) return i;
   return -1;
+}
+
+int registry_resolve(const char *guid, const char *label) {
+  int ri = registry_find_guid(guid);
+  if (ri >= 0) return ri;
+  return registry_find_short(label);
 }
 
 bool registry_state_known(int index) {

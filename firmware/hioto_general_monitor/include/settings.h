@@ -5,7 +5,7 @@
 /* One lamp button slot: assigned HIOTO device + icon style. */
 struct LampSlot {
   char guid[40]; /* actuator guid ("" = unassigned) */
-  char label[16]; /* short id, e.g. "LAMP.12" */
+  char label[20]; /* compact id, e.g. "LAMP.12" / "SMARTSTEKER-16" */
   uint8_t icon;   /* see ICON_NAMES in config.h */
 };
 
