@@ -1244,17 +1244,21 @@ void ui_catalog_changed(void) {
   s_dd_dirty = true;
 }
 
+void ui_after_calibration(void) {
+  /* the routine drew straight on the panel: repaint everything and go back
+   * to the settings screen so the user can carry on */
+  if (s_main) lv_obj_invalidate(s_main);
+  if (s_set) lv_obj_invalidate(s_set);
+  s_last_refresh = 0;
+  ui_open_settings();
+  ui_refresh_states();
+}
 void ui_theme_changed(void) { s_rebuild_pending = true; }
 
 void ui_poll(void) {
   if (s_cal_request) {
     s_cal_request = false;
     touch_calibrate();
-    /* the routine drew straight on the panel: repaint everything */
-    if (s_main) lv_obj_invalidate(s_main);
-    if (s_set) lv_obj_invalidate(s_set);
-    s_last_refresh = 0;
-    ui_refresh_states();
     return;
   }
   if (s_rebuild_pending) {

@@ -22,6 +22,7 @@
 #include <esp_partition.h>
 
 #include "board_pins.h"
+#include "touch.h"
 #include "config.h"
 #include "settings.h"
 #include "registry.h"
@@ -87,7 +88,7 @@ void display_self_test(void) {
     draw_disp_test(r);
     const uint32_t t0 = millis();
     while (millis() - t0 < 6000) {
-      if (s_tft.getTouchRawZ() > 300) {
+      if (touch_is_down()) {
         stop = true;
         break;
       }
@@ -122,8 +123,8 @@ static void lv_flush_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *
 /* ------------------------------------------------------------------------- */
 static void indev_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
   (void)drv;
-  uint16_t x = 0, y = 0;
-  if (s_tft.getTouch(&x, &y, 400)) {
+  int x = 0, y = 0;
+  if (touch_point(&x, &y)) {
     data->point.x = (lv_coord_t)x;
     data->point.y = (lv_coord_t)y;
     data->state = LV_INDEV_STATE_PRESSED;
@@ -184,136 +185,9 @@ const char *wifi_state_text(void) {
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Touch calibration (4 big squares + centre validation)                    */
+/*  Touch calibration (delegates to touch.cpp, which knows the topology)     */
 /* ------------------------------------------------------------------------- */
-static bool cal_wait_tap(uint16_t *rx, uint16_t *ry) {
-  uint32_t start = millis();
-  while (millis() - start < 90000) {
-    if (s_tft.getTouchRawZ() > 300) {
-      uint32_t sx = 0, sy = 0;
-      int n = 0;
-      while (s_tft.getTouchRawZ() > 300 && n < 10) {
-        uint16_t a, b;
-        s_tft.getTouchRaw(&a, &b);
-        sx += a;
-        sy += b;
-        n++;
-        delay(15);
-      }
-      if (n > 0) {
-        *rx = (uint16_t)(sx / n);
-        *ry = (uint16_t)(sy / n);
-        return true;
-      }
-    }
-    delay(15);
-  }
-  return false;
-}
-
-static void cal_draw_square(int i, uint16_t fill) {
-  const int pos[4][2] = {{64, 76}, {LCD_WIDTH - 64, 76}, {64, LCD_HEIGHT - 76},
-                         {LCD_WIDTH - 64, LCD_HEIGHT - 76}};
-  int x = pos[i][0], y = pos[i][1];
-  s_tft.fillRect(x - 44, y - 44, 88, 88, fill);
-  s_tft.drawRect(x - 46, y - 46, 92, 92, TFT_WHITE);
-  char num[4];
-  snprintf(num, sizeof num, "%d", i + 1);
-  s_tft.setTextColor(TFT_BLACK, fill);
-  s_tft.drawString(num, x - 8, y - 16, 4);
-}
-
-void touch_calibrate(void) {
-  for (int attempt = 0; attempt < 3; attempt++) {
-    s_tft.fillScreen(TFT_BLACK);
-    s_tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    s_tft.drawString("KALIBRASI: ketuk kotak 1-4", 70, 6, 2);
-    for (int i = 0; i < 4; i++) cal_draw_square(i, TFT_CYAN);
-    delay(300);
-
-    uint16_t raw[4][2];
-    bool ok = true;
-    for (int i = 0; i < 4 && ok; i++) {
-      if (!cal_wait_tap(&raw[i][0], &raw[i][1])) {
-        ok = false;
-        break;
-      }
-      cal_draw_square(i, TFT_GREEN);
-      delay(120);
-    }
-    if (!ok) {
-      s_tft.drawString("BATAL (timeout)", 170, 160, 4);
-      delay(900);
-      ui_open_settings();
-      return;
-    }
-
-    uint16_t v[8] = {raw[0][0], raw[0][1], raw[2][0], raw[2][1],
-                     raw[1][0], raw[1][1], raw[3][0], raw[3][1]};
-    bool rotate = abs((int)v[0] - (int)v[4]) > abs((int)v[1] - (int)v[5]);
-    int x0, x1, y0, y1;
-    if (rotate) {
-      x0 = (v[1] + v[3]) / 2;
-      x1 = (v[5] + v[7]) / 2;
-      y0 = (v[0] + v[4]) / 2;
-      y1 = (v[2] + v[6]) / 2;
-    } else {
-      x0 = (v[0] + v[2]) / 2;
-      x1 = (v[4] + v[6]) / 2;
-      y0 = (v[1] + v[5]) / 2;
-      y1 = (v[3] + v[7]) / 2;
-    }
-    bool invx = x0 > x1, invy = y0 > y1;
-    if (invx) { int t = x0; x0 = x1; x1 = t; }
-    if (invy) { int t = y0; y0 = y1; y1 = t; }
-
-    uint16_t cal[8];
-    cal[0] = (uint16_t)x0;
-    cal[1] = (uint16_t)(x1 - x0);
-    cal[2] = (uint16_t)y0;
-    cal[3] = (uint16_t)(y1 - y0);
-    cal[4] = (uint16_t)((rotate ? 1 : 0) | (invx ? 2 : 0) | (invy ? 4 : 0));
-    cal[5] = cal[6] = cal[7] = 0;
-    s_tft.setTouch(cal);
-
-    /* centre validation */
-    s_tft.fillScreen(TFT_BLACK);
-    s_tft.drawString("ketuk titik TENGAH", 140, 6, 2);
-    s_tft.drawCircle(240, 160, 32, TFT_YELLOW);
-    s_tft.drawFastVLine(240, 118, 84, TFT_YELLOW);
-    s_tft.drawFastHLine(198, 160, 84, TFT_YELLOW);
-    uint16_t cx = 0, cy = 0;
-    bool got = false;
-    uint32_t t0 = millis();
-    while (millis() - t0 < 30000) {
-      if (s_tft.getTouch(&cx, &cy, 300)) {
-        got = true;
-        break;
-      }
-      delay(15);
-    }
-    if (got && cx > 200 && cx < 280 && cy > 120 && cy < 200) {
-      memcpy(g_settings.touch_cal, cal, sizeof cal);
-      g_settings.touch_cal_valid = true;
-      settings_save(&g_settings);
-      Serial.printf("[touch] cal saved x0=%u x1=%u y0=%u y1=%u f=%u\n", cal[0], cal[1],
-                    cal[2], cal[3], cal[4]);
-      s_tft.fillScreen(TFT_BLACK);
-      s_tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      s_tft.drawString("KALIBRASI SELESAI", 130, 140, 4);
-      delay(1200);
-      ui_open_settings();
-      return;
-    }
-    if (g_settings.touch_cal_valid) s_tft.setTouch(g_settings.touch_cal);
-    s_tft.setTextColor(TFT_RED, TFT_BLACK);
-    s_tft.drawString("ULANGI KALIBRASI", 160, 280, 2);
-    delay(1200);
-  }
-  s_tft.drawString("KALIBRASI GAGAL", 170, 140, 4);
-  delay(1200);
-  ui_open_settings();
-}
+void touch_calibrate(void) { touch_calibrate_ui(); }
 
 /* ------------------------------------------------------------------------- */
 /*  Serial console                                                           */
@@ -577,8 +451,27 @@ static void serial_handle_line(char *line) {
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
     Serial.printf("[ldr] adc=%d pct=%d%%\n", adc, pct);
-  } else if (!strcmp(tok[0], "cal")) {
-    touch_calibrate();
+  } else if (!strcmp(tok[0], "tp")) {
+    Serial.println("[tp] sampling 20s - TEKAN & TAHAN layar sekarang");
+    for (int i = 0; i < 200; i++) {
+      const uint16_t z0 = touch_debug_variant(0xB0, 0);
+      const uint16_t x0 = touch_debug_variant(0xD0, 0);
+      const uint16_t y0 = touch_debug_variant(0x90, 0);
+      const uint16_t x1 = touch_debug_variant(0xD0, 1);
+      const uint16_t y1 = touch_debug_variant(0x90, 1);
+      Serial.printf("[tp] %3d irq=%d z=%4u | rise x=%4u y=%4u | fall x=%4u y=%4u\n", i,
+                    (int)touch_is_down(), (unsigned)z0, (unsigned)x0, (unsigned)y0,
+                    (unsigned)x1, (unsigned)y1);
+      delay(100);
+    }
+    Serial.println("[tp] selesai");
+  } else if (!strcmp(tok[0], "tpprobe")) {
+    Serial.println("[tp] port probe: 8 pembacaan (tekan layar)");
+    uint16_t x = 0, y = 0, z = 0;
+    touch_probe_read(&x, &y, &z);
+    Serial.printf("[tp] probe: irq=%d x=%u y=%u z=%u\n", (int)touch_is_down(),
+                  (unsigned)x, (unsigned)y, (unsigned)z);
+  } else if (!strcmp(tok[0], "cal")) {    touch_calibrate();
   } else if (!strcmp(tok[0], "clearcal")) {
     Preferences prefs;
     if (prefs.begin("hioto", false)) {
@@ -673,10 +566,6 @@ void setup() {
   s_disp_drv.draw_buf = &s_draw_buf;
   lv_disp_drv_register(&s_disp_drv);
 
-  if (g_settings.touch_cal_valid) {
-    s_tft.setTouch(g_settings.touch_cal);
-    Serial.println("[touch] saved calibration applied");
-  }
   static lv_indev_drv_t s_indev_drv;
   lv_indev_drv_init(&s_indev_drv);
   s_indev_drv.type = LV_INDEV_TYPE_POINTER;
@@ -687,6 +576,8 @@ void setup() {
   catalog_begin();
   ota_begin();
   ui_set_screen(scr_w, scr_h);
+  touch_begin(&s_tft);
+  touch_set_screen(scr_w, scr_h);
   ui_init();
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   identity_begin();

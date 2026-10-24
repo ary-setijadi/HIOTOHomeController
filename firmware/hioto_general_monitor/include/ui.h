@@ -34,6 +34,8 @@ bool wifi_ok(void);
 const char *wifi_state_text(void);
 void wifi_apply(const char *ssid, const char *pass);
 
-/* Touch calibration routine, implemented in main.cpp (blocks, draws on the
- * panel directly, then returns with the new calibration applied). */
+/* Touch calibration routine, implemented in touch.cpp. */
 void touch_calibrate(void);
+
+/* Called when the on-panel calibration finishes: repaint and reopen settings. */
+void ui_after_calibration(void);

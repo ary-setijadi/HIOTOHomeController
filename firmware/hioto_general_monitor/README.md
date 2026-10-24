@@ -177,3 +177,38 @@ keep BOOT ~1 s, release. The helper then flashes with `--before no_reset`.
   command (4 big numbered squares + centre validation, saved to NVS).
 - Panel geometry: the ST7796 is 320Ã—480 native; `TFT_WIDTH=320`,
   `TFT_HEIGHT=480` with `setRotation(1)` gives the 480Ã—320 landscape UI.
+
+## 2.8" CYD (ESP32-2432S028) — measured configuration
+
+Verified against the unit with `firmware/cyd_probe` (see
+`CYD-2432S028-CONTROL-REFERENCE.md`, Appendix B):
+
+| Item | Value |
+|---|---|
+| Panel driver | **ST7789** (`-DST7789_DRIVER=1`) — ILI9341 renders black/snow |
+| Colour order | **`TFT_RGB`** (BGR swaps red/blue) |
+| Native size | 240x320 portrait ? `setRotation(1)` = 320x240 landscape |
+| SPI host | HSPI (`-DUSE_HSPI_PORT`), 40 MHz |
+| Backlight | GPIO 21, active HIGH |
+| Touch controller | XPT2046 on its **own** bus: CLK 25, MOSI 32, MISO 39, CS 33, IRQ 36 |
+
+Because the touch chip is not on the display bus, `TOUCH_CS` is unusable there;
+`src/touch.cpp` drives it directly (`-DTOUCH_SEPARATE_BUS=1`) and keeps the
+3.5" board on the TFT_eSPI touch extension. Calibration is a 4-point routine
+(`cal` on the console or *Kalibrasi sentuh* in Settings) that stores raw
+min/max plus swap/invert flags in NVS.
+
+Current status on the 2.8" unit: display and UI verified good; the touch read
+returns X=0 / Y~4070 / Z=0 with IRQ stuck LOW for every implementation tried
+(hardware VSPI, bit-banged on both clock edges, and a verbatim port of the probe
+firmware), so the remaining fault is physical (FPC seating / touch controller),
+not a build flag. A full power cycle and an FFC reseat are the next checks.
+
+## Versions
+
+| Version | Notes |
+|---|---|
+| 1.3.0 | first 2.8" build: ST7789, separate touch bus, per-panel `FW_DEVICE_TYPE` |
+| 1.3.1-1.3.2 | calibration logging + `tp` diagnostic |
+| 1.3.4-1.3.5 | XPT2046 read corrected to 3 transfers (cmd + hi + lo) |
+| 1.3.6-1.3.8 | bit-banged touch, edge-variant diagnostics, verbatim probe port |
