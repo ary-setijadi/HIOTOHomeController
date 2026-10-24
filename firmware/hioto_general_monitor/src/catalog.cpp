@@ -50,8 +50,8 @@ static bool http_get(const char *path, String &body) {
   WiFiClient client;
   client.setTimeout(6000);
   if (!http.begin(client, url)) return false;
-  http.setTimeout(8000);
-  http.setConnectTimeout(4000);
+  http.setTimeout(5000);
+  http.setConnectTimeout(2500);
   const int code = http.GET();
   if (code != 200) {
     http.end();

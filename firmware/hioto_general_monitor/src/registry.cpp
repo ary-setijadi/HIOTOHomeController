@@ -267,8 +267,8 @@ static bool fetch_registry(void) {
     copy_str(s_status, sizeof s_status, "begin gagal");
     return false;
   }
-  http.setTimeout(10000);
-  http.setConnectTimeout(4000);
+  http.setTimeout(5000);
+  http.setConnectTimeout(2500);
   int code = http.GET();
   if (code != 200) {
     snprintf(s_status, sizeof s_status, "HTTP %d", code);

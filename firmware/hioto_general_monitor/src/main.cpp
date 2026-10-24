@@ -110,15 +110,79 @@ void display_self_test(void) {
 }
 
 /* ------------------------------------------------------------------------- */
+/*  Performance counters                                                     */
+/*                                                                           */
+/*  "sluggish" needs numbers: a slow panel usually means either the touch read */
+/*  is expensive (the XPT2046 is bit-banged by hand on the 2.8") or the flush */
+/*  is pushing more pixels than the SPI bus can carry. Counters are folded in */
+/*  loop() and reported by the "perf" console command.                       */
+/* ------------------------------------------------------------------------- */
+struct PerfStats {
+  uint32_t loops, loop_ms;
+  uint32_t touch_calls, touch_us, touch_max_us;
+  uint32_t flush_calls, flush_us, flush_px;
+  uint32_t lv_us, lv_max_us;
+  uint32_t gap_max_us;
+};
+static PerfStats s_perf;       /* current window, reset every 2 s */
+static PerfStats s_perf_last;  /* last completed window */
+static uint32_t s_perf_t0 = 0;
+static uint32_t s_loop_last_us = 0;
+
+static inline void perf_window(void) {
+  const uint32_t now = millis();
+  if (!s_perf_t0) {
+    s_perf_t0 = now;
+    return;
+  }
+  if (now - s_perf_t0 < 2000) return;
+  s_perf.loop_ms = now - s_perf_t0;
+  s_perf_last = s_perf;
+  memset(&s_perf, 0, sizeof s_perf);
+  s_perf_t0 = now;
+}
+
+static void perf_print(void) {
+  const PerfStats *p = &s_perf_last;
+  const uint32_t ms = p->loop_ms ? p->loop_ms : 1;
+  Serial.printf("[perf] window=%ums loops/s=%u lv_avg=%uus lv_max=%uus\n", ms,
+                (unsigned)(p->loops * 1000 / ms),
+                (unsigned)(p->lv_us / (p->loops ? p->loops : 1)), (unsigned)p->lv_max_us);
+  /* gap = worst time the loop was away. A large value with a small lv_max means
+   * something OUTSIDE lv_timer_handler blocked - typically an HTTP fetch or an
+   * MQTT connect with the broker unreachable. That is what makes the panel feel
+   * sluggish while the UI code itself is idle. */
+  Serial.printf("[perf] gap_avg=%ums gap_max=%ums (blocked outside LVGL)\n",
+                (unsigned)(ms / (p->loops ? p->loops : 1)), (unsigned)(p->gap_max_us / 1000));
+  Serial.printf("[perf] touch/s=%u touch_avg=%uus touch_max=%uus\n",
+                (unsigned)(p->touch_calls * 1000 / ms),
+                (unsigned)(p->touch_us / (p->touch_calls ? p->touch_calls : 1)),
+                (unsigned)p->touch_max_us);
+  Serial.printf("[perf] flush/s=%u flush_avg=%uus px/s=%u (~%u KB/s at 16bpp)\n",
+                (unsigned)(p->flush_calls * 1000 / ms),
+                (unsigned)(p->flush_us / (p->flush_calls ? p->flush_calls : 1)),
+                (unsigned)(p->flush_px * 1000 / ms), (unsigned)(p->flush_px * 2000 / ms / 1024));
+  Serial.printf("[perf] heap=%u largest=%u min_free=%u\n", (unsigned)ESP.getFreeHeap(),
+                (unsigned)ESP.getMaxAllocHeap(), (unsigned)ESP.getMinFreeHeap());
+}
+
+
+
+/* ------------------------------------------------------------------------- */
 /*  LVGL flush                                                               */
 /* ------------------------------------------------------------------------- */
 static void lv_flush_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p) {
   const uint32_t w = (uint32_t)(area->x2 - area->x1 + 1);
   const uint32_t h = (uint32_t)(area->y2 - area->y1 + 1);
+  const uint32_t t0 = micros();
   s_tft.startWrite();
   s_tft.setAddrWindow(area->x1, area->y1, w, h);
   s_tft.pushColors((uint16_t *)&color_p->full, w * h, true);
   s_tft.endWrite();
+  const uint32_t dt = micros() - t0;
+  s_perf.flush_calls++;
+  s_perf.flush_us += dt;
+  s_perf.flush_px += w * h;
   lv_disp_flush_ready(disp);
 }
 
@@ -128,7 +192,13 @@ static void lv_flush_cb(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *
 static void indev_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
   (void)drv;
   int x = 0, y = 0;
-  if (touch_point(&x, &y)) {
+  const uint32_t t0 = micros();
+  const bool down = touch_point(&x, &y);
+  const uint32_t dt = micros() - t0;
+  s_perf.touch_calls++;
+  s_perf.touch_us += dt;
+  if (dt > s_perf.touch_max_us) s_perf.touch_max_us = dt;
+  if (down) {
     data->point.x = (lv_coord_t)x;
     data->point.y = (lv_coord_t)y;
     data->state = LV_INDEV_STATE_PRESSED;
@@ -322,6 +392,7 @@ static void serial_help(void) {
   Serial.println("  cal                        touch calibration");
   Serial.println("  slot <n> <LAMP.xx>         assign button n (1-8) to a device");
   Serial.println("  dispid                     read the display controller id (wrong-board check)");
+  Serial.println("  perf                       loop / touch / flush timings + heap");
   Serial.println("  disptest                   cycle all 4 rotations with corner markers");
   Serial.println("  parts                      OTA slot layout + image versions");
   Serial.println("  ver                        firmware version + OTA status");
@@ -334,6 +405,7 @@ static void serial_help(void) {
   Serial.println("  cal | clearcal | traw      touch calibration");
   Serial.println("  save                       persist + reboot");
   Serial.println("  reboot");
+  Serial.println("  dl                         reboot into the ROM serial bootloader (no BOOT button)");
 }
 
 static void serial_status(void) {
@@ -572,6 +644,8 @@ static void serial_handle_line(char *line) {
       Serial.println("[tp] tidak ada ketukan");
     }
     ui_after_calibration();
+  } else if (!strcmp(tok[0], "perf")) {
+    perf_print();
   } else if (!strcmp(tok[0], "dispid")) {
     display_id_report();
   } else if (!strcmp(tok[0], "slot")) {
@@ -757,7 +831,24 @@ void setup() {
 }
 
 void loop() {
-  lv_timer_handler();
+  /* worst gap between loop iterations: reveals blocking work done outside LVGL */
+  {
+    const uint32_t now_us = micros();
+    if (s_loop_last_us) {
+      const uint32_t gap = now_us - s_loop_last_us;
+      if (gap > s_perf.gap_max_us) s_perf.gap_max_us = gap;
+    }
+    s_loop_last_us = now_us;
+  }
+  {
+    const uint32_t t0 = micros();
+    lv_timer_handler();
+    const uint32_t dt = micros() - t0;
+    s_perf.loops++;
+    s_perf.lv_us += dt;
+    if (dt > s_perf.lv_max_us) s_perf.lv_max_us = dt;
+    perf_window();
+  }
   ui_poll();
   mqtt_poll();
 
@@ -800,6 +891,5 @@ void loop() {
     }
   }
   s_btn_prev = btn;
-
-  delay(5);
+  delay(2); /* was 5: LVGL is serviced from this loop, so keep input latency low */
 }

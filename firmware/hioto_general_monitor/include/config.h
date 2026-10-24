@@ -17,7 +17,7 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "2.0.0"
+#define FW_VERSION "2.0.4"
 /* One device type per board AND panel controller, so a board can only ever pull
  * an image built for its own glass. Set by the PlatformIO env:
  *   genmon_35_st7796 -> "hioto-genmon-35-st7796"

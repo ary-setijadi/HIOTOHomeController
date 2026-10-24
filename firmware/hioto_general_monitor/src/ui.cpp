@@ -129,6 +129,14 @@ static lv_obj_t *s_lbl_scope = NULL;
 static int s_opt_reg[REG_OPT_MAX];
 static int s_opt_count = 0;
 
+/* Last applied state per slot. Rewriting a label or colour invalidates the
+ * object and repaints it, so refreshing four times a second repainted the whole
+ * panel continuously even when nothing had changed - that is what made the UI
+ * feel sluggish. Only touch the widgets when a value really differs. */
+static char s_last_name[GEN_SLOTS][24];
+static int8_t s_last_state[GEN_SLOTS]; /* -1 unknown, 0 off, 1 on */
+static bool s_last_wifi = false, s_last_mqtt = false, s_last_icons = false;
+
 static uint32_t s_last_refresh = 0;
 static bool s_rebuild_pending = false;
 static bool s_dd_dirty = false;
@@ -1232,6 +1240,9 @@ static void rebuild_dropdowns(void) {
 /* Forget every widget handle before the screens are rebuilt. */
 static void reset_widgets(void) {
   s_main = s_set = NULL;
+  memset(s_last_name, 0, sizeof s_last_name);
+  for (int i = 0; i < GEN_SLOTS; i++) s_last_state[i] = -1;
+  s_last_icons = false;
   s_title = NULL;
   s_ic_wifi = s_ic_mqtt = s_ic_set = NULL;
   s_ta_ssid = s_ta_pass = NULL;
@@ -1343,6 +1354,7 @@ void ui_open_settings(void) {
 }
 
 /* ------------------------------------------------------------------------- */
+
 void ui_refresh_states(void) {
   if (millis() - s_last_refresh < 250) return;
   s_last_refresh = millis();
@@ -1350,9 +1362,18 @@ void ui_refresh_states(void) {
   /* top bar icons carry the connection state as colour: green = up, dim = down */
   const bool wf = wifi_ok();
   const bool mq = mqtt_connected();
-  if (s_ic_wifi) lv_obj_set_style_text_color(s_ic_wifi, wf ? C(ok) : C(dim), 0);
-  if (s_ic_mqtt) lv_obj_set_style_text_color(s_ic_mqtt, mq ? C(ok) : C(dim), 0);
-  if (s_ic_set) lv_obj_set_style_text_color(s_ic_set, C(text), 0);
+  if (!s_last_icons || wf != s_last_wifi) {
+    if (s_ic_wifi) lv_obj_set_style_text_color(s_ic_wifi, wf ? C(ok) : C(dim), 0);
+    s_last_wifi = wf;
+  }
+  if (!s_last_icons || mq != s_last_mqtt) {
+    if (s_ic_mqtt) lv_obj_set_style_text_color(s_ic_mqtt, mq ? C(ok) : C(dim), 0);
+    s_last_mqtt = mq;
+  }
+  if (!s_last_icons) {
+    if (s_ic_set) lv_obj_set_style_text_color(s_ic_set, C(text), 0);
+    s_last_icons = true;
+  }
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
 
   for (int i = 0; i < GEN_SLOTS; i++) {
@@ -1363,19 +1384,26 @@ void ui_refresh_states(void) {
       snprintf(slot->guid, sizeof slot->guid, "%s", registry_guid_at(ri));
     bool known = ri >= 0 && registry_state_known(ri);
     bool on = known && registry_state_on(ri);
-    icon_apply_state(i, known, on);
+    const int8_t state = !known ? -1 : (on ? 1 : 0);
 
     char nm[24];
     slot_display_name(i, nm, sizeof nm);
-    lv_label_set_text(s_name[i], nm);
-    lv_obj_set_style_text_color(s_name[i], ri >= 0 ? C(text) : C(muted), 0);
+    const bool name_changed = strcmp(nm, s_last_name[i]) != 0;
+    if (name_changed) {
+      lv_label_set_text(s_name[i], nm);
+      snprintf(s_last_name[i], sizeof s_last_name[i], "%s", nm);
+      lv_obj_set_style_text_color(s_name[i], ri >= 0 ? C(text) : C(muted), 0);
+    }
 
-    const char *stt = !known ? "-" : (on ? "ON" : "OFF");
-    lv_label_set_text(s_state[i], stt);
-    lv_obj_set_style_text_color(s_state[i],
-                                known ? (on ? C(state_on) : C(muted)) : C(dim), 0);
-    lv_obj_set_style_bg_color(s_btn[i], on ? C(btn_on) : C(card), 0);
-    lv_obj_set_style_border_color(s_btn[i], on ? C(btn_on_border) : C(border), 0);
+    if (state != s_last_state[i]) {
+      icon_apply_state(i, known, on);
+      lv_label_set_text(s_state[i], !known ? "-" : (on ? "ON" : "OFF"));
+      lv_obj_set_style_text_color(s_state[i],
+                                  known ? (on ? C(state_on) : C(muted)) : C(dim), 0);
+      lv_obj_set_style_bg_color(s_btn[i], on ? C(btn_on) : C(card), 0);
+      lv_obj_set_style_border_color(s_btn[i], on ? C(btn_on_border) : C(border), 0);
+      s_last_state[i] = state;
+    }
   }
 }
 

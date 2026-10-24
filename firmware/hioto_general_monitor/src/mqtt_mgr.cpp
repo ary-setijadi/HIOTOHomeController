@@ -35,6 +35,10 @@ void mqtt_begin(const Settings *s) {
   s_client.setServer(s_cfg->mqtt_host, s_cfg->mqtt_port);
   s_client.setBufferSize(512);
   s_client.setKeepAlive(20);
+  /* PubSubClient's connect() blocks for its socket timeout. At the 15 s default a
+   * broker that is merely down freezes the panel for most of every retry cycle:
+   * the UI stops updating and the serial console stops answering. Cap it. */
+  s_client.setSocketTimeout(2);
   /* without this every incoming message is dropped: lamp states from the
    * broker and the OTA command channel both depend on it */
   s_client.setCallback(on_message);
@@ -109,9 +113,17 @@ static void on_message(char *topic, byte *payload, unsigned int len) {
 void mqtt_poll(void) {
   if (WiFi.status() != WL_CONNECTED) return;
   if (!s_client.connected()) {
-    if (millis() - s_last_try > 5000) {
+    /* Back off while the broker is unreachable: retrying every 5 s kept the
+     * loop busy with failed connects instead of drawing the screen. */
+    static uint32_t s_fails = 0;
+    const uint32_t gap = s_fails < 3 ? 5000 : 30000;
+    if (millis() - s_last_try > gap) {
       s_last_try = millis();
-      connect_mqtt();
+      if (connect_mqtt()) {
+        s_fails = 0;
+      } else if (s_fails < 100) {
+        s_fails++;
+      }
     }
     return;
   }
