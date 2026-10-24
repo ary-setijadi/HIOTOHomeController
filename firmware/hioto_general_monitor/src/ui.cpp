@@ -14,10 +14,20 @@
 /* Real panel size after rotation; set before ui_init(). */
 static lv_coord_t UI_W = 480;
 static lv_coord_t UI_H = 320;
+static int UI_COLS = 4; /* 4x2 on 480x320, 3x2 on 320x240 */
+static int UI_ROWS = 2;
 
 void ui_set_screen(int w, int h) {
   if (w > 0) UI_W = (lv_coord_t)w;
   if (h > 0) UI_H = (lv_coord_t)h;
+  /* a 320 px wide panel only fits three comfortable buttons per row */
+  if (UI_W >= 400) {
+    UI_COLS = 4;
+    UI_ROWS = 2;
+  } else {
+    UI_COLS = 3;
+    UI_ROWS = 2;
+  }
 }
 
 /* Active palette. C(field) expands to the colour of the current theme. */
@@ -81,9 +91,11 @@ static lv_obj_t *s_lbl_scope = NULL;
 #define PILL_W (UI_BIG ? 96 : 74)
 #define PILL_H (UI_BIG ? 30 : 22)
 
-#define SLOT_ROW_H (UI_BIG ? 122 : 100)
-#define BTN_W (UI_BIG ? 110 : ((UI_W - 16 - 12) / 4))
-#define BTN_H (UI_BIG ? 116 : 96)
+/* compact 320x240 budget: 8 pad + 26 top + 2*6 row gaps + 2*92 rows + 8 pad = 238 */
+#define SLOT_ROW_H (UI_BIG ? 122 : 92)
+#define BTN_W ((UI_W - 16 - (UI_COLS - 1) * 6) / UI_COLS)
+#define UI_SLOTS (UI_COLS * UI_ROWS)
+#define BTN_H (UI_BIG ? 116 : 88)
 #define ICON_X ((BTN_W - 48) / 2)
 #define NAME_Y (UI_BIG ? 48 : 46)
 #define NAME_W (BTN_W - 12)
@@ -434,12 +446,12 @@ static void mk_main(void) {
   lv_obj_add_event_cb(set, settings_click_cb, LV_EVENT_CLICKED, NULL);
   mk_label(set, "Setelan", F_SMALL, C(text));
 
-  /* 2 rows x 4 buttons */
-  for (int r = 0; r < 2; r++) {
+  /* UI_ROWS x UI_COLS buttons (4x2 or 3x2) */
+  for (int r = 0; r < UI_ROWS; r++) {
     lv_obj_t *row = mk_row(s_main, SLOT_ROW_H);
 
-    for (int c = 0; c < 4; c++) {
-      int i = r * 4 + c;
+    for (int c = 0; c < UI_COLS; c++) {
+      int i = r * UI_COLS + c;
       lv_obj_t *btn = lv_btn_create(row);
       lv_obj_set_size(btn, BTN_W, BTN_H);
       lv_obj_set_style_radius(btn, 14, 0);
@@ -781,6 +793,15 @@ static int kb_rows(lv_obj_t *kb) {
 }
 
 void ui_log_geometry(void) {
+  Serial.printf("[ui] grid cols=%d rows=%d slots=%d btn=%dx%d row_h=%d\n", UI_COLS,
+                UI_ROWS, UI_SLOTS, (int)BTN_W, (int)BTN_H, (int)SLOT_ROW_H);
+  for (int i = 0; i < UI_SLOTS && i < GEN_SLOTS; i++) {
+    if (!s_btn[i]) continue;
+    lv_area_t a;
+    lv_obj_get_coords(s_btn[i], &a);
+    Serial.printf("[ui] btn%d pos=%d,%d size=%dx%d bottom=%d\n", i, (int)a.x1, (int)a.y1,
+                  (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1), (int)a.y2);
+  }
   lv_obj_t *kbs[2] = {s_kb, s_edit_kb};
   for (int k = 0; k < 2; k++) {
     lv_obj_t *kb = kbs[k];
@@ -951,7 +972,7 @@ static void mk_settings(void) {
                                   &lv_font_montserrat_12, C(muted));
   (void)s_lbl_hint;
 
-  for (int i = 0; i < GEN_SLOTS; i++) {
+  for (int i = 0; i < UI_SLOTS; i++) {
     lv_obj_t *row = mk_row(s_set_content, SET_ROW_H);
 
     char num[8];
