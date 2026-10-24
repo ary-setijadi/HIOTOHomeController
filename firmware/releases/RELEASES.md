@@ -13,8 +13,8 @@ though the board is healthy (the firmware prints a board-tag warning).
 
 | version | device type | chip | size | sha256 | file |
 |---|---|---|---|---|---|
-| 2.0.4 | `hioto-genmon-28-st7789` | ST7789 | 1222672 | `ed8aac7fd1514d6f…` | `hioto-genmon-28-st7789-2.0.4.bin` |
-| 2.0.4 | `hioto-genmon-35-st7796` | ST7796 | 1212224 | `f43aa342ec417ffd…` | `hioto-genmon-35-st7796-2.0.4.bin` |
+| 2.0.6 | `hioto-genmon-28-st7789` | ST7789 | 1223264 | `102b4f2b2c46b5c6…` | `hioto-genmon-28-st7789-2.0.6.bin` |
+| 2.0.6 | `hioto-genmon-35-st7796` | ST7796 | 1212704 | `ffc6cfd947e22127…` | `hioto-genmon-35-st7796-2.0.6.bin` |
 
 Rebuild and publish both:
 

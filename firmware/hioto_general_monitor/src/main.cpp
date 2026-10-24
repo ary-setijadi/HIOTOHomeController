@@ -393,6 +393,7 @@ static void serial_help(void) {
   Serial.println("  slot <n> <LAMP.xx>         assign button n (1-8) to a device");
   Serial.println("  dispid                     read the display controller id (wrong-board check)");
   Serial.println("  perf                       loop / touch / flush timings + heap");
+  Serial.println("  icons                      top-bar icon colours (wifi / mqtt / gear)");
   Serial.println("  disptest                   cycle all 4 rotations with corner markers");
   Serial.println("  parts                      OTA slot layout + image versions");
   Serial.println("  ver                        firmware version + OTA status");
@@ -644,6 +645,8 @@ static void serial_handle_line(char *line) {
       Serial.println("[tp] tidak ada ketukan");
     }
     ui_after_calibration();
+  } else if (!strcmp(tok[0], "icons")) {
+    ui_log_icons();
   } else if (!strcmp(tok[0], "perf")) {
     perf_print();
   } else if (!strcmp(tok[0], "dispid")) {

@@ -126,6 +126,14 @@ static lv_obj_t *s_lbl_scope = NULL;
 #define BSTEP_W (UI_BIG ? 40 : 32)
 #define VAL_W (UI_BIG ? 48 : 44)
 #define REG_OPT_MAX 160
+
+/* Connection state of the top-bar icons. Deliberately NOT taken from the theme:
+ * these two glyphs report whether Wi-Fi and the broker are up, so they must read
+ * the same way in every palette. Borrowing the palette's "ok" colour made the
+ * meaning drift - Senja's accent is orange, so a healthy link looked like a
+ * fault. Green = up, red = down, in all six themes. */
+#define LINK_UP_HEX 0x22C55E
+#define LINK_DOWN_HEX 0xEF4444
 static int s_opt_reg[REG_OPT_MAX];
 static int s_opt_count = 0;
 
@@ -815,6 +823,27 @@ static int kb_rows(lv_obj_t *kb) {
   return rows;
 }
 
+/* Report the colours actually applied to the top-bar icons (and the palette
+ * entries they used to borrow). Console command: "icons". */
+void ui_log_icons(void) {
+  const UiTheme *t = T();
+  Serial.printf("[ui] tema=%s ok=#%06X accent=#%06X bad=#%06X dim=#%06X\n", t->name, t->ok,
+                t->accent, t->bad, t->dim);
+  lv_obj_t *objs[3] = {s_ic_wifi, s_ic_mqtt, s_ic_set};
+  const char *nm[3] = {"wifi", "mqtt", "gear"};
+  for (int i = 0; i < 3; i++) {
+    if (!objs[i]) { Serial.printf("[ui] ic-%s: (tidak ada)\n", nm[i]); continue; }
+    /* lv_color_t is RGB565 here: ch.red is 5 bits, ch.green 6, ch.blue 5.
+     * Printing the raw fields looked like a much darker colour than the panel
+     * shows, so widen to 24-bit first. */
+    const lv_color_t c = lv_obj_get_style_text_color(objs[i], 0);
+    const uint32_t rgb = (((uint32_t)c.ch.red << 3) << 16) |
+                         (((uint32_t)c.ch.green << 2) << 8) | ((uint32_t)c.ch.blue << 3);
+    Serial.printf("[ui] ic-%s live=#%06X\n", nm[i], (unsigned)rgb);
+  }
+  Serial.printf("[ui] wifi_ok=%d mqtt=%d harap up=#%06X down=#%06X\n", (int)wifi_ok(),
+                (int)mqtt_connected(), LINK_UP_HEX, LINK_DOWN_HEX);
+}
 void ui_log_geometry(void) {
   Serial.printf("[ui] grid cols=%d rows=%d slots=%d btn=%dx%d row_h=%d\n", UI_COLS,
                 UI_ROWS, UI_SLOTS, (int)BTN_W, (int)BTN_H, (int)SLOT_ROW_H);
@@ -1359,15 +1388,17 @@ void ui_refresh_states(void) {
   if (millis() - s_last_refresh < 250) return;
   s_last_refresh = millis();
 
-  /* top bar icons carry the connection state as colour: green = up, dim = down */
+  /* top bar icons report link state: green = up, red = down (theme independent) */
   const bool wf = wifi_ok();
   const bool mq = mqtt_connected();
   if (!s_last_icons || wf != s_last_wifi) {
-    if (s_ic_wifi) lv_obj_set_style_text_color(s_ic_wifi, wf ? C(ok) : C(dim), 0);
+    if (s_ic_wifi)
+      lv_obj_set_style_text_color(s_ic_wifi, lv_color_hex(wf ? LINK_UP_HEX : LINK_DOWN_HEX), 0);
     s_last_wifi = wf;
   }
   if (!s_last_icons || mq != s_last_mqtt) {
-    if (s_ic_mqtt) lv_obj_set_style_text_color(s_ic_mqtt, mq ? C(ok) : C(dim), 0);
+    if (s_ic_mqtt)
+      lv_obj_set_style_text_color(s_ic_mqtt, lv_color_hex(mq ? LINK_UP_HEX : LINK_DOWN_HEX), 0);
     s_last_mqtt = mq;
   }
   if (!s_last_icons) {

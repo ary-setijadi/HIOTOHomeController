@@ -19,6 +19,7 @@ void ui_theme_changed(void);
 
 /* Print keyboard / overlay geometry to the serial console (diagnostics). */
 void ui_log_geometry(void);
+void ui_log_icons(void); /* dump the live top-bar icon colours */
 
 /* Open the settings screen (also used on first boot without Wi-Fi). */
 void ui_open_settings(void);
