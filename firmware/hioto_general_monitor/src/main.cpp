@@ -192,6 +192,7 @@ const char *wifi_state_text(void) {
 /*  Touch calibration (delegates to touch.cpp, which knows the topology)     */
 /* ------------------------------------------------------------------------- */
 void touch_calibrate(void) { touch_calibrate_ui(); }
+bool touch_check_target(int tx, int ty, int *err_x, int *err_y);
 
 /* ------------------------------------------------------------------------- */
 /*  Wrong-board guard                                                        */
@@ -539,6 +540,17 @@ static void serial_handle_line(char *line) {
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
     Serial.printf("[ldr] adc=%d pct=%d%%\n", adc, pct);
+  } else if (!strcmp(tok[0], "tptarget")) {
+    /* Accuracy check with a drawn target, so the number means something. */
+    const int tw = (int)s_tft.width(), th = (int)s_tft.height();
+    int ex = 0, ey = 0;
+    Serial.printf("[tp] target tengah (%d,%d) - ketuk lingkaran putih\n", tw / 2, th / 2);
+    if (touch_check_target(tw / 2, th / 2, &ex, &ey)) {
+      Serial.printf("[tp] meleset dx=%d dy=%d px (batas wajar +/-20)\n", ex, ey);
+    } else {
+      Serial.println("[tp] tidak ada ketukan");
+    }
+    ui_after_calibration();
   } else if (!strcmp(tok[0], "dispid")) {
     display_id_report();
   } else if (!strcmp(tok[0], "slot")) {

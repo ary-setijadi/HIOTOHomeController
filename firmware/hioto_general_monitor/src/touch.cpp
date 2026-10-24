@@ -268,6 +268,37 @@ void touch_debug_sample(uint16_t *z, uint16_t *x, uint16_t *y) {
 #endif
 
 /* ------------------------------------------------------------------------- */
+/*  Target check: measures accuracy the same way calibration does - with a    */
+/*  visible target. Asking a person to "tap the centre" of a blank screen is  */
+/*  not a measurement: it reads ~30 px high because there is nothing to aim    */
+/*  at. Draw the crosshair, then report the error of the real touch path.     */
+/* ------------------------------------------------------------------------- */
+bool touch_check_target(int tx, int ty, int *err_x, int *err_y) {
+  if (!s_tft) return false;
+  s_tft->setRotation(g_settings.rot);
+  s_tft->fillScreen(TFT_BLACK);
+  s_tft->setTextColor(TFT_WHITE, TFT_BLACK);
+  s_tft->drawString("KETUK LINGKARAN PUTIH", 6, 4, 2);
+  s_tft->drawCircle(tx, ty, 16, TFT_WHITE);
+  s_tft->drawFastHLine(tx - 26, ty, 52, TFT_WHITE);
+  s_tft->drawFastVLine(tx, ty - 26, 52, TFT_WHITE);
+
+  const uint32_t t0 = millis();
+  while (millis() - t0 < 30000) {
+    int x = 0, y = 0;
+    if (touch_point(&x, &y)) {
+      *err_x = x - tx;
+      *err_y = y - ty;
+      const uint32_t r0 = millis(); /* let go before returning */
+      while (millis() - r0 < 2000 && touch_point(&x, &y)) delay(15);
+      return true;
+    }
+    delay(20);
+  }
+  return false;
+}
+
+/* ------------------------------------------------------------------------- */
 /*  Shared 5-point calibration (both topologies)                             */
 /* ------------------------------------------------------------------------- */
 static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
