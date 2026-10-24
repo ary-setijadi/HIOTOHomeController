@@ -34,6 +34,10 @@
 #include "ota.h"
 #include "ui.h"
 
+/* Full touch hardware diagnostic ("tpdiag"); detailed on the 2.8" board,
+ * a short notice elsewhere. */
+void touch_diag_full(void);
+
 static TFT_eSPI s_tft;
 static lv_disp_draw_buf_t s_draw_buf;
 static lv_disp_drv_t s_disp_drv;
@@ -471,6 +475,23 @@ static void serial_handle_line(char *line) {
     touch_probe_read(&x, &y, &z);
     Serial.printf("[tp] probe: irq=%d x=%u y=%u z=%u\n", (int)touch_is_down(),
                   (unsigned)x, (unsigned)y, (unsigned)z);
+  } else if (!strcmp(tok[0], "tptest")) {
+    /* Verification after calibration: reports the SCREEN coordinate that the
+     * production path (touch_point -> ui) produces, so a tap on a known spot
+     * can be checked against where the firmware thinks it landed. */
+    Serial.println("[tp] uji koordinat layar 20s - ketuk TENGAH layar");
+    const uint32_t t0 = millis();
+    bool was_down = false;
+    while (millis() - t0 < 20000) {
+      int x = 0, y = 0;
+      const bool down = touch_point(&x, &y);
+      if (down && !was_down) Serial.printf("[tp] TEKAN -> layar x=%d y=%d\n", x, y);
+      was_down = down;
+      delay(25);
+    }
+    Serial.println("[tp] selesai");
+  } else if (!strcmp(tok[0], "tpdiag")) {
+    touch_diag_full();
   } else if (!strcmp(tok[0], "cal")) {    touch_calibrate();
   } else if (!strcmp(tok[0], "clearcal")) {
     Preferences prefs;

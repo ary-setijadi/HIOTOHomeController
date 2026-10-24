@@ -28,7 +28,7 @@ static bool s_swap = false, s_invx = false, s_invy = false;
 /* Bit-banged XPT2046 read. The display owns a hardware SPI peripheral and the
  * touch chip sits on its own five pins, so driving it by hand removes every
  * bus-sharing question (the reference lists this as the standard recipe). */
-static uint16_t xpt(uint8_t cmd) {
+static uint16_t xpt_once(uint8_t cmd) {
   digitalWrite(TP_CS, LOW);
   delayMicroseconds(2);
   for (int i = 7; i >= 0; i--) {
@@ -51,6 +51,16 @@ static uint16_t xpt(uint8_t cmd) {
   return (uint16_t)((raw >> 3) & 0x0FFF);
 }
 
+/* Averaged read. A single conversion right after a channel switch can return
+ * the previous channel's residue, which makes one axis look dead while the
+ * other is fine. Discard the first conversion, settle, then average three. */
+static uint16_t xpt(uint8_t cmd) {
+  xpt_once(cmd);
+  delayMicroseconds(50);
+  uint32_t sum = 0;
+  for (int i = 0; i < 3; i++) sum += xpt_once(cmd);
+  return (uint16_t)(sum / 3);
+}
 static void load_calibration(void) {
   const uint16_t *c = g_settings.touch_cal;
   if (!g_settings.touch_cal_valid || c[1] <= c[0] || c[3] <= c[2]) {
@@ -167,7 +177,7 @@ uint16_t touch_debug_variant(uint8_t cmd, int mode) {
 }
 /* ------------------------------------------------------------------------- */
 /*  Verbatim port of the probe firmware's touch read (own SPIClass instance,  */
-/*  begin() once, 8 warm-up iterations) — used only to compare behaviour.     */
+/*  begin() once, 8 warm-up iterations) ï¿½ used only to compare behaviour.     */
 /* ------------------------------------------------------------------------- */
 bool touch_probe_read(uint16_t *out_x, uint16_t *out_y, uint16_t *out_z) {
   static SPIClass *spi = nullptr;
@@ -263,12 +273,20 @@ void touch_debug_sample(uint16_t *z, uint16_t *x, uint16_t *y) {
 static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
   const uint32_t t0 = millis();
   uint32_t last_report = 0;
+
+  /* A finger may still be resting from the previous box. Wait for it to lift,
+   * otherwise one press answers two boxes and the fit is built from twice the
+   * same raw position. */
+  const uint32_t rel0 = millis();
+  while (touch_is_down() && millis() - rel0 < 3000) delay(10);
+
   while (millis() - t0 < timeout_ms) {
     if (millis() - last_report > 5000) {
       last_report = millis();
       Serial.printf("[cal] menunggu tap: irq=%d\n", (int)touch_is_down());
     }
     if (touch_is_down()) {
+      delay(40); /* let the contact settle before sampling */
       uint32_t sx = 0, sy = 0;
       int n = 0;
       uint16_t a = 0, b = 0;
@@ -280,6 +298,9 @@ static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
         }
         delay(15);
       }
+      /* stay here until the finger lifts, so the next box needs a fresh tap */
+      const uint32_t rel1 = millis();
+      while (touch_is_down() && millis() - rel1 < 2000) delay(10);
       if (n > 0) {
         *rx = (uint16_t)(sx / n);
         *ry = (uint16_t)(sy / n);
