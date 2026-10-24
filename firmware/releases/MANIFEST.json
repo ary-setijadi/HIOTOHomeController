@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "releases": [
+    {
+      "device_type": "hioto-genmon-28-st7789",
+      "board": "ESP32-2432S028 (2.8\")",
+      "panel_chip": "ST7789",
+      "env": "genmon_28_st7789",
+      "version": "2.0.0",
+      "file": "hioto-genmon-28-st7789-2.0.0.bin",
+      "size": 1221344,
+      "sha256": "15414edce41a0f73e61ed85b2eadfe54851de21d9d423fc6c82e9407f5426081",
+      "built_at": "2026-10-24T04:50:12+00:00"
+    },
+    {
+      "device_type": "hioto-genmon-35-st7796",
+      "board": "ESP32-3248S035 (3.5\")",
+      "panel_chip": "ST7796",
+      "env": "genmon_35_st7796",
+      "version": "2.0.0",
+      "file": "hioto-genmon-35-st7796-2.0.0.bin",
+      "size": 1210864,
+      "sha256": "503e60e32aabaf4939cd94edf3b40ebea2bd626cf187bb0dd97e40ab762c8d8b",
+      "built_at": "2026-10-24T04:50:12+00:00"
+    }
+  ]
+}

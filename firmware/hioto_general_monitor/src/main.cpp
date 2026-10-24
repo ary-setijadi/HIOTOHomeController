@@ -248,12 +248,24 @@ static void display_id_report(void) {
   }
 }
 
-/* Deterministic wrong-board detector. RDDID above depends on the panel wiring
- * its SDO line and on TFT_eSPI supporting the read, which ST7796/ST7789 do not
- * (those reads come back 0xFF), so the reliable signal comes from NVS: the
- * first firmware that ever boots on a board stamps its device type here. Any
- * later boot with a different compiled type is almost certainly a wrong flash -
- * exactly the failure that makes a perfectly healthy CYD look dead. */
+/* Wrong-board detector. RDDID above depends on the panel wiring its SDO line
+ * and on TFT_eSPI supporting the read, which ST7796/ST7789 do not (those reads
+ * come back 0xFF), so the reliable signal comes from NVS: the first firmware
+ * that ever boots on a board stamps itself here. A later boot that disagrees is
+ * almost certainly a wrong flash - exactly the failure that makes a perfectly
+ * healthy CYD look dead.
+ *
+ * The comparison is on the BOARD token ("35" / "28"), not the full type string:
+ * a channel rename (adding the chipset, say) must not cry wolf, while a 28<->35
+ * mix-up - the one that actually blanks a screen - always does. */
+static int board_token(const char *type) {
+  const char *g = strstr(type, "genmon");
+  if (!g) return -1;
+  g += 6;
+  while (*g == '-' || *g == '_') g++;
+  return atoi(g); /* 0 when the token is missing or not numeric */
+}
+
 static void board_tag_check(void) {
   Preferences p;
   if (!p.begin("hioto", false)) return;
@@ -261,17 +273,25 @@ static void board_tag_check(void) {
   if (tag.length() == 0) {
     p.putString("btag", FW_DEVICE_TYPE);
     p.end();
-    Serial.printf("[board] tag disimpan: %s\n", FW_DEVICE_TYPE);
+    Serial.printf("[board] tag disimpan: %s (%s)\n", FW_DEVICE_TYPE, FW_PANEL_CHIP);
     return;
   }
-  if (tag != FW_DEVICE_TYPE) {
+  const int want = board_token(FW_DEVICE_TYPE);
+  const int got = board_token(tag.c_str());
+  if (want && got && want != got) {
     Serial.println("[board] !!! FIRMWARE TIDAK COCOK DENGAN BOARD INI !!!");
     Serial.printf("[board] board ini terakhir menjalankan '%s', sekarang '%s'\n", tag.c_str(),
                   FW_DEVICE_TYPE);
     Serial.println("[board] Layar bisa tampak mati padahal board sehat.");
     Serial.println("[board] Flash firmware dengan tipe device yang benar untuk board ini.");
   } else {
-    Serial.printf("[board] tag cocok: %s\n", FW_DEVICE_TYPE);
+    if (tag != FW_DEVICE_TYPE) {
+      /* same board size, new channel name: adopt it silently */
+      p.putString("btag", FW_DEVICE_TYPE);
+      Serial.printf("[board] tag diperbarui: %s -> %s\n", tag.c_str(), FW_DEVICE_TYPE);
+    } else {
+      Serial.printf("[board] tag cocok: %s\n", FW_DEVICE_TYPE);
+    }
   }
   p.end();
 }
@@ -437,7 +457,8 @@ static void serial_handle_line(char *line) {
     identity_register_now();
     Serial.printf("[id] %s\n", identity_state());
   } else if (!strcmp(tok[0], "ver")) {
-    Serial.printf("fw=%s type=%s ota=%s auto=%u server=%s\n", ota_version(), FW_DEVICE_TYPE,
+    Serial.printf("fw=%s type=%s chip=%s ota=%s auto=%u server=%s\n", ota_version(),
+                FW_DEVICE_TYPE, FW_PANEL_CHIP,
                   ota_status_text(), (unsigned)g_settings.ota_auto, OTA_BASE);
   } else if (!strcmp(tok[0], "ota")) {
     Serial.println("[ota] memeriksa server...");

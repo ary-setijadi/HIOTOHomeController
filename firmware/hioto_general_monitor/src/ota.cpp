@@ -249,7 +249,8 @@ void ota_request_check(void) { s_request = true; }
 
 void ota_begin(void) {
   s_last_check = millis();
-  Serial.printf("[ota] fw=%s type=%s server=%s\n", FW_VERSION, FW_DEVICE_TYPE, OTA_BASE);
+  Serial.printf("[ota] fw=%s type=%s chip=%s server=%s\n", FW_VERSION, FW_DEVICE_TYPE,
+                FW_PANEL_CHIP, OTA_BASE);
 }
 
 void ota_poll(void) {

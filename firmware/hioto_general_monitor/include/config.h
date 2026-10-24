@@ -17,11 +17,19 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "1.6.4"
-/* One device type per panel size so each board only ever pulls its own image
- * (set by the PlatformIO env; the fallback is the legacy shared name). */
+#define FW_VERSION "2.0.0"
+/* One device type per board AND panel controller, so a board can only ever pull
+ * an image built for its own glass. Set by the PlatformIO env:
+ *   genmon_35_st7796 -> "hioto-genmon-35-st7796"
+ *   genmon_28_st7789 -> "hioto-genmon-28-st7789"
+ * The fallback is deliberately obvious so a build without the env flag is
+ * spotted immediately on the console instead of silently joining a channel. */
 #ifndef FW_DEVICE_TYPE
-#define FW_DEVICE_TYPE "hioto-genmon"
+#define FW_DEVICE_TYPE "hioto-genmon-UNSET"
+#endif
+/* Human-readable panel controller for banners and release manifests. */
+#ifndef FW_PANEL_CHIP
+#define FW_PANEL_CHIP "UNKNOWN"
 #endif
 #define OTA_CHECK_MS 900000UL /* 15 min between automatic checks */
 
