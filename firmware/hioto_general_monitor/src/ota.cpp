@@ -5,8 +5,9 @@
 
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
-#include <Update.h>
 #include <WiFi.h>
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
 
 static char s_status[72] = "siap";
 static uint32_t s_last_check = 0;
@@ -102,7 +103,8 @@ static bool fetch_manifest(char *ver, size_t ver_n, char *url, size_t url_n, int
 }
 
 /* ------------------------------------------------------------------------- */
-/*  Stream a firmware URL into the OTA partition                             */
+/*  Stream a firmware URL into the inactive OTA slot (ESP-IDF API directly,   */
+/*  so the slot selection and boot switch are explicit and logged).          */
 /* ------------------------------------------------------------------------- */
 bool ota_flash_url(const char *url) {
   if (WiFi.status() != WL_CONNECTED) {
@@ -140,34 +142,74 @@ bool ota_flash_url(const char *url) {
     return false;
   }
 
+  const esp_partition_t *run = esp_ota_get_running_partition();
+  const esp_partition_t *boot = esp_ota_get_boot_partition();
+  const esp_partition_t *next = esp_ota_get_next_update_partition(NULL);
+  Serial.printf("[ota] boot=%s run=%s next=%s slot=%u size=%d\n",
+                boot ? boot->label : "?", run ? run->label : "?",
+                next ? next->label : "?", (unsigned)(next ? next->size : 0), len);
+  if (!next) {
+    set_status("tidak ada slot OTA");
+    http.end();
+    return false;
+  }
+  if ((size_t)len > next->size) {
+    set_statusf("slot %s terlalu kecil", next->label);
+    http.end();
+    return false;
+  }
+
   s_busy = true;
-  if (!Update.begin((size_t)len)) {
-    set_statusf("update begin gagal (%u)", (unsigned)Update.getError());
+  esp_ota_handle_t handle = 0;
+  esp_err_t err = esp_ota_begin(next, (size_t)len, &handle);
+  if (err != ESP_OK) {
+    set_statusf("ota_begin err=%d", (int)err);
     http.end();
     s_busy = false;
     return false;
   }
 
-  Serial.printf("[ota] menerima %d byte\n", len);
-  const size_t written = Update.writeStream(http.getStream());
+  Serial.printf("[ota] menerima %d byte -> %s\n", len, next->label);
+  static uint8_t buf[2048];
+  WiFiClient *stream = http.getStreamPtr();
+  int remaining = len;
+  bool ok = true;
+  while (remaining > 0) {
+    const int want = remaining > (int)sizeof buf ? (int)sizeof buf : remaining;
+    const int got = stream->readBytes(buf, want);
+    if (got <= 0) {
+      ok = false;
+      break;
+    }
+    err = esp_ota_write(handle, buf, (size_t)got);
+    if (err != ESP_OK) {
+      ok = false;
+      break;
+    }
+    remaining -= got;
+  }
   http.end();
 
-  if (written != (size_t)len) {
-    set_statusf("tulis %u/%d byte", (unsigned)written, len);
-    Update.abort();
+  if (!ok || remaining != 0) {
+    set_statusf("tulis gagal sisa=%d", remaining);
+    esp_ota_abort(handle);
     s_busy = false;
     return false;
   }
-  if (!Update.end()) {
-    set_statusf("update end gagal (%u)", (unsigned)Update.getError());
+  err = esp_ota_end(handle);
+  if (err != ESP_OK) {
+    set_statusf("ota_end err=%d", (int)err);
     s_busy = false;
     return false;
   }
-  if (!Update.isFinished()) {
-    set_status("update belum selesai");
+  err = esp_ota_set_boot_partition(next);
+  if (err != ESP_OK) {
+    set_statusf("set_boot err=%d", (int)err);
     s_busy = false;
     return false;
   }
+  const esp_partition_t *nb = esp_ota_get_boot_partition();
+  Serial.printf("[ota] boot partition sekarang %s\n", nb ? nb->label : "?");
   set_status("firmware terpasang, reboot...");
   s_busy = false;
   return true;

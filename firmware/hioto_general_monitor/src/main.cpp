@@ -18,6 +18,8 @@
 #include <Preferences.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
 
 #include "board_pins.h"
 #include "config.h"
@@ -45,6 +47,62 @@ static uint32_t s_btn_pressed_at = 0;
 static bool s_btn_long_done = false;
 static uint32_t s_last_ui = 0;
 static bool s_wifi_started = false;
+
+/* ------------------------------------------------------------------------- */
+/*  Display self test: cycles all four rotations with corner markers so the   */
+/*  correct orientation / geometry / colour order can be identified by eye.  */
+/* ------------------------------------------------------------------------- */
+static void draw_disp_test(int rot) {
+  s_tft.setRotation((uint8_t)rot);
+  const int w = (int)s_tft.width();
+  const int h = (int)s_tft.height();
+  s_tft.fillScreen(TFT_BLACK);
+  s_tft.drawRect(0, 0, w, h, TFT_WHITE);
+  s_tft.fillRect(0, 0, 34, 34, TFT_RED);              /* kiri-atas */
+  s_tft.fillRect(w - 34, 0, 34, 34, TFT_GREEN);       /* kanan-atas */
+  s_tft.fillRect(0, h - 34, 34, 34, TFT_BLUE);        /* kiri-bawah */
+  s_tft.fillRect(w - 34, h - 34, 34, 34, TFT_YELLOW); /* kanan-bawah */
+  s_tft.drawFastHLine(0, h / 2, w, TFT_CYAN);
+  s_tft.drawFastVLine(w / 2, 0, h, TFT_CYAN);
+  s_tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  s_tft.setCursor(6, h / 2 - 34);
+  s_tft.setTextFont(4);
+  s_tft.printf("ROT %d", rot);
+  s_tft.setCursor(6, h / 2 - 8);
+  s_tft.setTextFont(2);
+  s_tft.printf("%dx%d", w, h);
+  s_tft.setCursor(6, h / 2 + 10);
+  s_tft.setTextFont(1);
+  s_tft.printf("merah=kiri-atas hijau=kanan-atas");
+  s_tft.setCursor(6, h / 2 + 20);
+  s_tft.printf("biru=kiri-bawah kuning=kanan-bawah");
+  s_tft.setCursor(6, h - 20);
+  s_tft.printf("sentuh untuk berhenti");
+  Serial.printf("[disp] test rot=%d panel=%dx%d\n", rot, w, h);
+}
+
+void display_self_test(void) {
+  bool stop = false;
+  for (int r = 0; r < 4 && !stop; r++) {
+    draw_disp_test(r);
+    const uint32_t t0 = millis();
+    while (millis() - t0 < 6000) {
+      if (s_tft.getTouchRawZ() > 300) {
+        stop = true;
+        break;
+      }
+      if (Serial.available()) {
+        while (Serial.available()) Serial.read();
+        stop = true;
+        break;
+      }
+      delay(20);
+    }
+  }
+  s_tft.setRotation(g_settings.rot);
+  Serial.printf("[disp] selesai; rot=%u\n", (unsigned)g_settings.rot);
+  ui_open_settings();
+}
 
 /* ------------------------------------------------------------------------- */
 /*  LVGL flush                                                               */
@@ -281,6 +339,8 @@ static void serial_help(void) {
   Serial.println("  uigeom                     print keyboard / overlay geometry");
   Serial.println("  disp [0-3]                 TFT rotation (saved, reboots)");
   Serial.println("  cal                        touch calibration");
+  Serial.println("  disptest                   cycle all 4 rotations with corner markers");
+  Serial.println("  parts                      OTA slot layout + image versions");
   Serial.println("  ver                        firmware version + OTA status");
   Serial.println("  ota                        check the OTA server now (may reboot)");
   Serial.println("  otaurl <url>               flash a firmware URL directly");
@@ -365,6 +425,8 @@ static void serial_handle_line(char *line) {
     ui_catalog_changed();
     Serial.printf("[cfg] room=%s (id=%u)\n", g_settings.room_label,
                   (unsigned)g_settings.room_id);
+  } else if (!strcmp(tok[0], "disptest")) {
+    display_self_test();
   } else if (!strcmp(tok[0], "disp")) {
     if (n >= 2) {
       int r = atoi(tok[1]);
@@ -377,6 +439,27 @@ static void serial_handle_line(char *line) {
     } else {
       Serial.printf("[cfg] rot=%u panel=%dx%d (0/2 = portrait, 1/3 = landscape)\n",
                     (unsigned)g_settings.rot, (int)s_tft.width(), (int)s_tft.height());
+    }
+  } else if (!strcmp(tok[0], "parts")) {
+    const esp_partition_t *run = esp_ota_get_running_partition();
+    const esp_partition_t *boot = esp_ota_get_boot_partition();
+    Serial.printf("[part] run=%s boot=%s fw=%s\n", run ? run->label : "?",
+                  boot ? boot->label : "?", FW_VERSION);
+    for (int i = 0; i < 2; i++) {
+      const esp_partition_t *p = esp_partition_find_first(
+          ESP_PARTITION_TYPE_APP, (esp_partition_subtype_t)(ESP_PARTITION_SUBTYPE_APP_OTA_MIN + i),
+          NULL);
+      if (!p) {
+        Serial.printf("[part] ota%d: tidak ada\n", i);
+        continue;
+      }
+      uint32_t magic = 0;
+      esp_partition_read(p, 0, &magic, sizeof magic);
+      esp_app_desc_t desc;
+      const bool has = esp_ota_get_partition_description(p, &desc) == ESP_OK;
+      Serial.printf("[part] %s @0x%06x size=0x%06x magic=0x%08x ver=%s\n", p->label,
+                    (unsigned)p->address, (unsigned)p->size, (unsigned)magic,
+                    has ? desc.version : "-");
     }
   } else if (!strcmp(tok[0], "uigeom")) {
     ui_log_geometry();
