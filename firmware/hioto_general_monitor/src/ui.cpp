@@ -42,7 +42,9 @@ static lv_obj_t *s_set = NULL;
 
 /* main screen */
 static lv_obj_t *s_title = NULL;
-static lv_obj_t *s_status = NULL;
+static lv_obj_t *s_ic_wifi = NULL; /* glyph inside the wifi pill (tinted live) */
+static lv_obj_t *s_ic_mqtt = NULL; /* glyph inside the mqtt pill */
+static lv_obj_t *s_ic_set = NULL;  /* glyph inside the settings pill */
 static lv_obj_t *s_btn[GEN_SLOTS];
 static lv_obj_t *s_icon_box[GEN_SLOTS];
 static lv_obj_t *s_icon_fill[GEN_SLOTS][4]; /* shapes painted in the lamp colour */
@@ -88,8 +90,10 @@ static lv_obj_t *s_lbl_scope = NULL;
 #define F_SMALL (&lv_font_montserrat_12)
 
 #define TOP_H (UI_BIG ? 34 : 26)
-#define PILL_W (UI_BIG ? 96 : 74)
-#define PILL_H (UI_BIG ? 30 : 22)
+/* wifi / mqtt / settings are round icon buttons instead of text, so the top
+ * bar stays slim and the title keeps the width */
+#define TOP_ICON (UI_BIG ? 30 : 24)
+#define TOP_ICON_FONT (UI_BIG ? &lv_font_montserrat_20 : &lv_font_montserrat_16)
 
 /* compact 320x240 budget: 8 pad + 26 top + 2*6 row gaps + 2*92 rows + 8 pad = 238 */
 #define SLOT_ROW_H (UI_BIG ? 122 : 92)
@@ -416,6 +420,26 @@ static void settings_click_cb(lv_event_t *e) {
   ui_open_settings();
 }
 
+/* Round icon button for the top bar. Returns the glyph so the caller can
+ * recolour it as the connection state changes. */
+static lv_obj_t *mk_top_icon(lv_obj_t *parent, const char *sym) {
+  lv_obj_t *b = lv_btn_create(parent);
+  lv_obj_set_size(b, TOP_ICON, TOP_ICON);
+  lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+  lv_obj_set_style_bg_color(b, C(card), 0);
+  lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(b, 1, 0);
+  lv_obj_set_style_border_color(b, C(border), 0);
+  lv_obj_set_style_pad_all(b, 0, 0);
+  lv_obj_set_style_shadow_width(b, 0, 0);
+  /* resistive panel: widen the touch target beyond the visual circle */
+  lv_obj_set_ext_click_area(b, UI_BIG ? 8 : 6);
+  lv_obj_add_event_cb(b, settings_click_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_t *l = mk_label(b, sym, TOP_ICON_FONT, C(dim));
+  lv_obj_center(l);
+  return l;
+}
+
 static void mk_main(void) {
   s_main = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(s_main, C(bg), 0);
@@ -425,26 +449,17 @@ static void mk_main(void) {
   lv_obj_clear_flag(s_main, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_flex_flow(s_main, LV_FLEX_FLOW_COLUMN);
 
-  /* top bar: title + status + settings pill */
+  /* top bar: title (grows) + wifi + mqtt + settings icons */
   lv_obj_t *top = mk_row(s_main, TOP_H);
-  lv_obj_set_style_pad_column(top, 8, 0);
+  lv_obj_set_style_pad_column(top, UI_BIG ? 8 : 6, 0);
 
   s_title = mk_label(top, "Lantai 1 | Living Room", F_TITLE, C(text));
-  lv_obj_t *sp = lv_obj_create(top);
-  lv_obj_set_size(sp, 6, 1);
-  lv_obj_set_style_bg_opa(sp, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(sp, 0, 0);
+  lv_label_set_long_mode(s_title, LV_LABEL_LONG_DOT);
+  lv_obj_set_flex_grow(s_title, 1); /* take the leftover width, never push the icons */
 
-  s_status = mk_label(top, "", F_SMALL, C(muted));
-
-  lv_obj_t *set = lv_btn_create(top);
-  lv_obj_set_size(set, PILL_W, PILL_H);
-  lv_obj_set_style_radius(set, PILL_H / 2, 0);
-  lv_obj_set_style_bg_color(set, C(card), 0);
-  lv_obj_set_style_border_width(set, 1, 0);
-  lv_obj_set_style_border_color(set, C(border), 0);
-  lv_obj_add_event_cb(set, settings_click_cb, LV_EVENT_CLICKED, NULL);
-  mk_label(set, "Setelan", F_SMALL, C(text));
+  s_ic_wifi = mk_top_icon(top, LV_SYMBOL_WIFI);
+  s_ic_mqtt = mk_top_icon(top, LV_SYMBOL_UPLOAD);
+  s_ic_set = mk_top_icon(top, LV_SYMBOL_SETTINGS);
 
   /* UI_ROWS x UI_COLS buttons (4x2 or 3x2) */
   for (int r = 0; r < UI_ROWS; r++) {
@@ -795,6 +810,23 @@ static int kb_rows(lv_obj_t *kb) {
 void ui_log_geometry(void) {
   Serial.printf("[ui] grid cols=%d rows=%d slots=%d btn=%dx%d row_h=%d\n", UI_COLS,
                 UI_ROWS, UI_SLOTS, (int)BTN_W, (int)BTN_H, (int)SLOT_ROW_H);
+  lv_obj_t *tics[3] = {s_ic_wifi, s_ic_mqtt, s_ic_set};
+  const char *tnm[3] = {"wifi", "mqtt", "gear"};
+  for (int k = 0; k < 3; k++) {
+    if (!tics[k]) continue;
+    lv_obj_t *b = lv_obj_get_parent(tics[k]);
+    if (!b) b = tics[k];
+    lv_area_t a;
+    lv_obj_get_coords(b, &a);
+    Serial.printf("[ui] ic-%s pos=%d,%d size=%dx%d right=%d\n", tnm[k], (int)a.x1,
+                  (int)a.y1, (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1), (int)a.x2);
+  }
+  if (s_title) {
+    lv_area_t a;
+    lv_obj_get_coords(s_title, &a);
+    Serial.printf("[ui] top-title pos=%d,%d size=%dx%d\n", (int)a.x1, (int)a.y1,
+                  (int)(a.x2 - a.x1 + 1), (int)(a.y2 - a.y1 + 1));
+  }
   for (int i = 0; i < UI_SLOTS && i < GEN_SLOTS; i++) {
     if (!s_btn[i]) continue;
     lv_area_t a;
@@ -1200,7 +1232,8 @@ static void rebuild_dropdowns(void) {
 /* Forget every widget handle before the screens are rebuilt. */
 static void reset_widgets(void) {
   s_main = s_set = NULL;
-  s_title = s_status = NULL;
+  s_title = NULL;
+  s_ic_wifi = s_ic_mqtt = s_ic_set = NULL;
   s_ta_ssid = s_ta_pass = NULL;
   s_dd_floor = s_dd_room = NULL;
   s_lbl_wifi = s_kb = s_set_content = NULL;
@@ -1314,13 +1347,12 @@ void ui_refresh_states(void) {
   if (millis() - s_last_refresh < 250) return;
   s_last_refresh = millis();
 
-  char st[96];
-  snprintf(st, sizeof st, "%s  %s", wifi_state_text(),
-           mqtt_connected() ? "MQTT OK" : "MQTT --");
-  if (s_status) {
-    lv_label_set_text(s_status, st);
-    lv_obj_set_style_text_color(s_status, mqtt_connected() ? C(ok) : C(muted), 0);
-  }
+  /* top bar icons carry the connection state as colour: green = up, dim = down */
+  const bool wf = wifi_ok();
+  const bool mq = mqtt_connected();
+  if (s_ic_wifi) lv_obj_set_style_text_color(s_ic_wifi, wf ? C(ok) : C(dim), 0);
+  if (s_ic_mqtt) lv_obj_set_style_text_color(s_ic_mqtt, mq ? C(ok) : C(dim), 0);
+  if (s_ic_set) lv_obj_set_style_text_color(s_ic_set, C(text), 0);
   if (s_lbl_wifi) lv_label_set_text(s_lbl_wifi, wifi_state_text());
 
   for (int i = 0; i < GEN_SLOTS; i++) {
