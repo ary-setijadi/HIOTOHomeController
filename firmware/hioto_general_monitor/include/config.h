@@ -17,7 +17,7 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "1.5.3"
+#define FW_VERSION "1.6.3"
 /* One device type per panel size so each board only ever pulls its own image
  * (set by the PlatformIO env; the fallback is the legacy shared name). */
 #ifndef FW_DEVICE_TYPE

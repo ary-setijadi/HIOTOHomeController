@@ -194,6 +194,88 @@ const char *wifi_state_text(void) {
 void touch_calibrate(void) { touch_calibrate_ui(); }
 
 /* ------------------------------------------------------------------------- */
+/*  Wrong-board guard                                                        */
+/*                                                                           */
+/*  A CYD that is flashed with the other panel's firmware looks completely    */
+/*  dead - the init sequence belongs to a different controller - and there is */
+/*  no runtime hint about it. RDDID (0x04) answers 0x7796 on an ST7796 and    */
+/*  0x7789 on an ST7789, so a mismatch against the compiled driver can be     */
+/*  reported loudly instead. Boards whose MISO is not wired simply return     */
+/*  nonsense, in which case nothing is claimed.                              */
+/* ------------------------------------------------------------------------- */
+#if defined(ST7796_DRIVER)
+#define DISP_EXPECTED_ID 0x7796
+#define DISP_EXPECTED_NAME "ST7796"
+#elif defined(ST7789_DRIVER)
+#define DISP_EXPECTED_ID 0x7789
+#define DISP_EXPECTED_NAME "ST7789"
+#elif defined(ILI9341_DRIVER) || defined(ILI9341_2_DRIVER)
+#define DISP_EXPECTED_ID 0x9341
+#define DISP_EXPECTED_NAME "ILI9341"
+#else
+#define DISP_EXPECTED_ID 0
+#define DISP_EXPECTED_NAME "unknown"
+#endif
+
+static void display_id_report(void) {
+  uint8_t b[5] = {0, 0, 0, 0, 0};
+  for (int i = 0; i < 5; i++) b[i] = s_tft.readcommand8(0x04, (uint8_t)i);
+
+  /* The three ID bytes can land at different indices depending on the driver's
+   * dummy-bit handling, so scan for the pair instead of assuming an offset. */
+  int found = 0;
+  for (int i = 0; i + 1 < 5; i++) {
+    const int id = ((int)b[i] << 8) | b[i + 1];
+    if (id == 0x7796 || id == 0x7789 || id == 0x9341) {
+      found = id;
+      break;
+    }
+  }
+
+  Serial.printf("[disp] id=%02X %02X %02X %02X %02X harap=%s(0x%04X)\n", b[0], b[1], b[2],
+                b[3], b[4], DISP_EXPECTED_NAME, (unsigned)DISP_EXPECTED_ID);
+
+  if (!found) {
+    Serial.println("[disp] id tidak terbaca (MISO?) - tidak bisa dipastikan");
+  } else if (DISP_EXPECTED_ID && found != DISP_EXPECTED_ID) {
+    Serial.println("[disp] !!! SALAH FIRMWARE UNTUK BOARD INI !!!");
+    Serial.printf("[disp] panel menjawab 0x%04X tapi driver terkompilasi %s.\n",
+                  (unsigned)found, DISP_EXPECTED_NAME);
+    Serial.println("[disp] Layar akan tampak mati. Flash firmware tipe device yang benar.");
+  } else {
+    Serial.println("[disp] cocok");
+  }
+}
+
+/* Deterministic wrong-board detector. RDDID above depends on the panel wiring
+ * its SDO line and on TFT_eSPI supporting the read, which ST7796/ST7789 do not
+ * (those reads come back 0xFF), so the reliable signal comes from NVS: the
+ * first firmware that ever boots on a board stamps its device type here. Any
+ * later boot with a different compiled type is almost certainly a wrong flash -
+ * exactly the failure that makes a perfectly healthy CYD look dead. */
+static void board_tag_check(void) {
+  Preferences p;
+  if (!p.begin("hioto", false)) return;
+  const String tag = p.getString("btag", "");
+  if (tag.length() == 0) {
+    p.putString("btag", FW_DEVICE_TYPE);
+    p.end();
+    Serial.printf("[board] tag disimpan: %s\n", FW_DEVICE_TYPE);
+    return;
+  }
+  if (tag != FW_DEVICE_TYPE) {
+    Serial.println("[board] !!! FIRMWARE TIDAK COCOK DENGAN BOARD INI !!!");
+    Serial.printf("[board] board ini terakhir menjalankan '%s', sekarang '%s'\n", tag.c_str(),
+                  FW_DEVICE_TYPE);
+    Serial.println("[board] Layar bisa tampak mati padahal board sehat.");
+    Serial.println("[board] Flash firmware dengan tipe device yang benar untuk board ini.");
+  } else {
+    Serial.printf("[board] tag cocok: %s\n", FW_DEVICE_TYPE);
+  }
+  p.end();
+}
+
+/* ------------------------------------------------------------------------- */
 /*  Serial console                                                           */
 /* ------------------------------------------------------------------------- */
 static char s_cmd_buf[160];
@@ -217,6 +299,8 @@ static void serial_help(void) {
   Serial.println("  uigeom                     print keyboard / overlay geometry");
   Serial.println("  disp [0-3]                 TFT rotation (saved, reboots)");
   Serial.println("  cal                        touch calibration");
+  Serial.println("  slot <n> <LAMP.xx>         assign button n (1-8) to a device");
+  Serial.println("  dispid                     read the display controller id (wrong-board check)");
   Serial.println("  disptest                   cycle all 4 rotations with corner markers");
   Serial.println("  parts                      OTA slot layout + image versions");
   Serial.println("  ver                        firmware version + OTA status");
@@ -455,6 +539,30 @@ static void serial_handle_line(char *line) {
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
     Serial.printf("[ldr] adc=%d pct=%d%%\n", adc, pct);
+  } else if (!strcmp(tok[0], "dispid")) {
+    display_id_report();
+  } else if (!strcmp(tok[0], "slot")) {
+    const int idx = atoi(tok[1]) - 1;
+    if (idx < 0 || idx >= GEN_SLOTS || !tok[2]) {
+      Serial.println("[cfg] pakai: slot <1..8> <LAMP.xx>   (atau 'lamps' untuk daftar)");
+      for (int i = 0; i < GEN_SLOTS; i++) {
+        const int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
+        Serial.printf("[cfg] slot%d = %-16s %s\n", i + 1, g_settings.slots[i].label,
+                      ri >= 0 ? "ok" : "TIDAK DITEMUKAN");
+      }
+    } else {
+      snprintf(g_settings.slots[idx].label, sizeof g_settings.slots[idx].label, "%s", tok[2]);
+      g_settings.slots[idx].guid[0] = 0; /* resolve by label */
+      const int ri = registry_resolve("", g_settings.slots[idx].label);
+      if (ri >= 0)
+        snprintf(g_settings.slots[idx].guid, sizeof g_settings.slots[idx].guid, "%s",
+                 registry_guid_at(ri));
+      settings_save(&g_settings);
+      Serial.printf("[cfg] slot%d = %s -> %s\n", idx + 1, g_settings.slots[idx].label,
+                    ri >= 0 ? registry_fullname(ri) : "TIDAK DITEMUKAN");
+      ui_refresh_states(); /* repaint names/state; a full rebuild from the console
+                            * is not needed and collided with ui_poll() before */
+    }
   } else if (!strcmp(tok[0], "tp")) {
     Serial.println("[tp] sampling 20s - TEKAN & TAHAN layar sekarang");
     for (int i = 0; i < 200; i++) {
@@ -563,6 +671,8 @@ void setup() {
   const lv_coord_t scr_h = (lv_coord_t)s_tft.height();
   Serial.printf("[boot] rot=%u panel=%dx%d\n", (unsigned)g_settings.rot, (int)scr_w,
                 (int)scr_h);
+  display_id_report();
+  board_tag_check();
 
   backlight_begin(g_settings.brightness);
   Serial.printf("[cfg] dev=%s floor=%s room=%s mqtt=%s:%u\n", g_settings.device_id,
