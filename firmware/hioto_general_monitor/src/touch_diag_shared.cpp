@@ -14,6 +14,11 @@
 
 #if !TOUCH_SEPARATE_BUS
 
+/* The deep hardware sweep only makes sense for the bit-banged 2.8" bus. */
+void touch_diag_full(void) {
+  Serial.println("[tpd] diagnostik lengkap hanya tersedia pada board 2.8\"");
+}
+
 /* No bit-bang variants exist here: report the normal raw pressure so the
  * console command stays harmless instead of silently doing nothing. */
 uint16_t touch_debug_variant(uint8_t cmd, int mode) {
