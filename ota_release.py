@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -41,16 +42,45 @@ TARGETS = {
     "28": ("genmon_28_st7789", "ESP32-2432S028 (2.8\")", "ST7789", "hioto-genmon-28-st7789"),
 }
 
+# board -> version series. The two panels advance independently, so an env
+# carrying the other series is a build-flag mistake that must not be packaged.
+SERIES = {"35": "3.5.", "28": "2.8."}
+
 PIO = Path(os.environ.get("USERPROFILE", Path.home())) / ".platformio" / "penv" / "Scripts" / "pio.exe"
 if not PIO.exists():
     PIO = Path("pio")  # fall back to PATH
 
 
-def fw_version() -> str:
-    for line in (PROJECT / "include" / "config.h").read_text(encoding="utf-8").splitlines():
-        if line.strip().startswith("#define FW_VERSION"):
-            return line.split('"')[1]
-    sys.exit("FW_VERSION not found in include/config.h")
+def fw_version(board: str) -> str:
+    """Read FW_VERSION from the PlatformIO env's build flags.
+
+    Since the series split the version lives in platformio.ini per env
+    (-DFW_VERSION=\\"3.5.2\\"); include/config.h only carries the
+    "0.0.0-UNSET" fallback for a build that reached without that flag. Reading
+    config.h here would package the fallback and publish it as a release - and
+    every board on the channel would then immediately try to install it.
+    """
+    env = TARGETS[board][0]
+    ini = (PROJECT / "platformio.ini").read_text(encoding="utf-8")
+    current = None
+    for line in ini.splitlines():
+        s = line.strip()
+        if s.startswith("[env:") and s.endswith("]"):
+            current = s[len("[env:") : -1]
+            continue
+        if current != env or "-DFW_VERSION=" not in s:
+            continue
+        m = re.search(r'-DFW_VERSION=\\?"([0-9][^"\\]*)\\?"', s)
+        if not m:
+            continue
+        version = m.group(1)
+        if not version.startswith(SERIES[board]):
+            sys.exit(
+                f"FW_VERSION {version!r} in env {env} is not in the {SERIES[board]}x "
+                f"series for board {board} - refusing to package it"
+            )
+        return version
+    sys.exit(f"FW_VERSION not found for env {env} in platformio.ini")
 
 
 def sha256(path: Path) -> str:
@@ -94,9 +124,12 @@ def package(board: str, version: str) -> dict:
     return entry
 
 
-def write_manifest(entries: list[dict], version: str) -> None:
+def write_manifest(entries: list[dict]) -> None:
     manifest_path = RELEASES / "MANIFEST.json"
-    manifest = {"version": version, "releases": []}
+    manifest = {
+        "version": " / ".join(sorted({e["version"] for e in entries})),
+        "releases": [],
+    }
     if manifest_path.is_file():
         try:
             old = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -165,13 +198,12 @@ def main() -> None:
     a = ap.parse_args()
 
     boards = ["35", "28"] if a.board == "both" else [a.board]
-    version = fw_version()
 
     if not a.no_build:
         build([TARGETS[b][0] for b in boards])
 
-    entries = [package(b, version) for b in boards]
-    write_manifest(entries, version)
+    entries = [package(b, fw_version(b)) for b in boards]
+    write_manifest(entries)
 
     if a.publish:
         for e in entries:

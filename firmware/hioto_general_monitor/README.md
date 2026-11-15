@@ -1,12 +1,31 @@
 # HIOTO General Monitor — lamp switch panel (v1.0)
 
-Firmware for the **Sunton ESP32-3248S035** 3.5" CYD (ESP32-D0WD-V3, ST7796
-320×480 native panel driven as 480×320 landscape, XPT2046 touch, CH340 @ COM3).
+Firmware for the HIOTO CYD switch panels: **one code base, two builds**, one per
+panel. Each build carries its own device type, so a board can only ever pull an
+OTA image built for its own glass.
+
+| Env | Board | Panel | Buttons |
+|---|---|---|---|
+| `genmon_35_st7796` | Sunton ESP32-3248S035 | ST7796, 320×480 → 480×320 | **8** (4 × 2) |
+| `genmon_28_st7789` | Sunton ESP32-2432S028 | ST7789, 240×320 → 320×240 | **6** (3 × 2) |
+
+Both are ESP32-D0WD-V3 with a CH340 USB-UART. The 3.5" panel wires the XPT2046
+onto the display SPI bus (`TOUCH_CS=33`); the 2.8" panel gives it its own bus
+(`TOUCH_SEPARATE_BUS`: clk 25, mosi 32, miso 39, cs 33, irq 36).
+
+The button count is a single build-time constant, `GEN_SLOTS`, defined per
+PlatformIO env and consumed by `config.h`. Everything else derives from it —
+grid columns (`GEN_COLS = GEN_SLOTS / GEN_ROWS`), the Settings slot rows, and
+every `slots[]` array — so the main screen and the configuration screen can
+never disagree about how many buttons a board has. `DEFAULT_SLOT_LABELS` is
+selected by `#if GEN_SLOTS`, and a build whose panel width does not match
+`GEN_COLS` logs a `[ui] WARNING` at boot instead of silently re-flowing.
 
 A **simple lamp switch panel**:
 
 - Title bar **`[Floor] | [Room]`** (editable in Settings).
-- **2 × 4 big buttons**, each with a lamp icon, the lamp's short id
+- **A grid of big buttons** (`GEN_SLOTS`, 4 × 2 on the 3.5" build, 3 × 2 on the
+  2.8"), each with a lamp icon, the lamp's short id
   (e.g. `LAMP.14`) and its live ON/OFF state. Tap = toggle the lamp.
 - **`Setelan` pill** opens Settings:
   - **WiFi**: SSID + password (on-screen keyboard), applied on save.
@@ -19,8 +38,9 @@ A **simple lamp switch panel**:
     Taman).
   - **Simpan** persists everything to NVS and applies it.
 
-Default assignment (8 lamps): `LAMP.14, LAMP.15, LAMP.09, LAMP.10, LAMP.11,
-LAMP.12, LAMP.13, LAMP.17`.
+Default assignment (first boot, before anything is stored in NVS):
+`LAMP.14, LAMP.15, LAMP.09, LAMP.10, LAMP.11, LAMP.12` on the 6-button build,
+plus `LAMP.13, LAMP.17` on the 8-button build.
 
 The filter derives floor and room from each registry name (`LAMP.09-1ST.FLOOR-
 LIVING ROOM-250-01` → floor `1ST.FLOOR`, room `LIVING ROOM`). The panel's Floor
@@ -132,13 +152,55 @@ Automatic checks run every 15 minutes (`OTA_CHECK_MS`) and can be disabled with
 Publishing a new build from the workstation:
 
 ```powershell
-python -m platformio run -e hioto_genmon -d firmware/hioto_general_monitor
-python ota_publish.py firmware/hioto_general_monitor/.pio/build/hioto_genmon/firmware.bin `
-    1.2.0 --device hioto-genmon --note "what changed"
-python ota_trigger.py hioto-genmon-ec0940     # or wait for the 15 min check
+python ota_release.py --board 35 --publish
+python ota_release.py --board 35 --no-build --publish   # republish what is already built
 ```
 
 `FW_VERSION`, `FW_DEVICE_TYPE` and `OTA_BASE` live in `include/config.h`.
+
+## Watchdog & self-healing (3.5.2)
+
+A panel on a wall is out of reach, so two layers make it recover without a power
+cycle. Both are logged, because the only way to notice a recovery is the serial
+line - or the fact that the panel is still polling.
+
+**Task watchdog** (`src/watchdog.cpp`): the ESP32 TWDT watches the Arduino loop
+task with `WDT_TIMEOUT_S` = **30 s** and panics on a miss, which reboots the
+board. It is fed from `loop()` every iteration and from every long-running loop
+that does not return to it: the touch-calibration tap waits, the `disptest`
+self test, `tptest`, and the OTA download write-loop. `[boot] reset=<reason>`
+now reports *why* the last boot happened - `power-on`, `software (ESP.restart)`,
+`panic`, `task watchdog`, `brownout` - so a self-reboot is distinguishable from a
+mains power cycle.
+
+**Wi-Fi / MQTT supervision** (`main.cpp`, `net_supervisor_poll()`):
+
+- Disconnect **reason codes** are recorded from `ARDUINO_EVENT_WIFI_STA_DISCONNECTED`
+  and printed (`[net] wifi LOST reason=15 (4way handshake timeout (wrong PSK / WPA3-only AP?))`).
+  `WiFi.status()` alone only ever says "disconnected"; the reason tells a wrong
+  password apart from an AP that vanished.
+- While down: `WiFi.reconnect()` every 30 s, a full re-init (radio off/on) after
+  3 min, and a **self-reboot after 15 min** - but only once the board has been
+  online since power-on, so an absent AP or an unprovisioned board cannot turn
+  into a reboot loop.
+- After a recovery: MQTT is force-reconnected (the old socket is stale) and the
+  ArduinoOTA listener is rebound to the new lease.
+- MQTT: if it stays down while Wi-Fi is healthy, the laptop-style "turn it off
+  and on" is applied to the radio (once per 2 min) and, as a last resort, the
+  board reboots (30 min). Broker **credential rejections** (CONNACK 4/5) are
+  reported and deliberately *not* retried with a reboot - that is a
+  configuration error, not a hang.
+
+`status` prints the live picture:
+
+```
+net: wifi=WiFi OK reason=0 mqtt=MQTT OK rc=0
+wdt: aktif timeout=30s last-reset=power-on
+```
+
+Knobs live in `include/config.h`: `WDT_TIMEOUT_S`, `WIFI_RETRY_MS`,
+`WIFI_REINIT_MS`, `WIFI_REBOOT_MS`, `MQTT_STALL_CYCLE_MS`,
+`MQTT_STALL_REBOOT_MS`.
 
 ## Settings persistence (NVS namespace `hioto`)
 
@@ -173,19 +235,19 @@ keep BOOT ~1 s, release. The helper then flashes with `--before no_reset`.
 
 - BOOT short press opens Settings; holding BOOT ≥ 4 s factory-resets the NVS
   settings.
-- Touch calibration: Settings has no calibrate button; use the serial `cal`
-  command (4 big numbered squares + centre validation, saved to NVS).
+- Touch calibration: *Kalibrasi sentuh* in Settings, or the serial `cal` command
+  (4 corner squares + centre validation, saved to NVS).
 - Panel geometry: the ST7796 is 320×480 native; `TFT_WIDTH=320`,
   `TFT_HEIGHT=480` with `setRotation(1)` gives the 480×320 landscape UI.
 
-## 2.8" CYD (ESP32-2432S028) � measured configuration
+## 2.8" CYD (ESP32-2432S028) — measured configuration
 
 Verified against the unit with `firmware/cyd_probe` (see
 `CYD-2432S028-CONTROL-REFERENCE.md`, Appendix B):
 
 | Item | Value |
 |---|---|
-| Panel driver | **ST7789** (`-DST7789_DRIVER=1`) � ILI9341 renders black/snow |
+| Panel driver | **ST7789** (`-DST7789_DRIVER=1`) — ILI9341 renders black/snow |
 | Colour order | **`TFT_RGB`** (BGR swaps red/blue) |
 | Native size | 240x320 portrait ? `setRotation(1)` = 320x240 landscape |
 | SPI host | HSPI (`-DUSE_HSPI_PORT`), 40 MHz |
@@ -198,17 +260,37 @@ Because the touch chip is not on the display bus, `TOUCH_CS` is unusable there;
 (`cal` on the console or *Kalibrasi sentuh* in Settings) that stores raw
 min/max plus swap/invert flags in NVS.
 
-Current status on the 2.8" unit: display and UI verified good; the touch read
-returns X=0 / Y~4070 / Z=0 with IRQ stuck LOW for every implementation tried
-(hardware VSPI, bit-banged on both clock edges, and a verbatim port of the probe
-firmware), so the remaining fault is physical (FPC seating / touch controller),
-not a build flag. A full power cycle and an FFC reseat are the next checks.
+Verification status across the units brought up so far: display and UI are good
+on every unit, and **touch is confirmed working**. The earlier "X=0 / Y~4070 /
+IRQ stuck LOW" reading was a truncated SPI reply — the driver clocked one byte
+after the command instead of two — fixed in `src/touch.cpp` by clocking
+`cmd + hi + lo` and taking `(hi<<8|lo) >> 3`. Both calibrated units report
+`swap=1` (the XPT2046 axes are rotated relative to the screen) and pass the
+centre check within 3–4 px of a 16 px tolerance.
 
 ## Versions
+
+**Two independent series, one per panel.** The 2.8" and 3.5" boards are different
+hardware (controller, touch topology, button count) served by separate OTA
+channels, so they carry separate version series and separate release cadence.
+`FW_VERSION` is supplied per PlatformIO env, never shared; bumping one series
+must never bump the other. Each build also asserts its own series at boot
+(`FW_SERIES`, derived from `GEN_SLOTS`) and prints a loud warning if a 2.8" image
+ever carries a 3.5.x version or vice versa.
+
+| Series | Device type / env | Panel | Buttons |
+|---|---|---|---|
+| **3.5.x** | `hioto-genmon-35-st7796` / `genmon_35_st7796` | ST7796 480×320 | 8 (4 × 2) |
+| **2.8.x** | `hioto-genmon-28-st7789` / `genmon_28_st7789` | ST7789 320×240 | 6 (3 × 2) |
+
+Shared lineage before the split:
 
 | Version | Notes |
 |---|---|
 | 1.3.0 | first 2.8" build: ST7789, separate touch bus, per-panel `FW_DEVICE_TYPE` |
-| 1.3.1-1.3.2 | calibration logging + `tp` diagnostic |
-| 1.3.4-1.3.5 | XPT2046 read corrected to 3 transfers (cmd + hi + lo) |
-| 1.3.6-1.3.8 | bit-banged touch, edge-variant diagnostics, verbatim probe port |
+| 1.3.1-1.3.5 | calibration logging, `tp` diagnostic, XPT2046 read corrected to 3 transfers |
+| 1.3.6-1.3.8 | bit-banged touch experiments |
+| 2.0.6 | last shared-version build, published for both device types |
+| **3.5.1 / 2.8.1** | series split: `FW_VERSION` per env, `GEN_SLOTS` as the single source of truth, 6-button 2.8" layout |
+| 2.8.2 | 2.8" only: touch presence taken from the pressure axis instead of PENIRQ polarity, so a board whose PENIRQ idles LOW (one delivered unit does) no longer inverts every tap. Confined to `#if TOUCH_SEPARATE_BUS`; the 3.5" branch is unchanged |
+| **3.5.2** | 3.5" only: overall task watchdog (30 s, panic → reboot) plus Wi-Fi/MQTT supervision — disconnect reason logging, reconnect/escalating re-init, self-reboot after 15 min Wi-Fi (or 30 min MQTT) loss, reset-reason logging. Fixes the "needs a power cycle" panel: see `docs/ota-channels.md` for the observed 28.6 h outage in the OTA log |

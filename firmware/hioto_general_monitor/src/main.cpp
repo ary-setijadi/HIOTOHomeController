@@ -1,5 +1,5 @@
 /**
- * HIOTO General Monitor — lamp switch panel (v1.0)
+ * HIOTO General Monitor â€” lamp switch panel (v1.0)
  * ---------------------------------------------------------------------------
  *  Board: Sunton ESP32-3248S035 (3.5" CYD)
  *    - ESP32-D0WD-V3, 4 MB flash, no PSRAM
@@ -8,7 +8,7 @@
  *    - CH340 @ COM3
  *
  *  A simple lamp switch panel:
- *    - title [Floor] · [Room]
+ *    - title [Floor] Â· [Room]
  *    - 2 x 4 big buttons (lamp icon + short id); tap = toggle lamp
  *    - "Setelan" pill: WiFi, Floor/Room, per-button lamp + icon assignment
  */
@@ -33,6 +33,7 @@
 #include "backlight.h"
 #include "ota.h"
 #include "ui.h"
+#include "watchdog.h"
 
 /* Full touch hardware diagnostic ("tpdiag"); detailed on the 2.8" board,
  * a short notice elsewhere. */
@@ -92,6 +93,7 @@ void display_self_test(void) {
     draw_disp_test(r);
     const uint32_t t0 = millis();
     while (millis() - t0 < 6000) {
+      wdt_feed();
       if (touch_is_down()) {
         stop = true;
         break;
@@ -224,9 +226,172 @@ void wifi_apply(const char *ssid, const char *pass) {
 bool wifi_ok(void) { return WiFi.status() == WL_CONNECTED; }
 
 /* ------------------------------------------------------------------------- */
-/*  OTA (flash over Wi-Fi) — avoids the manual BOOT + replug dance           */
+/*  Wi-Fi / MQTT supervision                                                 */
+/*                                                                           */
+/*  The panel is usually mounted out of reach, so a dropped association or a  */
+/*  silent broker must not require a physical power cycle. Two layers: the    */
+/*  task watchdog reboots a wedged loop, and this supervisor re-associates     */
+/*  the radio and, as the last resort, reboots the board itself.              */
+/*                                                                           */
+/*  The event handler records esp_wifi disconnect REASON codes (AUTH_FAIL,     */
+/*  4WAY_HANDSHAKE_TIMEOUT, NO_AP_FOUND, BEACON_TIMEOUT, ...) because the     */
+/*  plain WiFi.status() only ever says "disconnected" and the reason is what   */
+/*  tells a wrong password from a dead AP.                                    */
+/* ------------------------------------------------------------------------- */
+static volatile int s_wifi_reason = 0; /* last STA_DISCONNECT reason code */
+
+static const char *wifi_reason_text(int r) {
+  switch (r) {
+    case 0: return "-";
+    case 1: return "unspecified";
+    case 2: return "auth expire";
+    case 6: return "not authed";
+    case 8: return "assoc leave";
+    case 15: return "4way handshake timeout (wrong PSK / WPA3-only AP?)";
+    case 16: return "group key timeout";
+    case 200: return "beacon timeout (AP gone)";
+    case 201: return "no AP found (SSID out of range)";
+    case 202: return "auth fail (wrong PSK)";
+    case 203: return "assoc fail";
+    case 204: return "handshake timeout";
+    case 205: return "connection fail";
+    default: return "esp_wifi reason";
+  }
+}
+
+static void wifi_event_cb(WiFiEvent_t event, WiFiEventInfo_t info) {
+  switch (event) {
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      s_wifi_reason = (int)info.wifi_sta_disconnected.reason;
+      break;
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      s_wifi_reason = 0;
+      break;
+    default:
+      break;
+  }
+}
+
+/* Supervisor state: a down/up edge, when it happened, how many full re-inits. */
+static bool s_wifi_up_prev = false;
+static bool s_wifi_ever_up = false; /* only a board that has been online reboots */
+static uint32_t s_wifi_up_since = 0;
+static uint32_t s_wifi_down_since = 0;
+static uint32_t s_wifi_last_attempt = 0;
+static uint32_t s_wifi_reinits = 0;
+static uint32_t s_mqtt_down_since = 0;
+static uint32_t s_mqtt_cycle_at = 0;
+
+static void wifi_cycle(void) {
+  /* Full off/on with the saved credentials - the software equivalent of the
+   * power cycle the panel used to need. */
+  if (!g_settings.wifi_ssid[0]) return;
+  Serial.println("[net] wifi cycle: re-applying credentials");
+  wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
+}
+
+static void ard_ota_rebind(void); /* defined with the OTA helpers below */
+
+static void wifi_supervisor_poll(void) {
+  const uint32_t now = millis();
+  const bool up = wifi_ok();
+
+  if (up) {
+    if (!s_wifi_up_prev) { /* first connect after boot, or a recovery */
+      if (s_wifi_down_since) {
+        Serial.printf("[net] wifi RECOVERED after %lus (%u re-inits, reason now %d)\n",
+                      (unsigned)((now - s_wifi_down_since) / 1000), (unsigned)s_wifi_reinits,
+                      s_wifi_reason);
+      }
+      s_wifi_down_since = 0;
+      s_wifi_reinits = 0;
+      s_wifi_up_since = now;
+      s_wifi_ever_up = true;
+      mqtt_force_reconnect(); /* stale socket from the old association */
+      ard_ota_rebind();       /* rebind the OTA listener to the new IP */
+    }
+    s_wifi_up_prev = true;
+    return;
+  }
+
+  if (s_wifi_up_prev) { /* loss edge: report why while it is fresh */
+    Serial.printf("[net] wifi LOST reason=%d (%s) status=%d\n", s_wifi_reason,
+                  wifi_reason_text(s_wifi_reason), (int)WiFi.status());
+    s_wifi_down_since = now;
+  }
+  s_wifi_up_prev = false;
+  if (!s_wifi_down_since) s_wifi_down_since = now;
+
+  const uint32_t down = now - s_wifi_down_since;
+
+  if (down > WIFI_RETRY_MS && now - s_wifi_last_attempt > WIFI_RETRY_MS) {
+    s_wifi_last_attempt = now;
+    if (down < WIFI_REINIT_MS) {
+      Serial.println("[net] wifi retry: reconnect()");
+      WiFi.reconnect();
+    } else {
+      Serial.printf("[net] wifi retry: full re-init (down %lus)\n",
+                    (unsigned)(down / 1000));
+      wifi_cycle();
+      s_wifi_reinits++;
+    }
+  }
+
+  /* Last resort. Only after the board has been online once, so an unprovisioned
+   * board or an absent AP cannot turn into an endless reboot loop. */
+  if (s_wifi_ever_up && down > WIFI_REBOOT_MS) {
+    Serial.printf("[net] wifi down %lus - REBOOTING to self-recover\n",
+                  (unsigned)(down / 1000));
+    delay(200);
+    ESP.restart();
+  }
+}
+
+static void mqtt_supervisor_poll(void) {
+  const uint32_t now = millis();
+  if (!wifi_ok()) return; /* association is the root cause; handled above */
+  if (mqtt_connected()) {
+    s_mqtt_down_since = 0;
+    return;
+  }
+  if (!s_mqtt_down_since) s_mqtt_down_since = now;
+  const uint32_t down = now - s_mqtt_down_since;
+  const int rc = mqtt_last_rc();
+
+  /* rc 4/5 = the broker rejected the credentials, rc 1..3 = protocol / client
+   * id problems: configuration errors that cycling radio or rebooting cannot
+   * fix, so they are reported in `status` and left alone instead of churning
+   * the fleet. Only socket-level failures (rc < 0) get the self-heal actions. */
+  const bool socket_level = (rc < 0);
+  if (!socket_level) return;
+
+  if (down > MQTT_STALL_CYCLE_MS && now - s_mqtt_cycle_at > MQTT_STALL_CYCLE_MS) {
+    s_mqtt_cycle_at = now;
+    Serial.printf("[net] mqtt silent %lus (rc=%d) -> cycling wifi\n",
+                  (unsigned)(down / 1000), rc);
+    wifi_cycle();
+  }
+  if (down > MQTT_STALL_REBOOT_MS) {
+    Serial.printf("[net] mqtt down %lus - REBOOTING to self-recover\n",
+                  (unsigned)(down / 1000));
+    delay(200);
+    ESP.restart();
+  }
+}
+
+static void net_supervisor_poll(void) {
+  wifi_supervisor_poll();
+  mqtt_supervisor_poll();
+}
+
+/* ------------------------------------------------------------------------- */
+/*  OTA (flash over Wi-Fi) â€” avoids the manual BOOT + replug dance           */
 /* ------------------------------------------------------------------------- */
 static bool s_ota_started = false;
+
+/* The Wi-Fi supervisor calls this after a reconnect: the OTA listener is bound
+ * to the interface address, so it has to be started again on the new lease. */
+static void ard_ota_rebind(void) { s_ota_started = false; }
 
 static void ard_ota_begin(void) {
   ArduinoOTA.setHostname(g_settings.device_id);
@@ -337,6 +502,15 @@ static int board_token(const char *type) {
 }
 
 static void board_tag_check(void) {
+  /* Version-series guard: each panel tracks its own series (2.8.x / 3.5.x).
+   * A 2.8" image carrying a 3.5.x version (or vice versa) means the env was
+   * edited in the wrong place, so say so loudly instead of publishing it. */
+  if (strncmp(FW_VERSION, FW_SERIES, strlen(FW_SERIES)) != 0) {
+    Serial.printf("[board] !!! VERSI %s BUKAN SERI %s (GEN_SLOTS=%d) !!!\n", FW_VERSION,
+                  FW_SERIES, GEN_SLOTS);
+    Serial.println("[board] Cek -DFW_VERSION di env PlatformIO untuk panel ini.");
+  }
+
   Preferences p;
   if (!p.begin("hioto", false)) return;
   const String tag = p.getString("btag", "");
@@ -374,7 +548,7 @@ static size_t s_cmd_len = 0;
 
 static void serial_help(void) {
   Serial.println("commands:");
-  Serial.println("  status                     print settings + state");
+  Serial.println("  status                     print settings + state (wdt/net too)");
   Serial.println("  wifi <ssid> <pass>         set Wi-Fi credentials");
   Serial.println("  mqtt <host> <port> <user> <pass>");
   Serial.println("  floor <label...>           title left part");
@@ -385,12 +559,12 @@ static void serial_help(void) {
   Serial.println("  scope [0-2]                picker filter: 0 ruang, 1 lantai, 2 semua");
   Serial.println("  cat                        list floors + rooms from the controller");
   Serial.println("  devid <name>               MQTT device id (default hioto-genmon-xxxxxx)");
-  Serial.println("  alias <n> <nama...>        friendly name for button n (1-8)");
+  Serial.printf("  alias <n> <nama...>        friendly name for button n (1-%d)\n", GEN_SLOTS);
   Serial.println("  alias <n> -                reset button n to the automatic name");
   Serial.println("  uigeom                     print keyboard / overlay geometry");
   Serial.println("  disp [0-3]                 TFT rotation (saved, reboots)");
   Serial.println("  cal                        touch calibration");
-  Serial.println("  slot <n> <LAMP.xx>         assign button n (1-8) to a device");
+  Serial.printf("  slot <n> <LAMP.xx>         assign button n (1-%d) to a device\n", GEN_SLOTS);
   Serial.println("  dispid                     read the display controller id (wrong-board check)");
   Serial.println("  perf                       loop / touch / flush timings + heap");
   Serial.println("  icons                      top-bar icon colours (wifi / mqtt / gear)");
@@ -418,6 +592,10 @@ static void serial_status(void) {
                 g_settings.mqtt_host, (unsigned)g_settings.mqtt_port, registry_count());
   Serial.printf("ip=%s ota=%s:3232\n", WiFi.localIP().toString().c_str(),
                 s_ota_started ? "ready" : "off");
+  Serial.printf("net: wifi=%s reason=%d mqtt=%s rc=%d\n", wifi_state_text(), s_wifi_reason,
+                mqtt_state_text(), mqtt_last_rc());
+  Serial.printf("wdt: %s timeout=%us last-reset=%s\n", wdt_active() ? "aktif" : "mati",
+                (unsigned)wdt_timeout_s(), wdt_reset_reason());
   Serial.printf("bright=%u%% theme=%u (%s) scope=%u\n", (unsigned)g_settings.brightness,
                 (unsigned)g_settings.theme, theme_get(g_settings.theme)->name,
                 (unsigned)g_settings.scope);
@@ -654,7 +832,8 @@ static void serial_handle_line(char *line) {
   } else if (!strcmp(tok[0], "slot")) {
     const int idx = atoi(tok[1]) - 1;
     if (idx < 0 || idx >= GEN_SLOTS || !tok[2]) {
-      Serial.println("[cfg] pakai: slot <1..8> <LAMP.xx>   (atau 'lamps' untuk daftar)");
+      Serial.printf("[cfg] pakai: slot <1..%d> <LAMP.xx>   (atau 'lamps' untuk daftar)\n",
+                    GEN_SLOTS);
       for (int i = 0; i < GEN_SLOTS; i++) {
         const int ri = registry_resolve(g_settings.slots[i].guid, g_settings.slots[i].label);
         Serial.printf("[cfg] slot%d = %-16s %s\n", i + 1, g_settings.slots[i].label,
@@ -681,7 +860,7 @@ static void serial_handle_line(char *line) {
       const uint16_t y0 = touch_debug_variant(0x90, 0);
       const uint16_t x1 = touch_debug_variant(0xD0, 1);
       const uint16_t y1 = touch_debug_variant(0x90, 1);
-      Serial.printf("[tp] %3d irq=%d z=%4u | rise x=%4u y=%4u | fall x=%4u y=%4u\n", i,
+      Serial.printf("[tp] %3d down=%d z=%4u | rise x=%4u y=%4u | fall x=%4u y=%4u\n", i,
                     (int)touch_is_down(), (unsigned)z0, (unsigned)x0, (unsigned)y0,
                     (unsigned)x1, (unsigned)y1);
       delay(100);
@@ -691,7 +870,7 @@ static void serial_handle_line(char *line) {
     Serial.println("[tp] port probe: 8 pembacaan (tekan layar)");
     uint16_t x = 0, y = 0, z = 0;
     touch_probe_read(&x, &y, &z);
-    Serial.printf("[tp] probe: irq=%d x=%u y=%u z=%u\n", (int)touch_is_down(),
+    Serial.printf("[tp] probe: down=%d x=%u y=%u z=%u\n", (int)touch_is_down(),
                   (unsigned)x, (unsigned)y, (unsigned)z);
   } else if (!strcmp(tok[0], "tptest")) {
     /* Verification after calibration: reports the SCREEN coordinate that the
@@ -701,6 +880,7 @@ static void serial_handle_line(char *line) {
     const uint32_t t0 = millis();
     bool was_down = false;
     while (millis() - t0 < 20000) {
+      wdt_feed();
       int x = 0, y = 0;
       const bool down = touch_point(&x, &y);
       if (down && !was_down) Serial.printf("[tp] TEKAN -> layar x=%d y=%d\n", x, y);
@@ -768,6 +948,10 @@ void setup() {
   Serial.printf("[boot] chip=%s flash=%uKB psram=%uKB\n", ESP.getChipModel(),
                 (unsigned)(ESP.getFlashChipSize() / 1024),
                 (unsigned)(ESP.getPsramSize() / 1024));
+  /* A reboot can be a power cycle, a deliberate restart, a panic or the
+   * watchdog; knowing which one is essential when the panel has no console. */
+  Serial.printf("[boot] reset=%s\n", wdt_reset_reason());
+  wdt_begin();
 
   lv_init();
   s_tft.init();
@@ -796,7 +980,10 @@ void setup() {
   s_buf_b = (lv_color_t *)heap_caps_malloc(px * sizeof(lv_color_t), MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   if (!s_buf_a || !s_buf_b) {
     Serial.println("[boot] FATAL: no RAM for LVGL buffers");
-    while (true) delay(1000);
+    while (true) {
+      wdt_feed(); /* stay halted instead of watchdog-rebooting in a loop */
+      delay(1000);
+    }
   }
 
   lv_disp_draw_buf_init(&s_draw_buf, s_buf_a, s_buf_b, px);
@@ -820,6 +1007,8 @@ void setup() {
   touch_begin(&s_tft);
   touch_set_screen(scr_w, scr_h);
   ui_init();
+  wdt_feed();
+  WiFi.onEvent(wifi_event_cb); /* record disconnect REASON codes before we join */
   wifi_apply(g_settings.wifi_ssid, g_settings.wifi_pass);
   identity_begin();
   mqtt_begin(&g_settings);
@@ -834,6 +1023,7 @@ void setup() {
 }
 
 void loop() {
+  wdt_feed(); /* proves the loop task is alive; a hung loop panics + reboots */
   /* worst gap between loop iterations: reveals blocking work done outside LVGL */
   {
     const uint32_t now_us = micros();
@@ -854,6 +1044,7 @@ void loop() {
   }
   ui_poll();
   mqtt_poll();
+  net_supervisor_poll(); /* re-associate Wi-Fi / MQTT, reboot if wedged */
 
   if (wifi_ok()) {
     if (!s_ota_started) ard_ota_begin();
@@ -896,3 +1087,4 @@ void loop() {
   s_btn_prev = btn;
   delay(2); /* was 5: LVGL is serviced from this loop, so keep input latency low */
 }
+

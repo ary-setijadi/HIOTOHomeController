@@ -4,6 +4,7 @@
 #include "config.h"
 #include "settings.h"
 #include "ui.h"
+#include "watchdog.h"
 
 #if TOUCH_SEPARATE_BUS
 
@@ -97,7 +98,26 @@ void touch_set_screen(int w, int h) {
   if (h > 0) s_h = h;
 }
 
-bool touch_is_down(void) { return digitalRead(TP_IRQ) == LOW; }
+/* Pressure below this counts as "not touched". Also used by touch_raw(), so
+ * presence and validity can never disagree (that mismatch would make wait_tap()
+ * spin until its timeout while the panel believes it is being held). */
+#define TOUCH_Z_DOWN 40
+
+/* Presence is taken from the PRESSURE axis of this panel, never from the PENIRQ
+ * pin.
+ *
+ * On the 2.8" CYD the XPT2046 shares the display board with the panel, and the
+ * PENIRQ net is not reliable across batches: boards 2 and 3 idle HIGH and go LOW
+ * on contact (XPT2046 datasheet behaviour), but one delivered unit idles LOW and
+ * goes HIGH on contact. Deriving presence from that pin therefore inverts every
+ * tap on such a unit - calibration waits for a "press" that is already asserted
+ * and discards the real ones, and the UI never responds.
+ *
+ * z is polarity-free, and it is the same quantity touch_raw() already validates,
+ * so presence and validity can never disagree on a 2.8" panel regardless of how
+ * its PENIRQ happens to be wired.
+ */
+bool touch_is_down(void) { return xpt(0xB0) >= TOUCH_Z_DOWN; }
 
 uint16_t touch_raw_pressure(void) { return xpt(0xB0); }
 
@@ -111,7 +131,7 @@ void touch_debug_sample(uint16_t *z, uint16_t *x, uint16_t *y) {
 }
 
 bool touch_raw(uint16_t *rx, uint16_t *ry) {
-  if (xpt(0xB0) < 40) return false; /* pressure check */
+  if (xpt(0xB0) < TOUCH_Z_DOWN) return false; /* pressure check */
   uint32_t sx = 0, sy = 0;
   for (int i = 0; i < 4; i++) {
     sx += xpt(0xD0);
@@ -285,12 +305,16 @@ bool touch_check_target(int tx, int ty, int *err_x, int *err_y) {
 
   const uint32_t t0 = millis();
   while (millis() - t0 < 30000) {
+    wdt_feed(); /* waiting for a finger must not look like a hung loop */
     int x = 0, y = 0;
     if (touch_point(&x, &y)) {
       *err_x = x - tx;
       *err_y = y - ty;
       const uint32_t r0 = millis(); /* let go before returning */
-      while (millis() - r0 < 2000 && touch_point(&x, &y)) delay(15);
+      while (millis() - r0 < 2000 && touch_point(&x, &y)) {
+        wdt_feed();
+        delay(15);
+      }
       return true;
     }
     delay(20);
@@ -309,9 +333,13 @@ static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
    * otherwise one press answers two boxes and the fit is built from twice the
    * same raw position. */
   const uint32_t rel0 = millis();
-  while (touch_is_down() && millis() - rel0 < 3000) delay(10);
+  while (touch_is_down() && millis() - rel0 < 3000) {
+    wdt_feed();
+    delay(10);
+  }
 
   while (millis() - t0 < timeout_ms) {
+    wdt_feed(); /* a calibration tap can take a minute; keep the WDT fed */
     if (millis() - last_report > 5000) {
       last_report = millis();
       Serial.printf("[cal] menunggu tap: irq=%d\n", (int)touch_is_down());
@@ -322,6 +350,7 @@ static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
       int n = 0;
       uint16_t a = 0, b = 0;
       while (n < 8 && touch_is_down()) {
+        wdt_feed();
         if (touch_raw(&a, &b)) {
           sx += a;
           sy += b;
@@ -331,7 +360,10 @@ static bool wait_tap(uint16_t *rx, uint16_t *ry, uint32_t timeout_ms) {
       }
       /* stay here until the finger lifts, so the next box needs a fresh tap */
       const uint32_t rel1 = millis();
-      while (touch_is_down() && millis() - rel1 < 2000) delay(10);
+      while (touch_is_down() && millis() - rel1 < 2000) {
+        wdt_feed();
+        delay(10);
+      }
       if (n > 0) {
         *rx = (uint16_t)(sx / n);
         *ry = (uint16_t)(sy / n);

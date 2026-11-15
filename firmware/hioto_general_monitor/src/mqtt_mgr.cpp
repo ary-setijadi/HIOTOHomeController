@@ -13,6 +13,8 @@ static const Settings *s_cfg = nullptr;
 static uint32_t s_last_try = 0;
 static uint32_t s_last_telemetry = 0;
 static uint32_t s_last_heartbeat = 0;
+static uint32_t s_fails = 0; /* consecutive failed connects (back-off) */
+static int s_last_rc = 0;    /* last CONNACK/socket result; 0 = connected */
 
 static char s_topic_status[48];
 static char s_topic_telemetry[48];
@@ -31,6 +33,9 @@ static void on_message(char *topic, byte *payload, unsigned int len);
 
 void mqtt_begin(const Settings *s) {
   s_cfg = s;
+  s_last_try = 0;
+  s_fails = 0;
+  s_last_rc = 0;
   build_topics();
   s_client.setServer(s_cfg->mqtt_host, s_cfg->mqtt_port);
   s_client.setBufferSize(512);
@@ -69,9 +74,11 @@ static bool connect_mqtt(void) {
   bool ok = s_client.connect(s_cfg->device_id, s_cfg->mqtt_user, s_cfg->mqtt_pass,
                              s_topic_status, 1, true, lwt);
   if (!ok) {
-    Serial.printf("[mqtt] connect failed rc=%d\n", s_client.state());
+    s_last_rc = s_client.state();
+    Serial.printf("[mqtt] connect failed rc=%d\n", s_last_rc);
     return false;
   }
+  s_last_rc = 0;
   char online[96];
   snprintf(online, sizeof online, "{\"device\":\"%s\",\"status\":\"online\"}", s_cfg->device_id);
   s_client.publish(s_topic_status, online, true);
@@ -115,7 +122,6 @@ void mqtt_poll(void) {
   if (!s_client.connected()) {
     /* Back off while the broker is unreachable: retrying every 5 s kept the
      * loop busy with failed connects instead of drawing the screen. */
-    static uint32_t s_fails = 0;
     const uint32_t gap = s_fails < 3 ? 5000 : 30000;
     if (millis() - s_last_try > gap) {
       s_last_try = millis();
@@ -141,6 +147,14 @@ void mqtt_poll(void) {
 bool mqtt_connected(void) { return s_client.connected(); }
 
 const char *mqtt_state_text(void) { return s_client.connected() ? "MQTT OK" : "MQTT --"; }
+
+int mqtt_last_rc(void) { return s_last_rc; }
+
+void mqtt_force_reconnect(void) {
+  if (s_client.connected()) s_client.disconnect();
+  s_fails = 0;
+  s_last_try = 0; /* mqtt_poll() retries on the very next iteration */
+}
 
 bool mqtt_publish_actuator(const char *guid, int value) {
   if (!s_client.connected() || !guid || !guid[0]) return false;

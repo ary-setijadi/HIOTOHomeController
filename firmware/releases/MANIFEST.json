@@ -1,5 +1,5 @@
 {
-  "version": "2.0.6",
+  "version": "3.5.2",
   "releases": [
     {
       "device_type": "hioto-genmon-28-st7789",
@@ -17,11 +17,11 @@
       "board": "ESP32-3248S035 (3.5\")",
       "panel_chip": "ST7796",
       "env": "genmon_35_st7796",
-      "version": "2.0.6",
-      "file": "hioto-genmon-35-st7796-2.0.6.bin",
-      "size": 1212704,
-      "sha256": "ffc6cfd947e221277e16b6a4ab9ebec19ea9cf13e572593cb8ff51aa16fcde6f",
-      "built_at": "2026-10-24T05:45:14+00:00"
+      "version": "3.5.2",
+      "file": "hioto-genmon-35-st7796-3.5.2.bin",
+      "size": 1216480,
+      "sha256": "728ea8cdefd4b7b8279fae4cedbf3b0fc7efe74fcc8a866436ebeeb299e1bbbd",
+      "built_at": "2026-11-15T12:31:41+00:00"
     }
   ]
 }

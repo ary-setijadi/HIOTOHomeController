@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "settings.h"
+#include "watchdog.h"
 
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
@@ -160,6 +161,8 @@ bool ota_flash_url(const char *url) {
   }
 
   s_busy = true;
+  wdt_feed(); /* the download loop runs long; it feeds below, this one covers
+               * the gap between loop() and the first chunk */
   esp_ota_handle_t handle = 0;
   esp_err_t err = esp_ota_begin(next, (size_t)len, &handle);
   if (err != ESP_OK) {
@@ -187,6 +190,7 @@ bool ota_flash_url(const char *url) {
       break;
     }
     remaining -= got;
+    wdt_feed(); /* a 1.2 MB image must never look like a stalled loop */
   }
   http.end();
 
@@ -223,6 +227,7 @@ bool ota_check_now(void) {
   }
   if (s_busy) return false;
   s_last_check = millis();
+  wdt_feed();
 
   char ver[24] = "";
   char url[160] = "";

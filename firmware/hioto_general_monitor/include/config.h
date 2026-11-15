@@ -17,7 +17,24 @@
 
 /* OTA firmware source: the Orange Pi "ota-firmware" service (port 8080). */
 #define OTA_BASE "http://192.168.1.99:8080"
-#define FW_VERSION "2.0.6"
+
+/* Firmware version — supplied by each PlatformIO env, NOT shared.
+ *
+ * The 2.8" (ESP32-2432S028 / ST7789) and 3.5" (ESP32-3248S035 / ST7796) panels
+ * are different hardware: different controller, different touch topology,
+ * different button count, and separate OTA channels (FW_DEVICE_TYPE). They
+ * therefore carry INDEPENDENT version series and independent release cadence.
+ *
+ * Series convention: <panel-major.minor>.<patch>
+ *     genmon_28_st7789 -> 2.8.x      (panel width 320, GEN_SLOTS 6)
+ *     genmon_35_st7796 -> 3.5.x      (panel width 480, GEN_SLOTS 8)
+ *
+ * Bump one series only when that panel's firmware changes. Never bump one to
+ * "keep them in step" — that is exactly the coupling this split removes.
+ */
+#ifndef FW_VERSION
+#define FW_VERSION "0.0.0-UNSET" /* a build reached without -DFW_VERSION */
+#endif
 /* One device type per board AND panel controller, so a board can only ever pull
  * an image built for its own glass. Set by the PlatformIO env:
  *   genmon_35_st7796 -> "hioto-genmon-35-st7796"
@@ -33,6 +50,31 @@
 #endif
 #define OTA_CHECK_MS 900000UL /* 15 min between automatic checks */
 
+/* ---------------------------------------------------------------------------
+ *  Self-healing: watchdog + Wi-Fi/MQTT supervision
+ *
+ *  A CYD panel is often out of reach (ceiling / wall mount), so a stalled loop
+ *  or a dead Wi-Fi association cannot be fixed by pulling the plug. Two layers:
+ *
+ *  1. Task watchdog - a panic + reboot after WDT_TIMEOUT_S without a feed.
+ *  2. Association supervisor - after a loss, reconnect every WIFI_RETRY_MS;
+ *     a full re-init (Wi-Fi off/on) after WIFI_REINIT_MS; and a self-reboot
+ *     after WIFI_REBOOT_MS, because a rebooted radio is cheaper than a dark
+ *     panel. The reboot is only used once the board has been up at least once
+ *     since power-on - a boot without an AP must not turn into a reboot loop.
+ *
+ *  MQTT gets the same treatment: if it stays down while Wi-Fi is healthy for
+ *  MQTT_STALL_CYCLE_MS, cycle the Wi-Fi link once; after MQTT_STALL_REBOOT_MS,
+ *  reboot. Broker credential rejections (rc 4/5) are NOT retried with a reboot
+ *  - that is a configuration error and rebooting would only churn the fleet.
+ * ------------------------------------------------------------------------ */
+#define WDT_TIMEOUT_S 30UL         /* loop-task watchdog timeout */
+#define WIFI_RETRY_MS 30000UL      /* reconnect attempt cadence while down */
+#define WIFI_REINIT_MS 180000UL    /* full Wi-Fi re-init after 3 min down */
+#define WIFI_REBOOT_MS 900000UL    /* self-reboot after 15 min down */
+#define MQTT_STALL_CYCLE_MS 120000UL  /* MQTT silent >2 min -> cycle Wi-Fi once */
+#define MQTT_STALL_REBOOT_MS 1800000UL /* MQTT dead >30 min -> reboot */
+
 /* Device registration with the controller (POST /api/register). */
 #define IDENTITY_RETRY_MS 300000UL /* retry every 5 min until registered */
 
@@ -43,12 +85,50 @@
 #define DEFAULT_FLOOR "Lantai 1"
 #define DEFAULT_ROOM  "Living Room"
 
-/* Number of lamp buttons (2 rows x 4 columns). */
-#define GEN_SLOTS 8
+/* ---------------------------------------------------------------------------
+ *  Button grid — ONE source of truth
+ *
+ *  GEN_SLOTS is the number of lamp buttons AND the number of slot rows in
+ *  Settings AND the size of every slot array. It is fixed per panel by the
+ *  PlatformIO env, never inferred at runtime:
+ *
+ *    genmon_35_st7796  480x320  ->  -DGEN_SLOTS=8   (4 columns x 2 rows)
+ *    genmon_28_st7789  320x240  ->  -DGEN_SLOTS=6   (3 columns x 2 rows)
+ *
+ *  Geometry is derived from it, so the grid and the settings list can never
+ *  disagree about how many buttons a board has.
+ * ------------------------------------------------------------------------ */
+#ifndef GEN_SLOTS
+#define GEN_SLOTS 8 /* fallback: the 3.5" layout */
+#endif
 
-/* Default slot assignment (short HIOTO lamp ids, resolved from the registry). */
+#define GEN_ROWS 2
+#if (GEN_SLOTS % GEN_ROWS) != 0
+#error "GEN_SLOTS must be a positive multiple of GEN_ROWS"
+#endif
+#define GEN_COLS (GEN_SLOTS / GEN_ROWS)
+
+/* Default slot assignment (short HIOTO lamp ids, resolved from the registry).
+ * Must contain exactly GEN_SLOTS entries. */
+#if GEN_SLOTS == 6
+#define DEFAULT_SLOT_LABELS "LAMP.14", "LAMP.15", "LAMP.09", "LAMP.10", \
+                            "LAMP.11", "LAMP.12"
+#elif GEN_SLOTS == 8
 #define DEFAULT_SLOT_LABELS "LAMP.14", "LAMP.15", "LAMP.09", "LAMP.10", \
                             "LAMP.11", "LAMP.12", "LAMP.13", "LAMP.17"
+#else
+#error "GEN_SLOTS has no DEFAULT_SLOT_LABELS - add one for this panel size"
+#endif
+
+/* Version series this build must belong to, derived from the panel it was
+ * compiled for. Used only as a build-time sanity check (see board_tag_check):
+ * a 2.8" image must never carry a 3.5.x version and vice versa, because the
+ * two series advance independently. */
+#if GEN_SLOTS == 6
+#define FW_SERIES "2.8"
+#elif GEN_SLOTS == 8
+#define FW_SERIES "3.5"
+#endif
 
 /* Lamp icon styles offered in Settings (index = stored value). */
 #define ICON_COUNT 5

@@ -14,19 +14,24 @@
 /* Real panel size after rotation; set before ui_init(). */
 static lv_coord_t UI_W = 480;
 static lv_coord_t UI_H = 320;
-static int UI_COLS = 4; /* 4x2 on 480x320, 3x2 on 320x240 */
-static int UI_ROWS = 2;
+/* Button grid comes from the build (config.h): 4x2 on the 480x320 3.5" panel,
+ * 3x2 on the 320x240 2.8" panel. The panel size drives fonts and metrics only,
+ * never the slot count, so the main grid and the settings slot rows cannot
+ * disagree. */
+static int UI_COLS = GEN_COLS;
+static int UI_ROWS = GEN_ROWS;
 
 void ui_set_screen(int w, int h) {
   if (w > 0) UI_W = (lv_coord_t)w;
   if (h > 0) UI_H = (lv_coord_t)h;
-  /* a 320 px wide panel only fits three comfortable buttons per row */
-  if (UI_W >= 400) {
-    UI_COLS = 4;
-    UI_ROWS = 2;
-  } else {
-    UI_COLS = 3;
-    UI_ROWS = 2;
+
+  /* Loud check for a mis-built env rather than a silent re-flow: a 320 px panel
+   * cannot fit four comfortable buttons per row, and a grid whose cell count
+   * differs from GEN_SLOTS would orphan configuration rows. */
+  const int fit = (UI_W >= 400) ? 4 : 3;
+  if (fit != UI_COLS) {
+    Serial.printf("[ui] WARNING panel %dx%d fits %d columns but GEN_SLOTS=%d (%dx%d)\n",
+                  (int)UI_W, (int)UI_H, fit, GEN_SLOTS, UI_COLS, UI_ROWS);
   }
 }
 
