@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <WiFi.h>
 #include <lvgl.h>
 
 #include "board_pins.h"
@@ -39,6 +40,11 @@ void ui_set_screen(int w, int h) {
 static inline const UiTheme *T(void) { return theme_get(g_settings.theme); }
 #define C(field) lv_color_hex(T()->field)
 
+/* Wi-Fi AP scan: how many results are kept. The scan list is the primary way
+ * to pick a network; the SSID/password text fields below it stay for a hidden
+ * SSID that never shows up in a scan. */
+#define AP_MAX 24
+
 /* ------------------------------------------------------------------------- */
 /*  Widget handles                                                           */
 /* ------------------------------------------------------------------------- */
@@ -64,6 +70,13 @@ static lv_obj_t *s_ta_pass = NULL;
 static lv_obj_t *s_dd_floor = NULL;
 static lv_obj_t *s_dd_room = NULL;
 static lv_obj_t *s_lbl_wifi = NULL;
+/* Wi-Fi scan list: results kept, and the row selected/matched to the SSID field */
+static char s_ap_ssid[AP_MAX][33];
+static uint8_t s_ap_auth[AP_MAX];
+static lv_obj_t *s_list_ap = NULL;
+static lv_obj_t *s_lbl_scan = NULL;
+static uint8_t s_scan_state = 0; /* 0 = idle, 1 = scan in progress */
+static uint32_t s_scan_t0 = 0;
 static lv_obj_t *s_dd_dev[GEN_SLOTS];
 static lv_obj_t *s_dd_icon[GEN_SLOTS];
 static lv_obj_t *s_lbl_alias[GEN_SLOTS]; /* friendly name shown in the row */
@@ -130,6 +143,10 @@ static lv_obj_t *s_lbl_scope = NULL;
 #define SLIDER_W (UI_BIG ? 190 : 110)
 #define BSTEP_W (UI_BIG ? 40 : 32)
 #define VAL_W (UI_BIG ? 48 : 44)
+/* Wi-Fi scan list: row height and visible height (the list scrolls when the
+ * scan found more networks than fit) */
+#define AP_ROW_H (UI_BIG ? 36 : 30)
+#define AP_LIST_H (UI_BIG ? 138 : 104)
 #define REG_OPT_MAX 160
 
 /* Connection state of the top-bar icons. Deliberately NOT taken from the theme:
@@ -808,6 +825,139 @@ static void save_click_cb(lv_event_t *e) {
 }
 
 /* ------------------------------------------------------------------------- */
+/*  Wi-Fi AP scan -> listview                                                */
+/*                                                                           */
+/*  Typing an SSID on a resistive keyboard is error-prone, so the Settings    */
+/*  screen offers the networks the radio actually hears. Tapping a row fills   */
+/*  the SSID field; a secured network then opens the password keyboard and an */
+/*  open one only needs "Simpan". The manual fields stay below the list for a */
+/*  hidden SSID (scan shows those only when show_hidden is set, and some APs   */
+/*  still refuse to advertise their name).                                    */
+/* ------------------------------------------------------------------------- */
+static void wifi_scan_cb(lv_event_t *e) {
+  (void)e;
+  if (s_scan_state) return; /* one scan at a time */
+  if (WiFi.getMode() != WIFI_STA) WiFi.mode(WIFI_STA);
+  const int16_t n = (int16_t)WiFi.scanNetworks(true /*async*/, true /*show_hidden*/);
+  if (n == WIFI_SCAN_FAILED) {
+    if (s_lbl_scan) lv_label_set_text(s_lbl_scan, "pindai gagal");
+    Serial.println("[wifi] pindai gagal");
+    return;
+  }
+  s_scan_state = 1;
+  s_scan_t0 = millis();
+  if (s_lbl_scan) lv_label_set_text(s_lbl_scan, "memindai jaringan...");
+  Serial.println("[wifi] memindai SSID...");
+}
+
+/* Tapping a row: fill the SSID, then ask for the password (or not). */
+static void ap_click_cb(lv_event_t *e) {
+  const int i = (int)(intptr_t)lv_event_get_user_data(e);
+  if (i < 0 || i >= AP_MAX || !s_ta_ssid) return;
+  const bool open = (s_ap_auth[i] == WIFI_AUTH_OPEN);
+  lv_textarea_set_text(s_ta_ssid, s_ap_ssid[i]);
+  if (s_ta_pass) lv_textarea_set_text(s_ta_pass, "");
+  if (!open && s_kb && s_ta_pass) {
+    lv_keyboard_set_textarea(s_kb, s_ta_pass);
+    lv_obj_clear_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+    if (s_set_content) lv_obj_set_height(s_set_content, UI_H - KB_MAIN_H);
+    lv_obj_scroll_to_view(s_ta_pass, LV_ANIM_ON);
+  } else if (s_kb) {
+    lv_obj_add_flag(s_kb, LV_OBJ_FLAG_HIDDEN);
+    if (s_set_content) lv_obj_set_height(s_set_content, SET_H);
+  }
+  if (s_lbl_scan)
+    lv_label_set_text(s_lbl_scan, open ? "terbuka - tekan Simpan" : "ketik sandi lalu Simpan");
+  Serial.printf("[wifi] dipilih '%s' (%s)\n", s_ap_ssid[i], open ? "terbuka" : "sandi");
+}
+
+/* Fill the list from the finished scan (strongest first, one row per SSID). */
+static void wifi_list_populate(int16_t n) {
+  if (!s_list_ap) {
+    WiFi.scanDelete();
+    return;
+  }
+  lv_obj_clean(s_list_ap);
+
+  struct ApEnt {
+    char ssid[33];
+    uint8_t auth;
+    int16_t rssi;
+  };
+  ApEnt items[AP_MAX];
+  int cnt = 0;
+  for (int16_t i = 0; i < n && cnt < AP_MAX; i++) {
+    String ss = WiFi.SSID(i);
+    if (!ss.length() || ss.length() > 32) continue;
+    bool dup = false;
+    for (int k = 0; k < cnt; k++)
+      if (!strcmp(items[k].ssid, ss.c_str())) {
+        dup = true;
+        break;
+      }
+    if (dup) continue;
+    snprintf(items[cnt].ssid, sizeof items[cnt].ssid, "%s", ss.c_str());
+    /* core 2.x names it encryptionType(); authMode() only exists in 3.x */
+    items[cnt].auth = (uint8_t)WiFi.encryptionType(i);
+    items[cnt].rssi = (int16_t)WiFi.RSSI(i);
+    cnt++;
+  }
+  for (int a = 1; a < cnt; a++) { /* insertion sort, descending RSSI */
+    ApEnt key = items[a];
+    int b = a - 1;
+    while (b >= 0 && items[b].rssi < key.rssi) {
+      items[b + 1] = items[b];
+      b--;
+    }
+    items[b + 1] = key;
+  }
+
+  for (int k = 0; k < cnt; k++) {
+    snprintf(s_ap_ssid[k], sizeof s_ap_ssid[k], "%s", items[k].ssid);
+    s_ap_auth[k] = items[k].auth;
+    char txt[48];
+    snprintf(txt, sizeof txt, "%s%s", items[k].ssid,
+             items[k].auth == WIFI_AUTH_OPEN ? " (terbuka)" : "");
+    lv_obj_t *btn = lv_list_add_btn(s_list_ap, LV_SYMBOL_WIFI, txt);
+    lv_obj_set_height(btn, AP_ROW_H);
+    lv_obj_set_style_bg_color(btn, C(card2), 0);
+    lv_obj_set_style_radius(btn, 6, 0);
+    lv_obj_set_style_border_width(btn, 0, 0);
+    lv_obj_set_style_text_font(btn, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(btn, C(text), 0);
+    lv_obj_add_event_cb(btn, ap_click_cb, LV_EVENT_CLICKED, (void *)(intptr_t)k);
+  }
+  lv_obj_clear_flag(s_list_ap, LV_OBJ_FLAG_HIDDEN);
+  if (s_lbl_scan) {
+    char b[32];
+    snprintf(b, sizeof b, "%d jaringan, ketuk satu", cnt);
+    lv_label_set_text(s_lbl_scan, b);
+  }
+  Serial.printf("[wifi] pindai selesai: %d SSID\n", cnt);
+  WiFi.scanDelete();
+}
+
+/* Called from ui_poll(): polls the asynchronous scan and fills the list. */
+static void wifi_scan_service(void) {
+  if (s_scan_state != 1) return;
+  const int16_t n = (int16_t)WiFi.scanComplete();
+  if (n == WIFI_SCAN_RUNNING) {
+    if (millis() - s_scan_t0 > 20000) { /* radio stuck: give the list back */
+      WiFi.scanDelete();
+      s_scan_state = 0;
+      if (s_lbl_scan) lv_label_set_text(s_lbl_scan, "pindai timeout, coba lagi");
+    }
+    return;
+  }
+  s_scan_state = 0;
+  if (n == WIFI_SCAN_FAILED) {
+    if (s_lbl_scan) lv_label_set_text(s_lbl_scan, "pindai gagal");
+    return;
+  }
+  wifi_list_populate(n);
+}
+
+/* ------------------------------------------------------------------------- */
 /*  Diagnostics                                                              */
 /* ------------------------------------------------------------------------- */
 static int kb_rows(lv_obj_t *kb) {
@@ -917,8 +1067,34 @@ static void mk_settings(void) {
 
   mk_label(s_set_content, "SETELAN", F_TITLE, C(text));
 
-  /* ---- WiFi ---- */
+  /* ---- WiFi: pick a network from the scan, no SSID typing needed ---- */
   mk_label(s_set_content, "WiFi", &lv_font_montserrat_14, C(accent));
+
+  lv_obj_t *wrow = mk_row(s_set_content, SET_ROW_H);
+  lv_obj_t *bscan = lv_btn_create(wrow);
+  lv_obj_set_size(bscan, UI_BIG ? 132 : 100, SET_ROW_H);
+  lv_obj_set_style_radius(bscan, 8, 0);
+  lv_obj_set_style_bg_color(bscan, C(card), 0);
+  lv_obj_set_style_border_width(bscan, 1, 0);
+  lv_obj_set_style_border_color(bscan, C(border), 0);
+  lv_obj_add_event_cb(bscan, wifi_scan_cb, LV_EVENT_CLICKED, NULL);
+  mk_label(bscan, "Pindai AP", &lv_font_montserrat_12, C(text));
+  s_lbl_scan = mk_label(wrow, "pilih jaringan di daftar", &lv_font_montserrat_12, C(muted));
+
+  /* the scan list: tap a row to fill the SSID and open the password keyboard */
+  lv_obj_t *aplist = lv_list_create(s_set_content);
+  lv_obj_set_size(aplist, LV_PCT(100), AP_LIST_H);
+  lv_obj_set_style_bg_color(aplist, C(card), 0);
+  lv_obj_set_style_radius(aplist, 10, 0);
+  lv_obj_set_style_border_width(aplist, 1, 0);
+  lv_obj_set_style_border_color(aplist, C(border), 0);
+  lv_obj_set_style_pad_all(aplist, 4, 0);
+  lv_obj_set_style_text_font(aplist, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_text_color(aplist, C(text), 0);
+  lv_obj_add_flag(aplist, LV_OBJ_FLAG_HIDDEN); /* shown once a scan has results */
+  s_list_ap = aplist;
+
+  mk_label(s_set_content, "atau ketik manual:", &lv_font_montserrat_12, C(muted));
   mk_ta(s_set_content, &s_ta_ssid, g_settings.wifi_ssid, false);
   mk_ta(s_set_content, &s_ta_pass, g_settings.wifi_pass, true);
   lv_obj_add_event_cb(s_ta_ssid, ta_event_cb, LV_EVENT_FOCUSED, NULL);
@@ -1282,6 +1458,8 @@ static void reset_widgets(void) {
   s_ta_ssid = s_ta_pass = NULL;
   s_dd_floor = s_dd_room = NULL;
   s_lbl_wifi = s_kb = s_set_content = NULL;
+  s_list_ap = s_lbl_scan = NULL;
+  s_scan_state = 0;
   s_slider = s_lbl_bright = s_dd_theme = NULL;
   s_dd_scope = s_lbl_scope = NULL;
   for (int i = 0; i < GEN_SLOTS; i++) {
@@ -1355,6 +1533,7 @@ void ui_after_calibration(void) {
 void ui_theme_changed(void) { s_rebuild_pending = true; }
 
 void ui_poll(void) {
+  wifi_scan_service(); /* async scan -> list, outside the LVGL event */
   if (s_cal_request) {
     s_cal_request = false;
     touch_calibrate();
@@ -1384,6 +1563,7 @@ void ui_open_settings(void) {
     lv_label_set_text(s_lbl_bright, b);
   }
   if (s_dd_theme) lv_dropdown_set_selected(s_dd_theme, g_settings.theme);
+  wifi_scan_cb(NULL); /* a fresh list every time Settings opens */
   lv_scr_load(s_set);
 }
 

@@ -28,7 +28,10 @@ A **simple lamp switch panel**:
   2.8"), each with a lamp icon, the lamp's short id
   (e.g. `LAMP.14`) and its live ON/OFF state. Tap = toggle the lamp.
 - **`Setelan` pill** opens Settings:
-  - **WiFi**: SSID + password (on-screen keyboard), applied on save.
+  - **WiFi**: **a scan list of the APs the radio hears** (tap one → the SSID is
+    filled in, a secured network opens the password keyboard, an open one just
+    needs *Simpan*). *Pindai AP* re-scans; the SSID/password fields below the
+    list remain for a hidden SSID. Applied on save.
   - **Tampilan**: Floor and Room title fields.
   - **Layar & tema**: backlight dimmer (`−` / `+` / slider, 20–100 %) and the
     colour theme dropdown (applied live).
@@ -294,3 +297,4 @@ Shared lineage before the split:
 | **3.5.1 / 2.8.1** | series split: `FW_VERSION` per env, `GEN_SLOTS` as the single source of truth, 6-button 2.8" layout |
 | 2.8.2 | 2.8" only: touch presence taken from the pressure axis instead of PENIRQ polarity, so a board whose PENIRQ idles LOW (one delivered unit does) no longer inverts every tap. Confined to `#if TOUCH_SEPARATE_BUS`; the 3.5" branch is unchanged |
 | **3.5.2** | 3.5" only: overall task watchdog (30 s, panic → reboot) plus Wi-Fi/MQTT supervision — disconnect reason logging, reconnect/escalating re-init, self-reboot after 15 min Wi-Fi (or 30 min MQTT) loss, reset-reason logging. Fixes the "needs a power cycle" panel: see `docs/ota-channels.md` for the observed 28.6 h outage in the OTA log |
+| **3.5.3** | 3.5" only: Wi-Fi settings no longer require typing an SSID — the Settings screen scans and shows a **listview of available APs** (strongest first, one row per SSID, `(terbuka)` marked), tapping a secured network opens the password keyboard, and settings auto-rescan on open. Manual SSID/password fields stay for hidden networks |

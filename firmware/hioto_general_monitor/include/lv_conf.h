@@ -32,6 +32,7 @@
 #define LV_USE_BAR 1
 #define LV_USE_SLIDER 1
 #define LV_USE_SWITCH 1
+#define LV_USE_LIST 1 /* Wi-Fi scan results */
 #define LV_USE_LED 0
 
 #define LV_FONT_MONTSERRAT_12 1
