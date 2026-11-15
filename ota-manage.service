@@ -1,0 +1,16 @@
+[Unit]
+Description=HIOTO OTA management console (:8082)
+After=network-online.target ota-firmware.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/ota_manage.py
+Restart=always
+RestartSec=3
+User=root
+NoNewPrivileges=yes
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

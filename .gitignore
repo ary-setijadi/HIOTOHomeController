@@ -38,6 +38,11 @@ Armbian_*
 __pycache__/
 *.pyc
 
+# --- PlatformIO build output (the CYD probe projects carry ~424 MB of libdeps) ---
+.pio/
+.vscode/
+compile_commands.json
+
 # --- Downloaded reference docs (scratch) ---
 armbian_firstboot.html
 board.html
