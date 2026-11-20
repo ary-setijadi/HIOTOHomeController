@@ -6,11 +6,11 @@ reflashes and is unique per board.
 
 | # | Board | MAC | GUID | Device ID | Floor | Room | FW | Status |
 |---|---|---|---|---|---|---|---|---|
-| 1 | ESP32-2432S028 2.8" (previous, now replaced) | `7c:d5:44:3d:42:cc` | `217bde1e-53b1-40dd-ab26-3d42ccd5447c` | `hioto-genmon-3d42cc` | Lantai 1 (3) | Living Room (8) | **2.8.5** | recorded retired, but **still online** and taking OTA updates — see the rollout note |
-| 2 | ESP32-2432S028 2.8" | `48:af:f3:70:b1:34` | `36fc3043-82b9-4820-994a-70b134aff348` | `hioto-genmon-70b134` | Lantai 1 (3) | Kitchen (6) | **2.8.5** | registered, MQTT online, calibrated |
-| 3 | ESP32-2432S028 2.8" | `7c:d5:44:3c:4b:08` | `3338bcf0-a852-44e0-9d51-3c4b08d5447c` | `hioto-genmon-3c4b08` | Lantai 2 (2) | **Kantor (3)** | **2.8.5** | registered, MQTT online, calibrated |
-| 4 | ESP32-2432S028 2.8" | `7c:d5:44:3c:4b:98` | `8ba2c8cf-a40d-45df-9086-3c4b98d5447c` | `hioto-genmon-3c4b98` | — (unset) | — (unset) | **2.8.5** | flashed + calibrated; **not** provisioned |
-| 5 | ESP32-2432S028 2.8" | `7c:d5:44:3c:33:74` | `33e0f518-aafd-4693-b134-3c3374d5447c` | `hioto-genmon-3c3374` | **Lantai 1 (3)** | **Kitchen (6)** | **2.8.5** | registered, calibrated; on `routerkantor` (see Wi-Fi note) |
+| 1 | ESP32-2432S028 2.8" (previous, now replaced) | `7c:d5:44:3d:42:cc` | `217bde1e-53b1-40dd-ab26-3d42ccd5447c` | `hioto-genmon-3d42cc` | Lantai 1 (3) | Living Room (8) | **2.8.6** | recorded retired, but **still online** and taking OTA updates — see the rollout note |
+| 2 | ESP32-2432S028 2.8" | `48:af:f3:70:b1:34` | `36fc3043-82b9-4820-994a-70b134aff348` | `hioto-genmon-70b134` | Lantai 1 (3) | Kitchen (6) | **2.8.6** | registered, MQTT online, calibrated |
+| 3 | ESP32-2432S028 2.8" | `7c:d5:44:3c:4b:08` | `3338bcf0-a852-44e0-9d51-3c4b08d5447c` | `hioto-genmon-3c4b08` | Lantai 2 (2) | **Kantor (3)** | **2.8.6** | registered, MQTT online, calibrated |
+| 4 | ESP32-2432S028 2.8" | `7c:d5:44:3c:4b:98` | `8ba2c8cf-a40d-45df-9086-3c4b98d5447c` | `hioto-genmon-3c4b98` | — (unset) | — (unset) | **2.8.6** | flashed + calibrated; **not** provisioned |
+| 5 | ESP32-2432S028 2.8" | `7c:d5:44:3c:33:74` | `33e0f518-aafd-4693-b134-3c3374d5447c` | `hioto-genmon-3c3374` | **Lantai 1 (3)** | **Kitchen (6)** | **2.8.6** | registered, calibrated; on `routerkantor` (see Wi-Fi note) |
 | 6 | ESP32-3248S035 3.5" ST7796 | — | — | `hioto-genmon-ec0940` | — (unset) | — (unset) | **3.5.5** | 3.5" series; OTA online, takes `hioto-genmon-35-st7796` |
 
 Each panel carries its own version series (`2.8.x` for the 2.8" ST7789 boards,
@@ -27,12 +27,24 @@ for what a board actually installed. Two rollouts are on record:
 | 2026-11-20 11:40 | one board downloaded **2.0.6** — this is the downgrade bug in the act: the `-28-st7789` channel was still publishing 2.0.6 while boards ran 2.8.x, and a plain `strcmp` read "different" as "newer" |
 | 2026-11-20 11:57–12:03 | all five 2.8" boards went **2.0.6 → 2.8.3** (`success`), regaining the watchdog and the Wi-Fi scan picker |
 | 2026-11-20 13:18–13:20 | five 2.8" boards → **2.8.4**, then → **2.8.5**; the 3.5" board → **3.5.5**; every download `completed: true`, every report `success` |
+| 2026-11-20 21:48–21:49 | **2.8.6** to all five 2.8" boards — the first attributed downloads (see below) |
 
 `2.8.5` / `3.5.5` are the first builds that put `&guid=<device id>` on the
-firmware URL. Downloads recorded before that show `guid: null` (the transfer was
-still visible, but could not be tied to a board); attribution starts with the
-*next* image a board fetches, because the URL is built by the firmware that is
-already running.
+firmware URL, but the URL is built by the firmware that is *already running*, so
+those releases were still downloaded unattributed (`guid: null`). `2.8.6` is a
+deliberate **no-op release** — same source as 2.8.5, version string only — whose
+purpose was to exercise that path from a board already running the new code.
+First attributed download ever recorded:
+
+```
+21:48:31  download_started  guid=hioto-genmon-3c4b98  version=2.8.6  size=1246368
+21:48:41  download          guid=hioto-genmon-3c4b98  version=2.8.6  sent=1246368  completed=True
+21:48:42  report            guid=hioto-genmon-3c4b98  from=2.8.5  to=2.8.6  status=success
+```
+
+The other four boards followed at 21:49 with the same pattern. The 3.5" series
+was left at 3.5.5 on purpose: it has one board, and its first attributed
+download will arrive with its next real release.
 
 ## Unit 2 bring-up record
 
