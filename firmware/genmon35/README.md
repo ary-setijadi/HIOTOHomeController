@@ -139,10 +139,14 @@ The firmware pulls updates from the `ota-firmware` service on the Orange Pi PC
 (`http://192.168.1.99:8080`), so no cable or BOOT button is needed after the
 first flash:
 
-1. `GET /api/latest?device=hioto-genmon&guid=<device id>` → manifest
-2. if `latest_version` differs from `FW_VERSION`, stream the `url` into the OTA
-   partition, then reboot
-3. `POST /api/report` with `status`, `from_version`, `to_version`
+1. `GET /api/latest?device=hioto-genmon-35-st7796&guid=<device id>` → manifest
+2. compare `latest_version` with `FW_VERSION` **numerically**; only a version
+   that is *newer* is installed — a server that is behind is refused, because
+   treating "different" as "newer" silently downgrades working boards
+3. `GET <url>&guid=<device id>` → stream into the inactive OTA partition, then
+   reboot. The device appends the `guid` itself (the manifest `url` has no query
+   string) so the server can attribute the download to this board
+4. `POST /api/report` with `status`, `from_version`, `to_version`
 
 Automatic checks run every 15 minutes (`OTA_CHECK_MS`) and can be disabled with
 `otaauto 0`. Triggers:
