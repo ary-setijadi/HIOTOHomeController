@@ -204,6 +204,7 @@ static void indev_read_cb(lv_indev_drv_t *drv, lv_indev_data_t *data) {
     data->point.x = (lv_coord_t)x;
     data->point.y = (lv_coord_t)y;
     data->state = LV_INDEV_STATE_PRESSED;
+    backlight_note_activity(); /* any touch wakes a dimmed panel */
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }
@@ -1045,6 +1046,7 @@ void loop() {
   ui_poll();
   mqtt_poll();
   net_supervisor_poll(); /* re-associate Wi-Fi / MQTT, reboot if wedged */
+  backlight_poll();      /* idle dim after 5 min without a touch */
 
   if (wifi_ok()) {
     if (!s_ota_started) ard_ota_begin();
@@ -1074,6 +1076,7 @@ void loop() {
     if (btn && !s_btn_prev) {
       s_btn_pressed_at = millis();
       s_btn_long_done = false;
+      backlight_note_activity(); /* BOOT counts as user presence too */
       ui_open_settings();
       delay(30);
     } else if (btn && !s_btn_long_done && millis() - s_btn_pressed_at > 5000) {
