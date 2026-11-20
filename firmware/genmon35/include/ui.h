@@ -1,0 +1,42 @@
+#pragma once
+#include <stdbool.h>
+#include <stdint.h>
+
+/* Build the main + settings UI. */
+void ui_init(void);
+
+/* Tell the UI the real panel size (after TFT rotation) before ui_init(). */
+void ui_set_screen(int w, int h);
+
+/* Refresh lamp button visuals + Wi-Fi/MQTT status line (call ~4x/s). */
+void ui_refresh_states(void);
+
+/* Housekeeping: applies a pending theme rebuild. Call once per loop(). */
+void ui_poll(void);
+
+/* Request a full re-style (used after a theme change from the console). */
+void ui_theme_changed(void);
+
+/* Print keyboard / overlay geometry to the serial console (diagnostics). */
+void ui_log_geometry(void);
+void ui_log_icons(void); /* dump the live top-bar icon colours */
+
+/* Open the settings screen (also used on first boot without Wi-Fi). */
+void ui_open_settings(void);
+
+/* Called after a registry refresh: rebuild the settings device dropdowns. */
+void ui_registry_changed(void);
+
+/* Called after a floor/room catalog refresh: rebuild the title dropdowns. */
+void ui_catalog_changed(void);
+
+/* Wi-Fi helpers, implemented in main.cpp. */
+bool wifi_ok(void);
+const char *wifi_state_text(void);
+void wifi_apply(const char *ssid, const char *pass);
+
+/* Touch calibration routine, implemented in touch.cpp. */
+void touch_calibrate(void);
+
+/* Called when the on-panel calibration finishes: repaint and reopen settings. */
+void ui_after_calibration(void);
