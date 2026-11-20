@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OTA firmware server v4 — device-type aware + GUID + query/download/report logging.
+"""OTA firmware server v4.1 — device-type aware + GUID + query/download/report logging.
 
 Device identification:
   - device type : query 'device' (e.g. ?device=esp32) or JSON body field
@@ -12,6 +12,13 @@ Endpoints:
   GET  /firmware/<type>/<file>?guid=<id>     -> firmware download (logged)
   POST /api/report                           -> device reports post-flash result (logged)
   GET  /api/log?limit=100                    -> recent events
+
+Download events (v4.1):
+  'download_started'  request accepted, with the parsed target version.
+  'download'          payload outcome: sent vs size and a 'completed' flag, so a
+                      truncated transfer is never mistaken for an install.
+  'download_missing'  404 / bad path, i.e. the device asked for an image that
+                      does not exist (silently invisible before v4.1).
 """
 import os, json, time
 from datetime import datetime, timezone
@@ -58,6 +65,19 @@ def read_manifest(device):
             return f.read()
     return json.dumps({'latest_version': None, 'filename': None,
                        'message': 'No firmware published for device type %r' % device})
+
+
+def version_from_name(name):
+    """fw-<device>-<version>.bin -> <version>; None when the name is odd.
+
+    Lets a download event state WHICH build was fetched without re-reading the
+    manifest (which may already have moved on by the time it is logged).
+    """
+    if not name:
+        return None
+    base = name[:-4] if name.lower().endswith('.bin') else name
+    parts = base.rsplit('-', 1)
+    return parts[1] if len(parts) == 2 and parts[1] else None
 
 
 def list_devices():
@@ -113,17 +133,29 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_file(self, fpath):
+        """Stream the file; return (size, bytes_actually_sent).
+
+        The sent count is what makes a download event meaningful: a device that
+        disconnects half-way has NOT installed the image, and the log used to
+        record the request but never the outcome.
+        """
         size = os.path.getsize(fpath)
         self.send_response(200)
         self.send_header('Content-Type', 'application/octet-stream')
         self.send_header('Content-Length', str(size))
         self.end_headers()
-        with open(fpath, 'rb') as f:
-            while True:
-                chunk = f.read(65536)
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
+        sent = 0
+        try:
+            with open(fpath, 'rb') as f:
+                while True:
+                    chunk = f.read(65536)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    sent += len(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        return size, sent
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -134,7 +166,7 @@ class Handler(BaseHTTPRequestHandler):
         guid = get_guid(qs, self.headers)
 
         if path in ('/', '/index.html'):
-            self._text(200, 'OTA firmware server v4.\n'
+            self._text(200, 'OTA firmware server v4.1.\n'
                             '  GET  /api/devices\n'
                             '  GET  /api/latest?device=<type>&guid=<id>\n'
                             '  GET  /api/<type>/latest?guid=<id>\n'
@@ -178,14 +210,29 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) == 3:
                 device, name = parts[1], parts[2]
                 fpath = os.path.join(ROOT, device, 'firmware', name)
+                ver = version_from_name(name)
                 if os.path.isfile(fpath):
                     size = os.path.getsize(fpath)
-                    log_event(event='download', device_type=device, guid=guid, ip=ip, user_agent=ua,
-                              filename=name, size=size, action='ota_execution')
-                    self._serve_file(fpath)
+                    log_event(event='download_started', device_type=device, guid=guid, ip=ip,
+                              user_agent=ua, filename=name, version=ver, size=size,
+                              action='ota_execution')
+                    got_size, sent = self._serve_file(fpath)
+                    # The payload event carries the OUTCOME, not just the intent:
+                    # sent == size means the device received the whole image.
+                    log_event(event='download', device_type=device, guid=guid, ip=ip,
+                              user_agent=ua, filename=name, version=ver, size=got_size,
+                              sent=sent, completed=(sent == got_size),
+                              action='ota_execution')
                 else:
+                    # A 404 is a real failure signal (wrong version string on the
+                    # device, wiped channel) and used to vanish without a trace.
+                    log_event(event='download_missing', device_type=device, guid=guid, ip=ip,
+                              user_agent=ua, filename=name, version=ver,
+                              action='ota_execution')
                     self._json(404, {'error': 'firmware not found'})
                 return
+            log_event(event='download_missing', device_type=None, guid=guid, ip=ip,
+                      user_agent=ua, filename=path, version=None, action='bad_firmware_path')
             self._json(400, {'error': 'bad firmware path'})
             return
 

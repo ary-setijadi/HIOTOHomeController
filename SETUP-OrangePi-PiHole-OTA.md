@@ -82,7 +82,7 @@ Runs as systemd service **`ota-firmware`** on port **8080**, auto-starts on boot
 | GET | `/api/devices` | list device types | — |
 | GET | `/api/latest?device=<type>&guid=<id>` | latest manifest | `query` |
 | GET | `/api/<type>/latest?guid=<id>` | latest manifest (path form) | `query` |
-| GET | `/firmware/<type>/<file>?guid=<id>` | download firmware | `download` (`ota_execution`) |
+| GET | `/firmware/<type>/<file>?guid=<id>` | download firmware | `download_started`, `download`, `download_missing` |
 | POST | `/api/report` | device reports post-flash result | `report` (`ota_report`) |
 | GET | `/api/log?limit=100` | view recent events | — |
 
@@ -116,14 +116,30 @@ Runs as systemd service **`ota-firmware`** on port **8080**, auto-starts on boot
 Response: `{"ok":true,"logged":{...}}`
 
 ### Log event schema (JSONL)
+
+A download produces up to two events so intent and outcome stay separate
+(server v4.1). `version` is parsed from the filename, and `guid` is only filled
+in when the device puts it on the URL — firmware 2.8.5 / 3.5.5 and later do.
+
 ```json
-{"time":"2026-09-29T23:26:18Z","ts":1790724378.49,
- "event":"download",                    // query | download | report
- "device_type":"esp32","guid":"device-1111-aaaa",
- "ip":"192.168.1.250","user_agent":"curl/8.21.0",
- "filename":"fw-esp32-1.0.0.bin","size":21,
+{"time":"2026-11-20T13:16:43Z","ts":1795180603.59,
+ "event":"download_started",            // query | download_started | download | download_missing | report
+ "device_type":"hioto-genmon-28-st7789","guid":"hioto-genmon-3c4b98",
+ "ip":"192.168.1.250","user_agent":"ESP32HTTPClient",
+ "filename":"fw-hioto-genmon-28-st7789-2.8.4.bin","version":"2.8.4",
+ "size":1246288,"action":"ota_execution"}
+
+{"time":"2026-11-20T13:16:43Z","ts":1795180603.72,
+ "event":"download",
+ "device_type":"hioto-genmon-28-st7789","guid":"hioto-genmon-3c4b98",
+ "ip":"192.168.1.250","user_agent":"ESP32HTTPClient",
+ "filename":"fw-hioto-genmon-28-st7789-2.8.4.bin","version":"2.8.4",
+ "size":1246288,"sent":1246288,"completed":true,   // sent < size = truncated transfer, NOT an install
  "action":"ota_execution"}
 ```
+
+A request for an image that does not exist logs `download_missing` (with the
+version it asked for) instead of disappearing into a bare 404.
 
 ### Publish new firmware
 ```bash
@@ -133,8 +149,9 @@ python3 /usr/local/bin/publish_firmware.py <file> --device <type> --version X.Y.
 Computes size + SHA-256 and updates `latest.json` for that device type.
 
 ### Device integration flow
-1. `GET /api/latest?device=<type>&guid=<guid>` → compare `latest_version` to running version.
+1. `GET /api/latest?device=<type>&guid=<guid>` → compare `latest_version` to running version (numeric compare; never install an older version).
 2. If newer → `GET /firmware/<type>/<file>?guid=<guid>` → flash → verify `sha256`.
+   The device appends `&guid=<device_id>` itself, because the manifest `url` carries no query string; without it the server logs `guid: null` and an install cannot be traced to a unit.
 3. `POST /api/report` with `status`, `from_version`, `to_version`, optional `message`.
 
 ---

@@ -271,8 +271,15 @@ bool ota_check_now(void) {
     return false;
   }
 
+  /* Attribute the transfer to this board. The manifest URL carries no query
+   * string, so every download used to be logged server-side as guid=null and an
+   * install could not be traced back to a physical unit. */
+  char aur[200];
+  snprintf(aur, sizeof aur, "%s%cguid=%s", url, strchr(url, '?') ? '&' : '?',
+           g_settings.device_id);
+
   Serial.printf("[ota] versi %s -> %s\n", FW_VERSION, ver);
-  if (!ota_flash_url(url)) {
+  if (!ota_flash_url(aur)) {
     report("failed", FW_VERSION, ver, s_status);
     return false;
   }
