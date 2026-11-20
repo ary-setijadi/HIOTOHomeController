@@ -18,6 +18,31 @@ static bool s_busy = false;
 const char *ota_version(void) { return FW_VERSION; }
 const char *ota_status_text(void) { return s_status; }
 
+/* Numeric compare of dotted versions ("2.8.3" vs "2.0.6"). Returns <0, 0, >0.
+ *
+ * The manifest check used to be a plain strcmp inequality, which treats ANY
+ * difference as an update - including a DOWNGRADE. That is not theoretical: the
+ * 2.8 channel was still publishing 2.0.6 while the boards ran 2.8.x, so working
+ * units re-flashed themselves back to 2.0.6 and lost the watchdog and the Wi-Fi
+ * scan picker, looking like "it cannot reconnect any more" and "there is no
+ * network list". An image may only be installed when it is NEWER than what is
+ * running. */
+static void ver_parts(const char *v, long out[4]) {
+  out[0] = out[1] = out[2] = out[3] = 0;
+  if (!v) return;
+  sscanf(v, "%ld.%ld.%ld.%ld", &out[0], &out[1], &out[2], &out[3]);
+}
+
+static int version_cmp(const char *a, const char *b) {
+  long pa[4], pb[4];
+  ver_parts(a, pa);
+  ver_parts(b, pb);
+  for (int i = 0; i < 4; i++) {
+    if (pa[i] != pb[i]) return (pa[i] < pb[i]) ? -1 : 1;
+  }
+  return 0;
+}
+
 static void set_status(const char *text) {
   snprintf(s_status, sizeof s_status, "%s", text ? text : "");
   Serial.printf("[ota] %s\n", s_status);
@@ -233,8 +258,16 @@ bool ota_check_now(void) {
   char url[160] = "";
   if (!fetch_manifest(ver, sizeof ver, url, sizeof url, nullptr)) return false;
 
-  if (!strcmp(ver, FW_VERSION)) {
+  const int cmp = version_cmp(ver, FW_VERSION);
+  if (cmp == 0) {
     set_statusf("terbaru sudah %s", FW_VERSION);
+    return false;
+  }
+  if (cmp < 0) {
+    /* Server is BEHIND us. Refuse: flashing it would be a silent downgrade and
+     * would remove whatever the newer build fixed. */
+    set_statusf("server %s lebih lama (lokal %s) - ditolak", ver, FW_VERSION);
+    Serial.printf("[ota] refusing downgrade: server %s < local %s\n", ver, FW_VERSION);
     return false;
   }
 
